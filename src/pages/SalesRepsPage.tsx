@@ -1,35 +1,53 @@
 import { useState } from "react";
-import { Mail, Phone, Eye, ExternalLink } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
 import { StatusBadge } from "@/components/StatusBadge";
 import { KpiGauge } from "@/components/KpiGauge";
-import { salesReps, territories, dealers, getTerritoryName, getDealersByRep, formatCurrency, monthlyKpi, activities } from "@/data/mockData";
+import { useSalesReps, useTerritories, useDealers, useRepTerritories, formatCurrency, getInitials, getTerritoryName, getDealersByRep } from "@/hooks/usePortalData";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SalesRepsPage() {
+  const { data: reps = [], isLoading: repsLoading } = useSalesReps();
+  const { data: territories = [] } = useTerritories();
+  const { data: dealers = [] } = useDealers();
+  const { data: repTerritories = [] } = useRepTerritories();
+
   const [search, setSearch] = useState("");
   const [territoryFilter, setTerritoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedRep, setSelectedRep] = useState<string | null>(null);
 
-  const filtered = salesReps.filter(r => {
+  const filtered = reps.filter(r => {
     if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (territoryFilter !== "all" && !r.territories.includes(territoryFilter)) return false;
+    if (territoryFilter !== "all") {
+      const repTerIds = repTerritories.filter(rt => rt.rep_id === r.id).map(rt => rt.territory_id);
+      if (!repTerIds.includes(territoryFilter)) return false;
+    }
     if (statusFilter !== "all" && r.status !== statusFilter) return false;
     return true;
-  }).sort((a, b) => b.kpiScore - a.kpiScore);
+  }).sort((a, b) => (b.kpi_score ?? 0) - (a.kpi_score ?? 0));
 
-  const rep = salesReps.find(r => r.id === selectedRep);
-  const repKpi = rep ? monthlyKpi.filter(k => k.repId === rep.id) : [];
-  const repDealers = rep ? getDealersByRep(rep.id) : [];
+  const rep = reps.find(r => r.id === selectedRep);
+  const repTerIds = rep ? repTerritories.filter(rt => rt.rep_id === rep.id).map(rt => rt.territory_id) : [];
+  const repDealers = rep ? getDealersByRep(dealers, rep.id) : [];
+
+  if (repsLoading) {
+    return (
+      <div className="animate-fade-in space-y-4">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-12 w-full" />
+        {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
       <div className="page-header">
         <h1 className="page-title">Sales Reps</h1>
-        <p className="page-subtitle">{salesReps.length} reps assigned to your region</p>
+        <p className="page-subtitle">{reps.length} reps synced from Acctivate</p>
       </div>
 
       <FilterBar
@@ -57,49 +75,59 @@ export default function SalesRepsPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(r => (
-              <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelectedRep(r.id)}>
-                <td className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-[11px] font-semibold text-primary-foreground shrink-0">
-                      {r.name.split(' ').map(n => n[0]).join('')}
+            {filtered.map(r => {
+              const rTerIds = repTerritories.filter(rt => rt.rep_id === r.id).map(rt => rt.territory_id);
+              const dealerCount = dealers.filter(d => d.rep_id === r.id).length;
+              const quotaPct = (r.quota ?? 0) > 0 ? Math.round((r.revenue ?? 0) / (r.quota ?? 1) * 100) : 0;
+              return (
+                <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelectedRep(r.id)}>
+                  <td className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-[11px] font-semibold text-primary-foreground shrink-0">
+                        {getInitials(r.name)}
+                      </div>
+                      <div>
+                        <p className="font-medium">{r.name}</p>
+                        <p className="text-xs text-muted-foreground">{r.email || 'No email'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{r.name}</p>
-                      <p className="text-xs text-muted-foreground">{r.email}</p>
+                  </td>
+                  <td className="p-3 hidden md:table-cell">
+                    <div className="flex flex-wrap gap-1">
+                      {rTerIds.length > 0 ? rTerIds.map(tId => (
+                        <span key={tId} className="text-[11px] bg-muted px-2 py-0.5 rounded-full">{getTerritoryName(territories, tId)}</span>
+                      )) : (
+                        <span className="text-[11px] text-muted-foreground">—</span>
+                      )}
                     </div>
-                  </div>
-                </td>
-                <td className="p-3 hidden md:table-cell">
-                  <div className="flex flex-wrap gap-1">
-                    {r.territories.map(t => (
-                      <span key={t} className="text-[11px] bg-muted px-2 py-0.5 rounded-full">{getTerritoryName(t)}</span>
-                    ))}
-                  </div>
-                </td>
-                <td className="p-3 text-center">{r.dealerCount}</td>
-                <td className="p-3"><StatusBadge status={r.status} /></td>
-                <td className="p-3"><KpiGauge score={r.kpiScore} size="sm" /></td>
-                <td className="p-3 text-right hidden lg:table-cell font-medium">{formatCurrency(r.revenue)}</td>
-                <td className="p-3 text-right hidden lg:table-cell">{Math.round(r.revenue / r.quota * 100)}%</td>
-                <td className="p-3">
-                  <div className="flex items-center justify-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); window.location.href = `mailto:${r.email}`; }}>
-                      <Mail className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); window.location.href = `tel:${r.phone}`; }}>
-                      <Phone className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="p-3 text-center">{dealerCount}</td>
+                  <td className="p-3"><StatusBadge status={r.status} /></td>
+                  <td className="p-3"><KpiGauge score={r.kpi_score ?? 0} size="sm" /></td>
+                  <td className="p-3 text-right hidden lg:table-cell font-medium">{formatCurrency(r.revenue)}</td>
+                  <td className="p-3 text-right hidden lg:table-cell">{quotaPct > 0 ? `${quotaPct}%` : '—'}</td>
+                  <td className="p-3">
+                    <div className="flex items-center justify-center gap-1">
+                      {r.email && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); window.location.href = `mailto:${r.email}`; }}>
+                          <Mail className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {r.phone && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); window.location.href = `tel:${r.phone}`; }}>
+                          <Phone className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-12 text-sm">No reps match your filters.</p>}
       </div>
 
-      {/* Rep Detail Sheet */}
       <Sheet open={!!selectedRep} onOpenChange={() => setSelectedRep(null)}>
         <SheetContent className="sm:max-w-lg overflow-y-auto">
           {rep && (
@@ -107,11 +135,11 @@ export default function SalesRepsPage() {
               <SheetHeader>
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground">
-                    {rep.name.split(' ').map(n => n[0]).join('')}
+                    {getInitials(rep.name)}
                   </div>
                   <div>
                     <SheetTitle>{rep.name}</SheetTitle>
-                    <p className="text-xs text-muted-foreground">{rep.email} • {rep.phone}</p>
+                    <p className="text-xs text-muted-foreground">{rep.email || 'No email'} {rep.phone ? `• ${rep.phone}` : ''}</p>
                   </div>
                 </div>
               </SheetHeader>
@@ -119,54 +147,42 @@ export default function SalesRepsPage() {
               <div className="mt-6 space-y-6">
                 <div className="flex items-center gap-3">
                   <StatusBadge status={rep.status} />
-                  <KpiGauge score={rep.kpiScore} />
+                  <KpiGauge score={rep.kpi_score ?? 0} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Revenue</p><p className="text-lg font-semibold">{formatCurrency(rep.revenue)}</p></div>
                   <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Quota</p><p className="text-lg font-semibold">{formatCurrency(rep.quota)}</p></div>
-                  <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Tasks Done</p><p className="text-lg font-semibold">{rep.tasksCompleted}</p></div>
-                  <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Overdue</p><p className="text-lg font-semibold text-destructive">{rep.tasksOverdue}</p></div>
+                  <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Tasks Done</p><p className="text-lg font-semibold">{rep.tasks_completed ?? 0}</p></div>
+                  <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Overdue</p><p className="text-lg font-semibold text-destructive">{rep.tasks_overdue ?? 0}</p></div>
                 </div>
 
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Territories</h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {rep.territories.map(t => <span key={t} className="text-xs bg-muted px-3 py-1 rounded-full">{getTerritoryName(t)}</span>)}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold mb-3">Monthly Revenue ($K)</h4>
-                  <div className="h-[160px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={repKpi.map(k => ({ month: k.month, revenue: k.revenue / 1000, quota: k.quota / 1000 }))}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" />
-                        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip />
-                        <Bar dataKey="revenue" fill="hsl(220 35% 22%)" radius={[3, 3, 0, 0]} />
-                        <Bar dataKey="quota" fill="hsl(38 75% 50%)" radius={[3, 3, 0, 0]} opacity={0.4} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {repTerIds.length > 0 ? repTerIds.map(tId => <span key={tId} className="text-xs bg-muted px-3 py-1 rounded-full">{getTerritoryName(territories, tId)}</span>) : (
+                      <span className="text-xs text-muted-foreground">No territories assigned yet</span>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Assigned Dealers ({repDealers.length})</h4>
                   <div className="space-y-2">
-                    {repDealers.map(d => (
+                    {repDealers.length > 0 ? repDealers.map(d => (
                       <div key={d.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/40 text-sm">
                         <span>{d.name}</span>
-                        <StatusBadge status={d.engagement} />
+                        <StatusBadge status={d.engagement ?? 'medium'} />
                       </div>
-                    ))}
+                    )) : (
+                      <p className="text-sm text-muted-foreground">No dealers assigned yet</p>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Notes</h4>
-                  <div className="rounded-lg border border-border p-3 min-h-[80px] text-sm text-muted-foreground">No notes yet. Notes will appear here.</div>
+                  <div className="rounded-lg border border-border p-3 min-h-[80px] text-sm text-muted-foreground">No notes yet.</div>
                 </div>
               </div>
             </>

@@ -1,20 +1,41 @@
 import { useState } from "react";
 import { Mail, Phone, ExternalLink, Copy } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
-import { contacts, territories } from "@/data/mockData";
+import { useSalesReps, useTerritories, useDealers, useContacts } from "@/hooks/usePortalData";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DirectoryPage() {
+  const { data: reps = [] } = useSalesReps();
+  const { data: territories = [] } = useTerritories();
+  const { data: dealers = [] } = useDealers();
+  const { data: dbContacts = [], isLoading } = useContacts();
+
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [territoryFilter, setTerritoryFilter] = useState("all");
   const { toast } = useToast();
+
+  // Build contact list from synced data when DB contacts are empty
+  const contacts = dbContacts.length > 0 ? dbContacts.map(c => ({
+    id: c.id,
+    name: c.name,
+    company: c.company || '',
+    role: c.role || 'other',
+    title: c.title || '',
+    phone: c.phone || '',
+    cell: c.cell || '',
+    email: c.email || '',
+    website: c.website || '',
+    territory: c.territory || '',
+  })) : [
+    ...reps.map(r => ({ id: `rep-${r.id}`, name: r.name, company: 'Lineage Collections', role: 'rep', title: 'Sales Representative', phone: r.phone || '', cell: '', email: r.email || '', website: '', territory: '' })),
+    ...dealers.slice(0, 200).map(d => ({ id: `dlr-${d.id}`, name: d.name, company: d.name, role: 'dealer', title: 'Dealer', phone: d.phone || '', cell: '', email: d.email || '', website: d.website || '', territory: '' })),
+  ];
 
   const filtered = contacts.filter(c => {
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !c.company.toLowerCase().includes(search.toLowerCase())) return false;
     if (roleFilter !== "all" && c.role !== roleFilter) return false;
-    if (territoryFilter !== "all" && !c.territory.toLowerCase().includes(territories.find(t => t.id === territoryFilter)?.name.toLowerCase() || '')) return false;
     return true;
   });
 
@@ -30,6 +51,17 @@ export default function DirectoryPage() {
     other: 'bg-muted text-muted-foreground',
   };
 
+  if (isLoading) {
+    return (
+      <div className="animate-fade-in space-y-4">
+        <Skeleton className="h-10 w-48" />
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -43,22 +75,19 @@ export default function DirectoryPage() {
         onSearchChange={setSearch}
         filters={[
           { label: "Role", value: roleFilter, onChange: setRoleFilter, options: [{ label: 'Dealer', value: 'dealer' }, { label: 'Rep', value: 'rep' }, { label: 'Manager', value: 'manager' }, { label: 'Other', value: 'other' }] },
-          { label: "Territory", value: territoryFilter, onChange: setTerritoryFilter, options: territories.map(t => ({ label: t.name, value: t.id })) },
         ]}
       />
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map(c => (
+        {filtered.slice(0, 60).map(c => (
           <div key={c.id} className="glass-card p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h3 className="font-semibold text-sm">{c.name}</h3>
-                <p className="text-xs text-muted-foreground">{c.title} • {c.company}</p>
+                <p className="text-xs text-muted-foreground">{c.title}{c.title && c.company ? ' • ' : ''}{c.company}</p>
               </div>
-              <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${roleBadgeClass[c.role]}`}>{c.role}</span>
+              <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${roleBadgeClass[c.role] || roleBadgeClass.other}`}>{c.role}</span>
             </div>
-
-            {c.territory && <p className="text-[11px] text-muted-foreground mb-3">{c.territory}</p>}
 
             <div className="space-y-1.5 text-xs mb-3">
               {c.phone && (
@@ -82,12 +111,13 @@ export default function DirectoryPage() {
             <div className="flex items-center gap-1.5 pt-2 border-t">
               {c.email && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.location.href = `mailto:${c.email}`}><Mail className="h-3.5 w-3.5" /></Button>}
               {c.phone && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.location.href = `tel:${c.phone}`}><Phone className="h-3.5 w-3.5" /></Button>}
-              {c.website && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(`https://${c.website}`, '_blank')}><ExternalLink className="h-3.5 w-3.5" /></Button>}
+              {c.website && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(c.website.startsWith('http') ? c.website : `https://${c.website}`, '_blank')}><ExternalLink className="h-3.5 w-3.5" /></Button>}
             </div>
           </div>
         ))}
       </div>
 
+      {filtered.length > 60 && <p className="text-center text-muted-foreground py-3 text-xs">Showing 60 of {filtered.length} contacts. Use search to narrow results.</p>}
       {filtered.length === 0 && <p className="text-center text-muted-foreground py-12 text-sm">No contacts match your search.</p>}
     </div>
   );
