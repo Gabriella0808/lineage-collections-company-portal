@@ -1,4 +1,5 @@
 import { LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings } from "lucide-react";
+import lineageLogo from "@/assets/lineage-logo.png";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
