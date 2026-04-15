@@ -94,6 +94,15 @@ export interface DbRepTerritory {
   territory_id: string;
 }
 
+export interface DbDealerSale {
+  id: string;
+  dealer_id: string;
+  year: number;
+  month: string;
+  revenue: number | null;
+  order_count: number | null;
+}
+
 // ── Hooks ─────────────────────────────────────────────────────────
 
 export function useSalesReps() {
@@ -177,6 +186,19 @@ export function useContacts() {
         .order("name");
       if (error) throw error;
       return (data ?? []) as DbContact[];
+    },
+  });
+}
+
+export function useDealerSales() {
+  return useQuery({
+    queryKey: ["dealer_sales"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dealer_sales")
+        .select("*");
+      if (error) throw error;
+      return (data ?? []) as DbDealerSale[];
     },
   });
 }
