@@ -16,8 +16,27 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+import { LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings, UserCog } from "lucide-react";
+import lineageLogo from "@/assets/lineage-logo.png";
+import { NavLink } from "@/components/NavLink";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+
 const navItems = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
+  { title: "Sales Managers", url: "/managers", icon: UserCog },
   { title: "Sales Reps", url: "/reps", icon: Users },
   { title: "Territories", url: "/territories", icon: Map },
   { title: "Dealers", url: "/dealers", icon: Store },

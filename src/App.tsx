@@ -9,6 +9,7 @@ import TerritoriesPage from "@/pages/TerritoriesPage";
 import DealersPage from "@/pages/DealersPage";
 import DirectoryPage from "@/pages/DirectoryPage";
 import KpiPage from "@/pages/KpiPage";
+import ManagersPage from "@/pages/ManagersPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
