@@ -1,12 +1,16 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import * as sql from "npm:mssql@11";
+import { Connection, Request as TdsRequest, TYPES } from "npm:tedious@19";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-function getMssqlConfig(): sql.config {
+interface MssqlRow {
+  [key: string]: unknown;
+}
+
+function connectToAcctivate(): Promise<Connection> {
   const host = Deno.env.get("ACCTIVATE_DB_HOST");
   const port = Deno.env.get("ACCTIVATE_DB_PORT");
   const user = Deno.env.get("ACCTIVATE_DB_USER");
@@ -14,22 +18,64 @@ function getMssqlConfig(): sql.config {
   const database = Deno.env.get("ACCTIVATE_DB_NAME");
 
   if (!host || !user || !password || !database) {
-    throw new Error("Missing Acctivate SQL Server credentials. Check ACCTIVATE_DB_HOST, ACCTIVATE_DB_USER, ACCTIVATE_DB_PASSWORD, ACCTIVATE_DB_NAME secrets.");
+    throw new Error("Missing Acctivate SQL Server credentials.");
   }
 
-  return {
-    server: host,
-    port: port ? parseInt(port) : 51924,
-    user,
-    password,
-    database,
-    options: {
-      encrypt: true,
-      trustServerCertificate: true,
-    },
-    connectionTimeout: 30000,
-    requestTimeout: 60000,
-  };
+  return new Promise((resolve, reject) => {
+    const connection = new Connection({
+      server: host,
+      authentication: {
+        type: "default",
+        options: { userName: user, password },
+      },
+      options: {
+        port: port ? parseInt(port) : 51924,
+        database,
+        encrypt: true,
+        trustServerCertificate: true,
+        connectTimeout: 30000,
+        requestTimeout: 60000,
+      },
+    });
+
+    connection.on("connect", (err: Error | undefined) => {
+      if (err) {
+        reject(new Error(`MSSQL connection failed: ${err.message}`));
+      } else {
+        resolve(connection);
+      }
+    });
+
+    connection.on("error", (err: Error) => {
+      reject(new Error(`MSSQL connection error: ${err.message}`));
+    });
+
+    connection.connect();
+  });
+}
+
+function queryMssql(connection: Connection, sql: string): Promise<MssqlRow[]> {
+  return new Promise((resolve, reject) => {
+    const rows: MssqlRow[] = [];
+
+    const request = new TdsRequest(sql, (err: Error | null) => {
+      if (err) {
+        reject(new Error(`MSSQL query failed: ${err.message}`));
+      } else {
+        resolve(rows);
+      }
+    });
+
+    request.on("row", (columns: Array<{ metadata: { colName: string }; value: unknown }>) => {
+      const row: MssqlRow = {};
+      columns.forEach((col) => {
+        row[col.metadata.colName] = col.value;
+      });
+      rows.push(row);
+    });
+
+    connection.execSql(request);
+  });
 }
 
 Deno.serve(async (req: Request) => {
@@ -37,21 +83,21 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  let connection: Connection | null = null;
+
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const mssqlConfig = getMssqlConfig();
 
-    console.log(`Connecting to Acctivate SQL Server at ${mssqlConfig.server}:${mssqlConfig.port}...`);
-    const pool = await sql.connect(mssqlConfig);
+    console.log("Connecting to Acctivate SQL Server...");
+    connection = await connectToAcctivate();
     console.log("Connected to Acctivate SQL Server successfully.");
 
     const results: Record<string, { synced: number; errors: string[] }> = {};
 
     // ─── SYNC SALES REPS ─────────────────────────────
+    // Adjust these SQL queries to match your actual Acctivate table/column names
     try {
-      // Adjust this query to match your Acctivate schema
-      // Common Acctivate tables: SalesRep, SalesPerson, etc.
-      const repsResult = await pool.request().query(`
+      const reps = await queryMssql(connection, `
         SELECT 
           SalesRepID AS acctivate_id,
           SalesRepName AS name,
@@ -61,28 +107,28 @@ Deno.serve(async (req: Request) => {
         WHERE IsActive = 1
       `);
 
-      for (const row of repsResult.recordset) {
+      for (const row of reps) {
         const { error } = await supabase.from("sales_reps").upsert(
           {
             acctivate_id: String(row.acctivate_id),
-            name: row.name || "Unknown",
-            email: row.email || null,
-            phone: row.phone || null,
+            name: String(row.name || "Unknown"),
+            email: row.email ? String(row.email) : null,
+            phone: row.phone ? String(row.phone) : null,
             status: "active",
           },
           { onConflict: "acctivate_id" }
         );
         if (error) console.error("Error upserting rep:", error.message);
       }
-      results.sales_reps = { synced: repsResult.recordset.length, errors: [] };
+      results.sales_reps = { synced: reps.length, errors: [] };
     } catch (e) {
-      console.error("Error syncing sales reps:", e.message);
-      results.sales_reps = { synced: 0, errors: [e.message] };
+      console.error("Error syncing sales reps:", (e as Error).message);
+      results.sales_reps = { synced: 0, errors: [(e as Error).message] };
     }
 
     // ─── SYNC TERRITORIES ────────────────────────────
     try {
-      const terResult = await pool.request().query(`
+      const territories = await queryMssql(connection, `
         SELECT 
           TerritoryID AS acctivate_id,
           TerritoryName AS name,
@@ -91,29 +137,28 @@ Deno.serve(async (req: Request) => {
         FROM SalesTerritory
       `);
 
-      for (const row of terResult.recordset) {
+      for (const row of territories) {
         const { error } = await supabase.from("territories").upsert(
           {
             acctivate_id: String(row.acctivate_id),
-            name: row.name || "Unknown",
-            region: row.region || null,
-            state: row.state || null,
+            name: String(row.name || "Unknown"),
+            region: row.region ? String(row.region) : null,
+            state: row.state ? String(row.state) : null,
             status: "on-track",
           },
           { onConflict: "acctivate_id" }
         );
         if (error) console.error("Error upserting territory:", error.message);
       }
-      results.territories = { synced: terResult.recordset.length, errors: [] };
+      results.territories = { synced: territories.length, errors: [] };
     } catch (e) {
-      console.error("Error syncing territories:", e.message);
-      results.territories = { synced: 0, errors: [e.message] };
+      console.error("Error syncing territories:", (e as Error).message);
+      results.territories = { synced: 0, errors: [(e as Error).message] };
     }
 
     // ─── SYNC DEALERS / CUSTOMERS ────────────────────
     try {
-      // Acctivate typically stores dealers/customers in a Customer table
-      const dealersResult = await pool.request().query(`
+      const dealers = await queryMssql(connection, `
         SELECT 
           CustomerID AS acctivate_id,
           CompanyName AS name,
@@ -128,38 +173,35 @@ Deno.serve(async (req: Request) => {
         WHERE IsActive = 1
       `);
 
-      for (const row of dealersResult.recordset) {
-        // Look up rep and territory by acctivate_id
+      for (const row of dealers) {
         let repId = null;
         let territoryId = null;
 
         if (row.rep_acctivate_id) {
-          const { data: repData } = await supabase
-            .from("sales_reps")
-            .select("id")
+          const { data } = await supabase
+            .from("sales_reps").select("id")
             .eq("acctivate_id", String(row.rep_acctivate_id))
             .maybeSingle();
-          repId = repData?.id || null;
+          repId = data?.id || null;
         }
 
         if (row.territory_acctivate_id) {
-          const { data: terData } = await supabase
-            .from("territories")
-            .select("id")
+          const { data } = await supabase
+            .from("territories").select("id")
             .eq("acctivate_id", String(row.territory_acctivate_id))
             .maybeSingle();
-          territoryId = terData?.id || null;
+          territoryId = data?.id || null;
         }
 
         const { error } = await supabase.from("dealers").upsert(
           {
             acctivate_id: String(row.acctivate_id),
-            name: row.name || "Unknown",
-            city: row.city || null,
-            state: row.state || null,
-            phone: row.phone || null,
-            email: row.email || null,
-            website: row.website || null,
+            name: String(row.name || "Unknown"),
+            city: row.city ? String(row.city) : null,
+            state: row.state ? String(row.state) : null,
+            phone: row.phone ? String(row.phone) : null,
+            email: row.email ? String(row.email) : null,
+            website: row.website ? String(row.website) : null,
             rep_id: repId,
             territory_id: territoryId,
             status: "active",
@@ -168,13 +210,14 @@ Deno.serve(async (req: Request) => {
         );
         if (error) console.error("Error upserting dealer:", error.message);
       }
-      results.dealers = { synced: dealersResult.recordset.length, errors: [] };
+      results.dealers = { synced: dealers.length, errors: [] };
     } catch (e) {
-      console.error("Error syncing dealers:", e.message);
-      results.dealers = { synced: 0, errors: [e.message] };
+      console.error("Error syncing dealers:", (e as Error).message);
+      results.dealers = { synced: 0, errors: [(e as Error).message] };
     }
 
-    await pool.close();
+    // Close connection
+    connection.close();
     console.log("Sync complete:", JSON.stringify(results));
 
     return new Response(
@@ -182,6 +225,7 @@ Deno.serve(async (req: Request) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error: unknown) {
+    if (connection) try { connection.close(); } catch (_) {}
     console.error("Sync failed:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(
