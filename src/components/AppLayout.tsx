@@ -1,20 +1,3 @@
-import { LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings } from "lucide-react";
-import lineageLogo from "@/assets/lineage-logo.png";
-import { NavLink } from "@/components/NavLink";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
 
 import { LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings, UserCog } from "lucide-react";
 import lineageLogo from "@/assets/lineage-logo.png";
