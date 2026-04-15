@@ -1,6 +1,5 @@
-import { LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings, LogOut, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { currentManager } from "@/data/mockData";
 import {
   Sidebar,
   SidebarContent,
@@ -73,12 +72,12 @@ function SidebarNav() {
       <SidebarFooter className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-semibold text-sidebar-accent-foreground">
-            {currentManager.name.split(' ').map(n => n[0]).join('')}
+            LC
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-accent-foreground truncate">{currentManager.name}</p>
-              <p className="text-[11px] text-sidebar-muted truncate">{currentManager.region} Manager</p>
+              <p className="text-xs font-medium text-sidebar-accent-foreground truncate">Lineage Collections</p>
+              <p className="text-[11px] text-sidebar-muted truncate">Sales Portal</p>
             </div>
           )}
         </div>

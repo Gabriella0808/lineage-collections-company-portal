@@ -1,4 +1,3 @@
-import { currentManager } from "@/data/mockData";
 import { Settings as SettingsIcon } from "lucide-react";
 
 export default function SettingsPage() {
@@ -10,16 +9,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="glass-card p-6 mb-5">
-        <h3 className="text-sm font-semibold mb-4">Profile</h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Name</span><span className="font-medium">{currentManager.name}</span></div>
-          <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Email</span><span className="font-medium">{currentManager.email}</span></div>
-          <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Phone</span><span className="font-medium">{currentManager.phone}</span></div>
-          <div className="flex justify-between py-2"><span className="text-muted-foreground">Region</span><span className="font-medium">{currentManager.region}</span></div>
-        </div>
-      </div>
-
-      <div className="glass-card p-6 mb-5">
         <h3 className="text-sm font-semibold mb-4">Data Integration</h3>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between items-center py-2 border-b">
@@ -27,12 +16,12 @@ export default function SettingsPage() {
             <span className="text-xs bg-success/10 text-success px-2.5 py-0.5 rounded-full font-medium">Connected</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b">
-            <span className="text-muted-foreground">Last Sync</span>
-            <span className="font-medium">Today, 8:00 AM</span>
+            <span className="text-muted-foreground">Sync Method</span>
+            <span className="font-medium">Local Node.js script → Backend</span>
           </div>
           <div className="flex justify-between items-center py-2">
-            <span className="text-muted-foreground">Sync Frequency</span>
-            <span className="font-medium">Every 4 hours</span>
+            <span className="text-muted-foreground">Data</span>
+            <span className="font-medium">Sales Reps, Territories, Dealers</span>
           </div>
         </div>
       </div>
