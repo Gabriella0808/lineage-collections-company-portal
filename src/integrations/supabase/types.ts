@@ -234,6 +234,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          monday_id: string | null
           name: string
           phone: string | null
           region: string | null
@@ -244,6 +245,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          monday_id?: string | null
           name: string
           phone?: string | null
           region?: string | null
@@ -254,6 +256,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          monday_id?: string | null
           name?: string
           phone?: string | null
           region?: string | null
@@ -300,6 +303,7 @@ export type Database = {
           kpi_score: number | null
           last_activity: string | null
           manager_id: string | null
+          monday_id: string | null
           name: string
           phone: string | null
           quota: number | null
@@ -318,6 +322,7 @@ export type Database = {
           kpi_score?: number | null
           last_activity?: string | null
           manager_id?: string | null
+          monday_id?: string | null
           name: string
           phone?: string | null
           quota?: number | null
@@ -336,6 +341,7 @@ export type Database = {
           kpi_score?: number | null
           last_activity?: string | null
           manager_id?: string | null
+          monday_id?: string | null
           name?: string
           phone?: string | null
           quota?: number | null
@@ -406,6 +412,7 @@ export type Database = {
           created_at: string
           id: string
           kpi_score: number | null
+          monday_id: string | null
           name: string
           quota: number | null
           region: string | null
@@ -419,6 +426,7 @@ export type Database = {
           created_at?: string
           id?: string
           kpi_score?: number | null
+          monday_id?: string | null
           name: string
           quota?: number | null
           region?: string | null
@@ -432,6 +440,7 @@ export type Database = {
           created_at?: string
           id?: string
           kpi_score?: number | null
+          monday_id?: string | null
           name?: string
           quota?: number | null
           region?: string | null
