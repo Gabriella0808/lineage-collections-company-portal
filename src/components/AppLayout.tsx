@@ -34,15 +34,7 @@ function SidebarNav() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <span className="text-sidebar-primary-foreground font-display text-sm font-bold">L</span>
-          </div>
-          {!collapsed && (
-            <div>
-              <p className="text-sm font-semibold text-sidebar-accent-foreground">Lineage Collections</p>
-              <p className="text-[11px] text-sidebar-muted">Sales Manager Portal</p>
-            </div>
-          )}
+          <img src={lineageLogo} alt="Lineage Collections" className="h-8 w-auto" />
         </div>
       </SidebarHeader>
 
