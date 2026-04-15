@@ -41,9 +41,7 @@ export default function DashboardPage() {
   currentYearSales.forEach(s => {
     dealerRevenueMap[s.dealer_id] = (dealerRevenueMap[s.dealer_id] ?? 0) + (s.revenue ?? 0);
   });
-    dealerRevenueMap.set(s.dealer_id, (dealerRevenueMap.get(s.dealer_id) ?? 0) + (s.revenue ?? 0));
-  });
-  const topDealers = [...dealerRevenueMap.entries()]
+  const topDealers = Object.entries(dealerRevenueMap)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
     .map(([dealerId, revenue]) => {
