@@ -31,6 +31,7 @@ export default function ManagersPage() {
   const [detailView, setDetailView] = useState<DetailView>(null);
   const [selectedRepIds, setSelectedRepIds] = useState<string[]>([]);
   const [selectedDealerIds, setSelectedDealerIds] = useState<string[]>([]);
+  const [selectedTrip, setSelectedTrip] = useState<DbTravelLog | null>(null);
 
   const isLoading = mgrLoading || repsLoading;
 
