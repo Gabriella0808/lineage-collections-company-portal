@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-type DetailView = null | "territories" | "dealers";
+type DetailView = null | "territories" | "dealers" | "ytd-bookings" | "ytd-goal";
 
 export default function ManagersPage() {
   const { data: managers = [], isLoading: mgrLoading } = useManagers();
