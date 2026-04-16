@@ -27,13 +27,18 @@ function getColValue(item: MondayItem, colId: string): string | null {
   return item.column_values.find((c) => c.id === colId)?.value ?? null;
 }
 
-// Extract last name from a full name
+// Normalize full name: lowercase, remove all non-alpha
+function normalizeFull(name: string): string {
+  return name.toLowerCase().replace(/[^a-z]/g, "");
+}
+
+// Extract last name — take last word
 function lastName(name: string): string {
   const parts = name.trim().split(/\s+/);
   return parts[parts.length - 1].toLowerCase().replace(/[^a-z]/g, "");
 }
 
-// Extract first name initial/prefix
+// Extract first name
 function firstName(name: string): string {
   return name.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, "");
 }
