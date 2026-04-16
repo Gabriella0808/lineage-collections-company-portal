@@ -1,5 +1,9 @@
 import { useState, useMemo } from "react";
-import { Map, Store, ArrowLeft, Filter, X, DollarSign, Target, TrendingUp, TrendingDown } from "lucide-react";
+import { Map, Store, ArrowLeft, Filter, X, DollarSign, Target, TrendingUp, TrendingDown, CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   useSalesReps, useTerritories, useDealers, useManagers,
   useRepTerritories, useDealerSales, useTravelLog,
