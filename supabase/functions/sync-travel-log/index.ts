@@ -11,6 +11,7 @@ const COL = {
   purpose: "dropdown_mkz8tgvx",
   approvalStatus: "color_mkz82ffa",
   notes: "long_text_mkz847ha",
+  repCode: "dropdown_mm2fdwa3",
 };
 
 interface MondayItem {
@@ -120,9 +121,26 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Fetch managers for matching
+    // Fetch managers + sales reps for matching
     const { data: managers } = await supabase.from("managers").select("id, name");
     const managerList = (managers ?? []) as { id: string; name: string }[];
+
+    const { data: salesReps } = await supabase.from("sales_reps").select("id, acctivate_id");
+    const repCodeMap = new Map<string, string>();
+    for (const r of (salesReps ?? []) as { id: string; acctivate_id: string | null }[]) {
+      if (r.acctivate_id) repCodeMap.set(r.acctivate_id.trim().toLowerCase(), r.id);
+    }
+
+    function findRepIds(repCodeText: string): string[] {
+      if (!repCodeText) return [];
+      const codes = repCodeText.split(",").map(c => c.trim().toLowerCase()).filter(Boolean);
+      const ids = new Set<string>();
+      for (const code of codes) {
+        const id = repCodeMap.get(code);
+        if (id) ids.add(id);
+      }
+      return [...ids];
+    }
 
     // Match a single Monday name to a manager using last name + first name prefix
     function findManager(mondayName: string): { id: string; name: string } | null {
@@ -176,7 +194,7 @@ Deno.serve(async (req: Request) => {
     // Delete existing travel_log entries from Monday
     await supabase.from("travel_log").delete().not("monday_id", "is", null);
 
-    // Build rows — one per manager per item
+    // Build rows — one per manager per item, with rep_id from rep code
     const rows: {
       monday_id: string;
       notes: string | null;
@@ -184,12 +202,14 @@ Deno.serve(async (req: Request) => {
       travel_end_date: string | null;
       salesperson_name: string | null;
       manager_id: string | null;
+      rep_id: string | null;
       purpose: string | null;
       approval_status: string | null;
     }[] = [];
 
     for (const item of allItems) {
       const salespersonText = getCol(item, COL.salesperson);
+      const repCodeText = getCol(item, COL.repCode);
       const dateValue = getColValue(item, COL.travelDates);
       let travelDate = new Date().toISOString().split("T")[0];
       let travelEndDate: string | null = null;
@@ -207,9 +227,11 @@ Deno.serve(async (req: Request) => {
       const approvalStatus = getCol(item, COL.approvalStatus) || null;
 
       const managerIds = findAllManagerIds(salespersonText);
+      const repIds = findRepIds(repCodeText);
+      // Use first matched rep id for all rows of this item (typical case is single rep)
+      const primaryRepId = repIds[0] ?? null;
 
       if (managerIds.length === 0) {
-        // Still insert with no manager
         rows.push({
           monday_id: `${item.id}_unassigned`,
           notes,
@@ -217,11 +239,11 @@ Deno.serve(async (req: Request) => {
           travel_end_date: travelEndDate,
           salesperson_name: salespersonText || null,
           manager_id: null,
+          rep_id: primaryRepId,
           purpose,
           approval_status: approvalStatus,
         });
       } else {
-        // One row per manager
         for (const mgrId of managerIds) {
           rows.push({
             monday_id: `${item.id}_${mgrId}`,
@@ -230,6 +252,7 @@ Deno.serve(async (req: Request) => {
             travel_end_date: travelEndDate,
             salesperson_name: salespersonText || null,
             manager_id: mgrId,
+            rep_id: primaryRepId,
             purpose,
             approval_status: approvalStatus,
           });
