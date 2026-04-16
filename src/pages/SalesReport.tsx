@@ -499,13 +499,12 @@ export default function SalesReport({ metric }: SalesReportProps) {
                 </tr>
               </thead>
               <tbody>
-                {sortedRows.map(row => (
+                {pagedRows.map(row => (
                   <tr key={row.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-3 font-medium">{row.dealer}</td>
                     <td className="p-3">{row.rep}</td>
                     <td className="p-3 text-muted-foreground">{row.manager}</td>
                     <td className="p-3 text-muted-foreground">{row.territory}</td>
-                    
                     <td className="p-3 text-right tabular-nums font-medium">{formatCurrency(row.value)}</td>
                   </tr>
                 ))}
@@ -516,13 +515,37 @@ export default function SalesReport({ metric }: SalesReportProps) {
               {sortedRows.length > 0 && (
                 <tfoot>
                   <tr className="border-t bg-muted/30 font-semibold">
-                    <td className="p-3" colSpan={4}>Total</td>
+                    <td className="p-3" colSpan={4}>Total (all rows)</td>
                     <td className="p-3 text-right tabular-nums">{formatCurrency(total)}</td>
                   </tr>
                 </tfoot>
               )}
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-2 px-4 py-3 border-t">
+              <p className="text-xs text-muted-foreground">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, sortedRows.length)} of {sortedRows.length}
+              </p>
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                <Button size="sm" variant="outline" className="h-8 px-2" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Prev</Button>
+                {pageNumbers.map((p, i) => p === "…" ? (
+                  <span key={`e${i}`} className="px-1 text-xs text-muted-foreground">…</span>
+                ) : (
+                  <Button
+                    key={p}
+                    size="sm"
+                    variant={p === currentPage ? "default" : "outline"}
+                    className="h-8 min-w-8 px-2 text-xs"
+                    onClick={() => setPage(p as number)}
+                  >
+                    {p}
+                  </Button>
+                ))}
+                <Button size="sm" variant="outline" className="h-8 px-2" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
