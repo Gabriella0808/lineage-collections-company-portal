@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, Download, Filter, X, ArrowUpDown, ArrowUp, ArrowDown, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip,
   ResponsiveContainer, LineChart, Line, CartesianGrid, Legend,
@@ -17,6 +18,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 type Metric = "bookings" | "invoices";
 
@@ -27,7 +31,7 @@ interface SalesReportProps {
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTH_INDEX: Record<string, number> = MONTHS.reduce((acc, m, i) => ({ ...acc, [m]: i }), {});
 
-type SortKey = "dealer" | "rep" | "manager" | "territory" | "state" | "value";
+type SortKey = "dealer" | "rep" | "manager" | "territory" | "value";
 type SortDir = "asc" | "desc";
 
 export default function SalesReport({ metric }: SalesReportProps) {
