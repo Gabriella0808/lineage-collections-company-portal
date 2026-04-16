@@ -12,8 +12,7 @@ export default function DashboardPage() {
   const { data: reps = [], isLoading: repsLoading } = useSalesReps();
   const { data: territories = [], isLoading: terLoading } = useTerritories();
   const { data: dealers = [], isLoading: dlrLoading } = useDealers();
-  const { data: activities = [] } = useActivities();
-  const { data: repTerritories = [] } = useRepTerritories();
+  const { data: signIns = [] } = useSignInFeed(8);
   const { data: dealerSales = [], isLoading: salesLoading } = useDealerSales();
 
   const isLoading = repsLoading || terLoading || dlrLoading || salesLoading;
