@@ -809,24 +809,45 @@ function DealerReport({
             </table>
           </div>
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-xs text-muted-foreground">{rows.length} dealers</p>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t">
+              <p className="text-xs text-muted-foreground">
+                Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, rows.length)} of {rows.length}
+              </p>
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                <Button variant="outline" size="sm" className="h-8 px-2" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <Button
-                    key={i}
-                    variant={page === i ? "default" : "ghost"}
-                    size="sm"
-                    className="h-7 w-7 p-0 text-xs"
-                    onClick={() => setPage(i)}
-                  >
-                    {i + 1}
-                  </Button>
-                ))}
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                {(() => {
+                  const current = page + 1;
+                  const pages: (number | "…")[] = [];
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (current > 4) pages.push("…");
+                    const start = Math.max(2, current - 1);
+                    const end = Math.min(totalPages - 1, current + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (current < totalPages - 3) pages.push("…");
+                    pages.push(totalPages);
+                  }
+                  return pages.map((p, i) =>
+                    p === "…" ? (
+                      <span key={`e${i}`} className="px-1 text-xs text-muted-foreground">…</span>
+                    ) : (
+                      <Button
+                        key={p}
+                        variant={current === p ? "default" : "outline"}
+                        size="sm"
+                        className="h-8 min-w-8 px-2 text-xs"
+                        onClick={() => setPage((p as number) - 1)}
+                      >
+                        {p}
+                      </Button>
+                    ),
+                  );
+                })()}
+                <Button variant="outline" size="sm" className="h-8 px-2" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
