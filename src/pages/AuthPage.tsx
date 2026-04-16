@@ -78,10 +78,7 @@ export default function AuthPage() {
       <img src={lineageLogo} alt="Lineage Collections" className="h-12 w-auto" />
       <Card className="w-full max-w-md">
         <CardHeader className="items-center text-center space-y-2">
-          <CardDescription>
-            {mode === "signin" ? "Sign in to your account" : "Create your account"}
-            <span className="block mt-1 text-xs uppercase tracking-[0.2em]">Sales Manager Portal</span>
-          </CardDescription>
+          <CardDescription>{mode === "signin" ? "Sign in to your account" : "Create your account"}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
