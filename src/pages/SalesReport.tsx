@@ -47,13 +47,16 @@ export default function SalesReport({ metric }: SalesReportProps) {
   const [year, setYear] = useState<number>(2026);
   const [monthFrom, setMonthFrom] = useState<number>(0); // Jan
   const [monthTo, setMonthTo] = useState<number>(11);    // Dec
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
   const [selectedManagerIds, setSelectedManagerIds] = useState<string[]>([]);
   const [selectedRepIds, setSelectedRepIds] = useState<string[]>([]);
   const [selectedTerritoryIds, setSelectedTerritoryIds] = useState<string[]>([]);
   const [selectedDealerIds, setSelectedDealerIds] = useState<string[]>([]);
-  const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const useDateRange = !!(dateFrom && dateTo);
 
   const title = metric === "bookings" ? "YTD Bookings Report" : "YTD Invoicing Report";
   const valueLabel = metric === "bookings" ? "Bookings" : "Invoices";
