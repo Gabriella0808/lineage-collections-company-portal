@@ -406,7 +406,7 @@ export default function SalesReport({ metric }: SalesReportProps) {
                   onClear={() => setSelectedTerritoryIds([])}
                 />
                 <FilterSection
-                  label={`Dealers (${dealers.length} synced)`}
+                  label="Dealers"
                   count={selectedDealerIds.length}
                   items={dealers.map(d => ({ id: d.id, label: d.name }))}
                   selected={selectedDealerIds}
