@@ -291,7 +291,7 @@ export default function ManagersPage() {
       <DealerReport
         manager={selectedManager}
         managerReps={managerReps}
-        dealers={mgrDealers}
+        dealers={dealers}
         allDealers={dealers}
         dealerSales={dealerSales}
         reps={reps}
@@ -310,7 +310,7 @@ export default function ManagersPage() {
       <DealerReport
         manager={selectedManager}
         managerReps={managerReps}
-        dealers={mgrDealers}
+        dealers={dealers}
         allDealers={dealers}
         dealerSales={dealerSales}
         reps={reps}
@@ -386,7 +386,7 @@ export default function ManagersPage() {
                   <Store className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold">{totalDealers}</p>
+                  <p className="text-2xl font-semibold">{dealers.length}</p>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Dealers</p>
                 </div>
               </div>
