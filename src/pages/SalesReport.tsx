@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Metric = "bookings" | "invoices";
@@ -263,83 +263,110 @@ export default function SalesReport({ metric }: SalesReportProps) {
             {dealerCount} active dealers • {MONTHS[monthFrom]}–{MONTHS[monthTo]} {year}
           </p>
         </div>
-        <Button onClick={exportCsv} size="sm" variant="outline" className="gap-2">
-          <Download className="h-4 w-4" /> Export CSV
-        </Button>
-      </div>
-
-      {/* Filter bar */}
-      <Card className="mb-6">
-        <CardContent className="pt-5 pb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-              <SelectTrigger className="h-9 w-28"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {availableYears.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={String(monthFrom)} onValueChange={(v) => setMonthFrom(Number(v))}>
-              <SelectTrigger className="h-9 w-28"><SelectValue placeholder="From" /></SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <span className="text-xs text-muted-foreground">to</span>
-            <Select value={String(monthTo)} onValueChange={(v) => setMonthTo(Number(v))}>
-              <SelectTrigger className="h-9 w-28"><SelectValue placeholder="To" /></SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <div className="w-px h-6 bg-border mx-1" />
-
-            <FilterPopover
-              label="Manager"
-              count={selectedManagerIds.length}
-              items={visibleManagers.map(m => ({ id: m.id, label: m.name }))}
-              selected={selectedManagerIds}
-              onToggle={(id) => toggle(selectedManagerIds, setSelectedManagerIds, id)}
-            />
-            <FilterPopover
-              label="Rep"
-              count={selectedRepIds.length}
-              items={reps.map(r => ({ id: r.id, label: r.name }))}
-              selected={selectedRepIds}
-              onToggle={(id) => toggle(selectedRepIds, setSelectedRepIds, id)}
-            />
-            <FilterPopover
-              label="Territory"
-              count={selectedTerritoryIds.length}
-              items={territories.map(t => ({ id: t.id, label: t.name }))}
-              selected={selectedTerritoryIds}
-              onToggle={(id) => toggle(selectedTerritoryIds, setSelectedTerritoryIds, id)}
-            />
-            <FilterPopover
-              label="Dealer"
-              count={selectedDealerIds.length}
-              items={dealers.map(d => ({ id: d.id, label: d.name }))}
-              selected={selectedDealerIds}
-              onToggle={(id) => toggle(selectedDealerIds, setSelectedDealerIds, id)}
-              wide
-            />
-            <FilterPopover
-              label="State"
-              count={selectedStates.length}
-              items={availableStates.map(s => ({ id: s, label: s }))}
-              selected={selectedStates}
-              onToggle={(id) => toggle(selectedStates, setSelectedStates, id)}
-            />
-
-            {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearAll}>
-                <X className="h-3.5 w-3.5 mr-1" /> Clear
+        <div className="flex items-center gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filters
+                {(hasFilters || year !== 2026 || monthFrom !== 0 || monthTo !== 11) && (
+                  <Badge variant="secondary" className="ml-1 px-1.5 text-[10px]">
+                    {selectedManagerIds.length + selectedRepIds.length + selectedTerritoryIds.length + selectedDealerIds.length + selectedStates.length + 1}
+                  </Badge>
+                )}
               </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </SheetTrigger>
+            <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Report Filters</SheetTitle>
+                <SheetDescription>Customize the data shown in this report.</SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-6 space-y-5">
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-muted-foreground mb-2 block">Year</label>
+                  <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {availableYears.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-muted-foreground mb-2 block">Month range</label>
+                  <div className="flex items-center gap-2">
+                    <Select value={String(monthFrom)} onValueChange={(v) => setMonthFrom(Number(v))}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <Select value={String(monthTo)} onValueChange={(v) => setMonthTo(Number(v))}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <FilterSection
+                  label="Managers"
+                  count={selectedManagerIds.length}
+                  items={visibleManagers.map(m => ({ id: m.id, label: m.name }))}
+                  selected={selectedManagerIds}
+                  onToggle={(id) => toggle(selectedManagerIds, setSelectedManagerIds, id)}
+                  onClear={() => setSelectedManagerIds([])}
+                />
+                <FilterSection
+                  label="Reps"
+                  count={selectedRepIds.length}
+                  items={reps.map(r => ({ id: r.id, label: r.name }))}
+                  selected={selectedRepIds}
+                  onToggle={(id) => toggle(selectedRepIds, setSelectedRepIds, id)}
+                  onClear={() => setSelectedRepIds([])}
+                />
+                <FilterSection
+                  label="Territories"
+                  count={selectedTerritoryIds.length}
+                  items={territories.map(t => ({ id: t.id, label: t.name }))}
+                  selected={selectedTerritoryIds}
+                  onToggle={(id) => toggle(selectedTerritoryIds, setSelectedTerritoryIds, id)}
+                  onClear={() => setSelectedTerritoryIds([])}
+                />
+                <FilterSection
+                  label="Dealers"
+                  count={selectedDealerIds.length}
+                  items={dealers.map(d => ({ id: d.id, label: d.name }))}
+                  selected={selectedDealerIds}
+                  onToggle={(id) => toggle(selectedDealerIds, setSelectedDealerIds, id)}
+                  onClear={() => setSelectedDealerIds([])}
+                />
+                <FilterSection
+                  label="States"
+                  count={selectedStates.length}
+                  items={availableStates.map(s => ({ id: s, label: s }))}
+                  selected={selectedStates}
+                  onToggle={(id) => toggle(selectedStates, setSelectedStates, id)}
+                  onClear={() => setSelectedStates([])}
+                />
+              </div>
+
+              <SheetFooter className="mt-6">
+                <Button variant="outline" size="sm" onClick={() => { clearAll(); setYear(2026); setMonthFrom(0); setMonthTo(11); }} className="gap-2">
+                  <X className="h-4 w-4" /> Reset all
+                </Button>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+
+          <Button onClick={exportCsv} size="sm" variant="outline" className="gap-2">
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+        </div>
+      </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
