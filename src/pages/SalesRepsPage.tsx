@@ -47,7 +47,7 @@ export default function SalesRepsPage() {
     <div className="animate-fade-in">
       <div className="page-header">
         <h1 className="page-title">Sales Reps</h1>
-        <p className="page-subtitle">{reps.length} reps synced from Acctivate</p>
+        <p className="page-subtitle">{reps.length} reps</p>
       </div>
 
       <FilterBar
