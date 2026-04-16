@@ -701,7 +701,7 @@ function DealerReport({
         }));
 
         // Pie chart: bookings by rep
-        const repMap = new Map<string, number>();
+        const repMap: globalThis.Map<string, number> = new globalThis.Map();
         rows.forEach(r => {
           const cur = repMap.get(r.repCode) || 0;
           repMap.set(r.repCode, cur + r.bookings2026);
