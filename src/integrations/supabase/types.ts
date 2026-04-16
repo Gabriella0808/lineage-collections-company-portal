@@ -108,9 +108,13 @@ export type Database = {
       }
       dealer_sales: {
         Row: {
+          booking_count: number | null
+          bookings: number | null
           created_at: string
           dealer_id: string
           id: string
+          invoice_count: number | null
+          invoices: number | null
           month: string
           order_count: number | null
           revenue: number | null
@@ -118,9 +122,13 @@ export type Database = {
           year: number
         }
         Insert: {
+          booking_count?: number | null
+          bookings?: number | null
           created_at?: string
           dealer_id: string
           id?: string
+          invoice_count?: number | null
+          invoices?: number | null
           month: string
           order_count?: number | null
           revenue?: number | null
@@ -128,9 +136,13 @@ export type Database = {
           year: number
         }
         Update: {
+          booking_count?: number | null
+          bookings?: number | null
           created_at?: string
           dealer_id?: string
           id?: string
+          invoice_count?: number | null
+          invoices?: number | null
           month?: string
           order_count?: number | null
           revenue?: number | null
@@ -491,6 +503,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      travel_log: {
+        Row: {
+          created_at: string
+          id: string
+          monday_id: string | null
+          notes: string | null
+          rep_id: string | null
+          territory_id: string | null
+          travel_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          monday_id?: string | null
+          notes?: string | null
+          rep_id?: string | null
+          territory_id?: string | null
+          travel_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          monday_id?: string | null
+          notes?: string | null
+          rep_id?: string | null
+          territory_id?: string | null
+          travel_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_log_rep_id_fkey"
+            columns: ["rep_id"]
+            isOneToOne: false
+            referencedRelation: "sales_reps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_log_territory_id_fkey"
+            columns: ["territory_id"]
+            isOneToOne: false
+            referencedRelation: "territories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
