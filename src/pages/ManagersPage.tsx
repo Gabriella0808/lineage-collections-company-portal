@@ -158,16 +158,16 @@ export default function ManagersPage() {
                       <th className="text-left p-3 font-medium text-muted-foreground">Rep Code</th>
                       <th className="text-left p-3 font-medium text-muted-foreground">Territory</th>
                       <th className="text-right p-3 font-medium text-muted-foreground">
-                        <Link to="/reports/bookings" className="hover:text-primary hover:underline transition-colors">2025 YTD Bookings</Link>
+                        <Link to="/reports/bookings" className="underline underline-offset-2 hover:text-primary transition-colors">2025 YTD Bookings</Link>
                       </th>
                       <th className="text-right p-3 font-medium text-muted-foreground">
-                        <Link to="/reports/invoicing" className="hover:text-primary hover:underline transition-colors">2025 YTD Invoicing</Link>
+                        <Link to="/reports/invoicing" className="underline underline-offset-2 hover:text-primary transition-colors">2025 YTD Invoicing</Link>
                       </th>
                       <th className="text-right p-3 font-medium text-muted-foreground">
-                        <Link to="/reports/bookings" className="hover:text-primary hover:underline transition-colors">2026 YTD Bookings</Link>
+                        <Link to="/reports/bookings" className="underline underline-offset-2 hover:text-primary transition-colors">2026 YTD Bookings</Link>
                       </th>
                       <th className="text-right p-3 font-medium text-muted-foreground">
-                        <Link to="/reports/invoicing" className="hover:text-primary hover:underline transition-colors">2026 YTD Invoicing</Link>
+                        <Link to="/reports/invoicing" className="underline underline-offset-2 hover:text-primary transition-colors">2026 YTD Invoicing</Link>
                       </th>
                       <th className="text-left p-3 font-medium text-muted-foreground">Last Travel Dates</th>
                     </tr>
