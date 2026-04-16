@@ -52,8 +52,72 @@ export default function ManagersPage() {
     );
   }
 
-  const selectedManager = managers.find(m => m.id === selectedManagerId);
-  const managerReps = selectedManager ? reps.filter(r => r.manager_id === selectedManager.id) : [];
+  const visibleManagers = useMemo(
+    () => managers.filter((manager) => {
+      const normalizedName = manager.name.trim().toLowerCase();
+      const normalizedEmail = manager.email?.trim().toLowerCase();
+      return normalizedName !== "sales" && normalizedEmail !== "sales@lineage-collections.com";
+    }),
+    [managers],
+  );
+
+  const repsById = useMemo(
+    () => new Map(reps.map((rep) => [rep.id, rep])),
+    [reps],
+  );
+
+  const directRepIdsByManager = useMemo(() => {
+    const repIdsByManager = new Map<string, string[]>();
+
+    reps.forEach((rep) => {
+      if (!rep.manager_id) return;
+      const currentIds = repIdsByManager.get(rep.manager_id) ?? [];
+      currentIds.push(rep.id);
+      repIdsByManager.set(rep.manager_id, currentIds);
+    });
+
+    return repIdsByManager;
+  }, [reps]);
+
+  const fallbackRepIdsByManager = useMemo(() => {
+    const repIdsByManager = new Map<string, string[]>();
+
+    travelLog.forEach((entry) => {
+      if (!entry.manager_id || !entry.rep_id || !repsById.has(entry.rep_id)) return;
+
+      const currentIds = repIdsByManager.get(entry.manager_id) ?? [];
+      if (!currentIds.includes(entry.rep_id)) {
+        currentIds.push(entry.rep_id);
+        repIdsByManager.set(entry.manager_id, currentIds);
+      }
+    });
+
+    return repIdsByManager;
+  }, [travelLog, repsById]);
+
+  const managerRepsById = useMemo(() => {
+    const repMap = new Map<string, DbSalesRep[]>();
+
+    visibleManagers.forEach((manager) => {
+      const directIds = directRepIdsByManager.get(manager.id) ?? [];
+      const fallbackIds = fallbackRepIdsByManager.get(manager.id) ?? [];
+      const resolvedIds = (directIds.length > 0 ? directIds : fallbackIds).filter(
+        (repId, index, ids) => ids.indexOf(repId) === index,
+      );
+
+      const resolvedReps = resolvedIds
+        .map((repId) => repsById.get(repId))
+        .filter((rep): rep is DbSalesRep => Boolean(rep))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      repMap.set(manager.id, resolvedReps);
+    });
+
+    return repMap;
+  }, [visibleManagers, directRepIdsByManager, fallbackRepIdsByManager, repsById]);
+
+  const selectedManager = visibleManagers.find(m => m.id === selectedManagerId);
+  const managerReps = selectedManager ? (managerRepsById.get(selectedManager.id) ?? []) : [];
   const mgrTerritoryIds = [...new Set(managerReps.flatMap(r => repTerritories.filter(rt => rt.rep_id === r.id).map(rt => rt.territory_id)))];
   const mgrDealers = dealers.filter(d => managerReps.some(r => r.id === d.rep_id));
   const mgrTravelLog = selectedManager ? travelLog.filter(tl => tl.manager_id === selectedManager.id) : [];
@@ -385,12 +449,12 @@ export default function ManagersPage() {
     <div className="animate-fade-in">
       <div className="page-header">
         <h1 className="page-title">Sales Managers</h1>
-        <p className="page-subtitle">{managers.length} managers</p>
+         <p className="page-subtitle">{visibleManagers.length} managers</p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {managers.map(mgr => {
-          const mgrReps = reps.filter(r => r.manager_id === mgr.id);
+        {visibleManagers.map(mgr => {
+          const mgrReps = managerRepsById.get(mgr.id) ?? [];
           const mgrRevenue = mgrReps.reduce((s, r) => s + (r.revenue ?? 0), 0);
           const mgrDealerCount = dealers.filter(d => mgrReps.some(r => r.id === d.rep_id)).length;
           const mgrTerCount = [...new Set(mgrReps.flatMap(r => repTerritories.filter(rt => rt.rep_id === r.id).map(rt => rt.territory_id)))].length;
@@ -434,7 +498,7 @@ export default function ManagersPage() {
             </Card>
           );
         })}
-        {managers.length === 0 && <p className="text-sm text-muted-foreground col-span-full py-12 text-center">No managers found.</p>}
+        {visibleManagers.length === 0 && <p className="text-sm text-muted-foreground col-span-full py-12 text-center">No managers found.</p>}
       </div>
     </div>
   );
