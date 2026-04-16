@@ -358,25 +358,6 @@ export default function SalesReport({ metric }: SalesReportProps) {
                   </Select>
                 </div>
 
-                <div className={cn(useDateRange && "opacity-50 pointer-events-none")}>
-                  <label className="text-xs uppercase tracking-wide text-muted-foreground mb-2 block">Month range</label>
-                  <div className="flex items-center gap-2">
-                    <Select value={String(monthFrom)} onValueChange={(v) => setMonthFrom(Number(v))} disabled={useDateRange}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {MONTHS.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <span className="text-xs text-muted-foreground">to</span>
-                    <Select value={String(monthTo)} onValueChange={(v) => setMonthTo(Number(v))} disabled={useDateRange}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {MONTHS.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
                 <FilterSection
                   label="Managers"
                   count={selectedManagerIds.length}
