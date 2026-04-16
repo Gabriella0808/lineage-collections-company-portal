@@ -282,7 +282,7 @@ export default function SalesReport({ metric }: SalesReportProps) {
           <p className="text-sm text-muted-foreground">
             {dealerCount} active dealers • {useDateRange && dateFrom && dateTo
               ? `${format(dateFrom, "MMM d, yyyy")} – ${format(dateTo, "MMM d, yyyy")}`
-              : `${MONTHS[monthFrom]}–${MONTHS[monthTo]} ${year}`}
+              : `${year}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export default function SalesReport({ metric }: SalesReportProps) {
               <Button size="sm" variant="outline" className="gap-2">
                 <Filter className="h-4 w-4" />
                 Filters
-                {(hasFilters || useDateRange || year !== 2026 || monthFrom !== 0 || monthTo !== 11) && (
+                {(hasFilters || useDateRange || year !== 2026) && (
                   <Badge variant="secondary" className="ml-1 px-1.5 text-[10px]">
                     {selectedManagerIds.length + selectedRepIds.length + selectedTerritoryIds.length + selectedDealerIds.length + 1}
                   </Badge>
