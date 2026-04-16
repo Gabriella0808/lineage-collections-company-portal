@@ -239,10 +239,13 @@ export default function SalesReport({ metric }: SalesReportProps) {
   };
 
   const exportCsv = () => {
-    const headers = ["Dealer", "Rep Code", "Rep", "Manager", "Territory", "State", `${valueLabel} (${year})`];
+    const periodLabel = useDateRange && dateFrom && dateTo
+      ? `${format(dateFrom, "yyyy-MM-dd")}_to_${format(dateTo, "yyyy-MM-dd")}`
+      : `${year}-${MONTHS[monthFrom]}-${MONTHS[monthTo]}`;
+    const headers = ["Dealer", "Rep Code", "Rep", "Manager", "Territory", `${valueLabel} (${periodLabel})`];
     const lines = [headers.join(",")];
     sortedRows.forEach(r => {
-      const cells = [r.dealer, r.repCode, r.rep, r.manager, r.territory, r.state, r.value.toString()]
+      const cells = [r.dealer, r.repCode, r.rep, r.manager, r.territory, r.value.toString()]
         .map(c => `"${String(c).replace(/"/g, '""')}"`);
       lines.push(cells.join(","));
     });
@@ -250,7 +253,7 @@ export default function SalesReport({ metric }: SalesReportProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${metric}-report-${year}-${MONTHS[monthFrom]}-${MONTHS[monthTo]}.csv`;
+    a.download = `${metric}-report-${periodLabel}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
