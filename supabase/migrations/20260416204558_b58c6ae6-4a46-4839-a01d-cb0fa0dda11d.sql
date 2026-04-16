@@ -1,0 +1,1 @@
+ALTER TABLE public.sales_reps DROP CONSTRAINT IF EXISTS sales_reps_acctivate_id_key;
