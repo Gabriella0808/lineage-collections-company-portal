@@ -35,7 +35,9 @@ export default function ManagersPage() {
   const [selectedRepIds, setSelectedRepIds] = useState<string[]>([]);
   const [selectedDealerIds, setSelectedDealerIds] = useState<string[]>([]);
   const [selectedTrip, setSelectedTrip] = useState<DbTravelLog | null>(null);
-
+  const [travelPage, setTravelPage] = useState(0);
+  const [travelDateFrom, setTravelDateFrom] = useState<Date | undefined>();
+  const [travelDateTo, setTravelDateTo] = useState<Date | undefined>();
   const isLoading = mgrLoading || repsLoading;
 
   if (isLoading) {
