@@ -595,10 +595,10 @@ function DealerReport({
       const sales = dealerSales.filter(s => s.dealer_id === dealer.id);
       const rep = reps.find(r => r.id === dealer.rep_id);
 
-      const bookings2025 = sales.filter(s => s.year === 2025).reduce((s, r) => s + (r.bookings ?? r.revenue ?? 0), 0);
-      const bookings2026 = sales.filter(s => s.year === 2026).reduce((s, r) => s + (r.bookings ?? r.revenue ?? 0), 0);
-      const invoices2025 = sales.filter(s => s.year === 2025).reduce((s, r) => s + (r.invoices ?? 0), 0);
-      const invoices2026 = sales.filter(s => s.year === 2026).reduce((s, r) => s + (r.invoices ?? 0), 0);
+      const bookings2025 = sales.filter(s => s.year === 2025).reduce((s, r) => s + ((r.bookings ?? 0) > 0 ? (r.bookings ?? 0) : (r.revenue ?? 0)), 0);
+      const bookings2026 = sales.filter(s => s.year === 2026).reduce((s, r) => s + ((r.bookings ?? 0) > 0 ? (r.bookings ?? 0) : (r.revenue ?? 0)), 0);
+      const invoices2025 = sales.filter(s => s.year === 2025).reduce((s, r) => s + ((r.invoices ?? 0) > 0 ? (r.invoices ?? 0) : (r.revenue ?? 0)), 0);
+      const invoices2026 = sales.filter(s => s.year === 2026).reduce((s, r) => s + ((r.invoices ?? 0) > 0 ? (r.invoices ?? 0) : (r.revenue ?? 0)), 0);
 
       return {
         id: dealer.id,
