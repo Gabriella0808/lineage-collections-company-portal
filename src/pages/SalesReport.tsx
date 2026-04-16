@@ -108,16 +108,24 @@ export default function SalesReport({ metric }: SalesReportProps) {
 
   const filteredDealerIds = useMemo(() => new Set(filteredDealers.map(d => d.id)), [filteredDealers]);
 
-  // Filter sales by year, month range, dealers
+  // Filter sales by date-range OR (year + month range), and by visible dealers
   const filteredSales = useMemo(() => {
     return sales.filter(s => {
-      if (s.year !== year) return false;
       const mIdx = MONTH_INDEX[s.month];
-      if (mIdx === undefined || mIdx < monthFrom || mIdx > monthTo) return false;
+      if (mIdx === undefined) return false;
+      if (dateBounds) {
+        const key = s.year * 12 + mIdx;
+        const lo = dateBounds.fromY * 12 + dateBounds.fromM;
+        const hi = dateBounds.toY * 12 + dateBounds.toM;
+        if (key < lo || key > hi) return false;
+      } else {
+        if (s.year !== year) return false;
+        if (mIdx < monthFrom || mIdx > monthTo) return false;
+      }
       if (!filteredDealerIds.has(s.dealer_id)) return false;
       return true;
     });
-  }, [sales, year, monthFrom, monthTo, filteredDealerIds]);
+  }, [sales, year, monthFrom, monthTo, dateBounds, filteredDealerIds]);
 
   const getValue = (s: typeof sales[number]) => {
     if (metric === "bookings") return (s.bookings ?? 0) > 0 ? (s.bookings ?? 0) : (s.revenue ?? 0);
@@ -209,11 +217,10 @@ export default function SalesReport({ metric }: SalesReportProps) {
     setSelectedRepIds([]);
     setSelectedTerritoryIds([]);
     setSelectedDealerIds([]);
-    setSelectedStates([]);
   };
 
   const hasFilters = selectedManagerIds.length + selectedRepIds.length +
-    selectedTerritoryIds.length + selectedDealerIds.length + selectedStates.length > 0;
+    selectedTerritoryIds.length + selectedDealerIds.length > 0;
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
