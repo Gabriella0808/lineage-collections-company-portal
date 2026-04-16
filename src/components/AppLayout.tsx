@@ -1,5 +1,7 @@
 
-import { LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings, UserCog, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import lineageLogo from "@/assets/lineage-logo.png";
 import { NavLink } from "@/components/NavLink";
 import {
