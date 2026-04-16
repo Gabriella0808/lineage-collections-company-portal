@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Map, Store, ArrowLeft, Filter, X } from "lucide-react";
+import { Map, Store, ArrowLeft, Filter, X, DollarSign, Target, TrendingUp, TrendingDown } from "lucide-react";
 import {
   useSalesReps, useTerritories, useDealers, useManagers,
   useRepTerritories, useDealerSales, useTravelLog,
