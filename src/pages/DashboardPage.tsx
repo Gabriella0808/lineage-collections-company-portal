@@ -1,10 +1,10 @@
-import { Users, Map, Store, AlertTriangle, CheckCircle, Clock, TrendingUp, Mail, Phone, ExternalLink } from "lucide-react";
+import { Users, Map, Store, AlertTriangle, CheckCircle, LogIn } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
-import { StatusBadge } from "@/components/StatusBadge";
-import { KpiGauge } from "@/components/KpiGauge";
-import { useSalesReps, useTerritories, useDealers, useActivities, useRepTerritories, useDealerSales, formatCurrency, getInitials } from "@/hooks/usePortalData";
+import { useSalesReps, useTerritories, useDealers, useDealerSales, formatCurrency } from "@/hooks/usePortalData";
+import { useSignInFeed } from "@/hooks/useSignInFeed";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from "date-fns";
 
 const MONTH_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
