@@ -55,6 +55,8 @@ export default function SalesReport({ metric }: SalesReportProps) {
   const [selectedDealerIds, setSelectedDealerIds] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const useDateRange = !!(dateFrom && dateTo);
 
