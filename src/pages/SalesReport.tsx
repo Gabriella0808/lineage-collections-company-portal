@@ -613,7 +613,7 @@ function FilterSection({ label, count, items, selected, onToggle, onClear }: Fil
               className="w-full h-8 px-2 text-xs border rounded bg-background"
             />
           )}
-          <ScrollArea className="max-h-48">
+          <div className="h-56 overflow-y-auto overscroll-contain pr-1 border rounded bg-background/50">
             {filtered.length === 0 && <p className="p-2 text-xs text-muted-foreground">No matches</p>}
             {filtered.map(it => (
               <label key={it.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm">
@@ -621,7 +621,8 @@ function FilterSection({ label, count, items, selected, onToggle, onClear }: Fil
                 <span className="truncate">{it.label}</span>
               </label>
             ))}
-          </ScrollArea>
+          </div>
+          <p className="text-[10px] text-muted-foreground px-1">{filtered.length} of {items.length}</p>
         </div>
       )}
     </div>
