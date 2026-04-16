@@ -130,9 +130,36 @@ export default function ManagersPage() {
     );
   }
 
+  // ── YTD Bookings detail view ──
+  if (selectedManager && (detailView === "ytd-bookings" || detailView === "ytd-goal")) {
+    return (
+      <DealerReport
+        manager={selectedManager}
+        managerReps={managerReps}
+        dealers={mgrDealers}
+        allDealers={dealers}
+        dealerSales={dealerSales}
+        reps={reps}
+        selectedRepIds={selectedRepIds}
+        setSelectedRepIds={setSelectedRepIds}
+        selectedDealerIds={selectedDealerIds}
+        setSelectedDealerIds={setSelectedDealerIds}
+        onBack={handleBack}
+      />
+    );
+  }
+
   // ── Manager detail (tiles) ──
   if (selectedManager) {
     const totalDealers = mgrDealers.length;
+
+    // Compute YTD bookings from dealer_sales for this manager's dealers
+    const mgrDealerIds = mgrDealers.map(d => d.id);
+    const mgrSales = dealerSales.filter(s => mgrDealerIds.includes(s.dealer_id));
+    const ytdBookingsActual = mgrSales.filter(s => s.year === 2026).reduce((s, r) => s + (r.bookings ?? r.revenue ?? 0), 0);
+    const ytdBookingsGoal = managerReps.reduce((s, r) => s + (r.quota ?? 0), 0);
+    const variancePct = ytdBookingsGoal > 0 ? ((ytdBookingsActual - ytdBookingsGoal) / ytdBookingsGoal) * 100 : 0;
+    const variancePositive = variancePct >= 0;
 
     return (
       <div className="animate-fade-in">
@@ -155,7 +182,8 @@ export default function ManagersPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          {/* Tile 1: Territories */}
           <Card
             className="cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => setDetailView("territories")}
@@ -170,10 +198,10 @@ export default function ManagersPage() {
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Territories</p>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Click to view territories, reps, and travel dates</p>
             </CardContent>
           </Card>
 
+          {/* Tile 2: Dealers */}
           <Card
             className="cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => setDetailView("dealers")}
@@ -188,7 +216,62 @@ export default function ManagersPage() {
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Dealers</p>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Click to view bookings & invoices report</p>
+            </CardContent>
+          </Card>
+
+          {/* Tile 3: YTD Bookings Actual */}
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setDetailView("ytd-bookings")}
+          >
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-accent-foreground" />
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold">{formatCurrency(ytdBookingsActual)}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">YTD Bookings</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tile 4: YTD Bookings Goal */}
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setDetailView("ytd-goal")}
+          >
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold">{formatCurrency(ytdBookingsGoal)}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">YTD Goal</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tile 5: Variance % */}
+          <Card className="flex items-center">
+            <CardContent className="pt-6 w-full">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${variancePositive ? "bg-green-500/10" : "bg-destructive/10"}`}>
+                  {variancePositive
+                    ? <TrendingUp className="h-5 w-5 text-green-600" />
+                    : <TrendingDown className="h-5 w-5 text-destructive" />
+                  }
+                </div>
+                <div>
+                  <p className={`text-2xl font-semibold ${variancePositive ? "text-green-600" : "text-destructive"}`}>
+                    {variancePositive ? "+" : ""}{variancePct.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Variance</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
