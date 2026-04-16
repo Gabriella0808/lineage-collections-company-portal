@@ -310,7 +310,7 @@ export default function ManagersPage() {
       <DealerReport
         manager={selectedManager}
         managerReps={managerReps}
-        dealers={mgrDealers}
+        dealers={dealers}
         allDealers={dealers}
         dealerSales={dealerSales}
         reps={reps}
