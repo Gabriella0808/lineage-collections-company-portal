@@ -98,8 +98,14 @@ const ChartTooltipContent = React.forwardRef<
       indicator?: "line" | "dot" | "dashed";
       nameKey?: string;
       labelKey?: string;
+      active?: boolean;
+      payload?: any;
+      label?: any;
+      labelFormatter?: any;
+      formatter?: any;
+      color?: string;
     }
-> & Record<string, any>>(
+>(
   (
     {
       active,
