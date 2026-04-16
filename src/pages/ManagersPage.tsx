@@ -71,51 +71,169 @@ export default function ManagersPage() {
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
         <h1 className="text-xl font-semibold mb-1">{selectedManager.name} — Territories</h1>
-        <p className="text-sm text-muted-foreground mb-6">{mgrTerritoryIds.length} territories • {mgrTravelLog.length} travel entries</p>
+        <p className="text-sm text-muted-foreground mb-6">{mgrTerritoryIds.length} territories • {managerReps.length} reps • {mgrDealers.length} dealers • {mgrTravelLog.length} travel entries</p>
 
-        <div className="table-container">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="text-left p-3 font-medium text-muted-foreground">Territory</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Rep</th>
-                <th className="text-left p-3 font-medium text-muted-foreground">Last Traveled</th>
-                <th className="text-center p-3 font-medium text-muted-foreground">Dealers</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mgrTerritoryIds.map(tId => {
-                const ter = territories.find(t => t.id === tId);
-                if (!ter) return null;
-                const terReps = managerReps.filter(r => repTerritories.some(rt => rt.rep_id === r.id && rt.territory_id === tId));
-                const terDealers = dealers.filter(d => d.territory_id === tId);
-                const lastTravel = mgrTravelLog
-                  .filter(tl => tl.territory_id === tId || terReps.some(r => r.id === tl.rep_id))
-                  .sort((a, b) => b.travel_date.localeCompare(a.travel_date))[0];
+        <div className="grid gap-6">
+          {/* Territories Table */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Territories</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="table-container">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Region</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">State</th>
+                      <th className="text-right p-3 font-medium text-muted-foreground">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mgrTerritoryIds.map(tId => {
+                      const ter = territories.find(t => t.id === tId);
+                      if (!ter) return null;
+                      return (
+                        <tr key={tId} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="p-3 font-medium">{ter.name}</td>
+                          <td className="p-3">{ter.region || "—"}</td>
+                          <td className="p-3">{ter.state || "—"}</td>
+                          <td className="p-3 text-right">{formatCurrency(ter.revenue)}</td>
+                        </tr>
+                      );
+                    })}
+                    {mgrTerritoryIds.length === 0 && (
+                      <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No territories linked yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
 
-                return (
-                  <tr key={tId} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="p-3 font-medium">{ter.name}</td>
-                    <td className="p-3">{terReps.map(r => r.name).join(", ") || "—"}</td>
-                    <td className="p-3">
-                      {lastTravel ? (
-                        <button
-                          className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
-                          onClick={() => setSelectedTrip(lastTravel)}
-                        >
-                          {new Date(lastTravel.travel_date).toLocaleDateString()}
-                        </button>
-                      ) : <span className="text-muted-foreground">—</span>}
-                    </td>
-                    <td className="p-3 text-center">{terDealers.length}</td>
-                  </tr>
-                );
-              })}
-              {mgrTerritoryIds.length === 0 && (
-                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No territories linked yet.</td></tr>
-              )}
-            </tbody>
-          </table>
+          {/* Reps Table */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Sales Reps</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="table-container">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Email</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                      <th className="text-right p-3 font-medium text-muted-foreground">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {managerReps.map(rep => (
+                      <tr key={rep.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="p-3 font-medium">{rep.name}</td>
+                        <td className="p-3">{rep.email || "—"}</td>
+                        <td className="p-3">
+                          <Badge variant={rep.status === "active" ? "default" : "secondary"}>{rep.status}</Badge>
+                        </td>
+                        <td className="p-3 text-right">{formatCurrency(rep.revenue)}</td>
+                      </tr>
+                    ))}
+                    {managerReps.length === 0 && (
+                      <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No reps assigned.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Last Traveled Table */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Last Traveled</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="table-container">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left p-3 font-medium text-muted-foreground">Territory</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Salesperson</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mgrTerritoryIds.map(tId => {
+                      const ter = territories.find(t => t.id === tId);
+                      if (!ter) return null;
+                      const terReps = managerReps.filter(r => repTerritories.some(rt => rt.rep_id === r.id && rt.territory_id === tId));
+                      const lastTravel = mgrTravelLog
+                        .filter(tl => tl.territory_id === tId || terReps.some(r => r.id === tl.rep_id))
+                        .sort((a, b) => b.travel_date.localeCompare(a.travel_date))[0];
+                      return (
+                        <tr key={tId} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="p-3 font-medium">{ter.name}</td>
+                          <td className="p-3">
+                            {lastTravel ? (
+                              <button
+                                className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+                                onClick={() => setSelectedTrip(lastTravel)}
+                              >
+                                {new Date(lastTravel.travel_date).toLocaleDateString()}
+                              </button>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </td>
+                          <td className="p-3">{lastTravel?.salesperson_name || "—"}</td>
+                        </tr>
+                      );
+                    })}
+                    {mgrTerritoryIds.length === 0 && (
+                      <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">No travel data yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dealers Table */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Dealers</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="table-container">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">City</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">State</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                      <th className="text-right p-3 font-medium text-muted-foreground">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mgrDealers.map(d => (
+                      <tr key={d.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="p-3 font-medium">{d.name}</td>
+                        <td className="p-3">{d.city || "—"}</td>
+                        <td className="p-3">{d.state || "—"}</td>
+                        <td className="p-3">
+                          <Badge variant={d.status === "active" ? "default" : "secondary"}>{d.status}</Badge>
+                        </td>
+                        <td className="p-3 text-right">{formatCurrency(d.revenue)}</td>
+                      </tr>
+                    ))}
+                    {mgrDealers.length === 0 && (
+                      <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No dealers assigned.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Trip detail sidebar */}
