@@ -58,6 +58,13 @@ export default function SalesReport({ metric }: SalesReportProps) {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
+  // Reset to page 1 whenever filters or sort change
+  useEffect(() => { setPage(1); }, [
+    year, monthFrom, monthTo, dateFrom, dateTo,
+    selectedManagerIds, selectedRepIds, selectedTerritoryIds, selectedDealerIds,
+    sortKey, sortDir,
+  ]);
+
   const useDateRange = !!(dateFrom && dateTo);
 
   const title = metric === "bookings" ? "YTD Bookings Report" : "YTD Invoicing Report";
