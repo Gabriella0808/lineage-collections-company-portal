@@ -126,30 +126,36 @@ Deno.serve(async (req: Request) => {
 
     // Match a single Monday name to a manager using last name + first name prefix
     function findManager(mondayName: string): { id: string; name: string } | null {
+      const mNorm = normalizeFull(mondayName);
       const mLast = lastName(mondayName);
       const mFirst = firstName(mondayName);
 
+      // 1. Full normalized name match (handles "Mateo Delisa" == "Mateo De Lisa")
+      for (const mgr of managerList) {
+        if (normalizeFull(mgr.name) === mNorm) return mgr;
+      }
+
+      // 2. Last name + first name prefix match
       for (const mgr of managerList) {
         const dbLast = lastName(mgr.name);
         const dbFirst = firstName(mgr.name);
-
-        if (mLast === dbLast) {
-          // Last name matches — good enough for names like De Lisa/Delisa
-          // But check first name doesn't conflict (e.g., Chris vs Mateo both De Lisa)
-          if (mFirst.startsWith(dbFirst) || dbFirst.startsWith(mFirst)) {
-            return mgr;
-          }
-          // If first names don't overlap at all, still check if there's only one with that last name
+        if (mLast === dbLast && (mFirst.startsWith(dbFirst) || dbFirst.startsWith(mFirst))) {
+          return mgr;
         }
       }
 
-      // Fallback: last name match only (handles "Sergio" single name)
+      // 3. Last name only (unique match)
       const lastNameMatches = managerList.filter(m => lastName(m.name) === mLast);
       if (lastNameMatches.length === 1) return lastNameMatches[0];
 
-      // Single-word name exact match (e.g., "Sergio")
-      const normalized = mondayName.trim().toLowerCase();
-      const exact = managerList.find(m => m.name.toLowerCase() === normalized);
+      // 4. Full normalized contains (handles nicknames like Chris/Christopher)
+      for (const mgr of managerList) {
+        const dbNorm = normalizeFull(mgr.name);
+        if (mNorm.includes(dbNorm) || dbNorm.includes(mNorm)) return mgr;
+      }
+
+      // 5. Single-word exact
+      const exact = managerList.find(m => m.name.toLowerCase() === mondayName.trim().toLowerCase());
       if (exact) return exact;
 
       return null;
