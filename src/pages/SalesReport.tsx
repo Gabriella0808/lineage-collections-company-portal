@@ -81,17 +81,21 @@ export default function SalesReport({ metric }: SalesReportProps) {
     return Array.from(ys).sort((a, b) => b - a);
   }, [sales]);
 
-  const availableStates = useMemo(() => {
-    const s = new Set<string>();
-    dealers.forEach(d => d.state && s.add(d.state));
-    return Array.from(s).sort();
-  }, [dealers]);
+  // Date-range to (year, month) bounds when active
+  const dateBounds = useMemo(() => {
+    if (!useDateRange || !dateFrom || !dateTo) return null;
+    return {
+      fromY: dateFrom.getFullYear(),
+      fromM: dateFrom.getMonth(),
+      toY: dateTo.getFullYear(),
+      toM: dateTo.getMonth(),
+    };
+  }, [useDateRange, dateFrom, dateTo]);
 
   // Filter dealers
   const filteredDealers = useMemo(() => {
     return dealers.filter(d => {
       if (selectedDealerIds.length > 0 && !selectedDealerIds.includes(d.id)) return false;
-      if (selectedStates.length > 0 && !selectedStates.includes(d.state ?? "")) return false;
       if (selectedTerritoryIds.length > 0 && !selectedTerritoryIds.includes(d.territory_id ?? "")) return false;
       if (selectedRepIds.length > 0 && !selectedRepIds.includes(d.rep_id ?? "")) return false;
       if (selectedManagerIds.length > 0) {
@@ -100,7 +104,7 @@ export default function SalesReport({ metric }: SalesReportProps) {
       }
       return true;
     });
-  }, [dealers, selectedDealerIds, selectedStates, selectedTerritoryIds, selectedRepIds, selectedManagerIds, repsById]);
+  }, [dealers, selectedDealerIds, selectedTerritoryIds, selectedRepIds, selectedManagerIds, repsById]);
 
   const filteredDealerIds = useMemo(() => new Set(filteredDealers.map(d => d.id)), [filteredDealers]);
 
@@ -152,7 +156,6 @@ export default function SalesReport({ metric }: SalesReportProps) {
         case "rep": cmp = a.rep.localeCompare(b.rep); break;
         case "manager": cmp = a.manager.localeCompare(b.manager); break;
         case "territory": cmp = a.territory.localeCompare(b.territory); break;
-        case "state": cmp = a.state.localeCompare(b.state); break;
         case "value": cmp = a.value - b.value; break;
       }
       return sortDir === "asc" ? cmp : -cmp;
