@@ -282,7 +282,7 @@ export default function SalesReport({ metric }: SalesReportProps) {
           <p className="text-sm text-muted-foreground">
             {dealerCount} active dealers • {useDateRange && dateFrom && dateTo
               ? `${format(dateFrom, "MMM d, yyyy")} – ${format(dateTo, "MMM d, yyyy")}`
-              : `${MONTHS[monthFrom]}–${MONTHS[monthTo]} ${year}`}
+              : `${year}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export default function SalesReport({ metric }: SalesReportProps) {
               <Button size="sm" variant="outline" className="gap-2">
                 <Filter className="h-4 w-4" />
                 Filters
-                {(hasFilters || useDateRange || year !== 2026 || monthFrom !== 0 || monthTo !== 11) && (
+                {(hasFilters || useDateRange || year !== 2026) && (
                   <Badge variant="secondary" className="ml-1 px-1.5 text-[10px]">
                     {selectedManagerIds.length + selectedRepIds.length + selectedTerritoryIds.length + selectedDealerIds.length + 1}
                   </Badge>
@@ -356,25 +356,6 @@ export default function SalesReport({ metric }: SalesReportProps) {
                       {availableYears.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div className={cn(useDateRange && "opacity-50 pointer-events-none")}>
-                  <label className="text-xs uppercase tracking-wide text-muted-foreground mb-2 block">Month range</label>
-                  <div className="flex items-center gap-2">
-                    <Select value={String(monthFrom)} onValueChange={(v) => setMonthFrom(Number(v))} disabled={useDateRange}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {MONTHS.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <span className="text-xs text-muted-foreground">to</span>
-                    <Select value={String(monthTo)} onValueChange={(v) => setMonthTo(Number(v))} disabled={useDateRange}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {MONTHS.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
 
                 <FilterSection
