@@ -101,6 +101,20 @@ export interface DbDealerSale {
   month: string;
   revenue: number | null;
   order_count: number | null;
+  bookings: number | null;
+  invoices: number | null;
+  booking_count: number | null;
+  invoice_count: number | null;
+}
+
+export interface DbTravelLog {
+  id: string;
+  rep_id: string | null;
+  territory_id: string | null;
+  travel_date: string;
+  notes: string | null;
+  monday_id: string | null;
+  created_at: string;
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────
@@ -212,6 +226,20 @@ export function useRepTerritories() {
         .select("*");
       if (error) throw error;
       return (data ?? []) as DbRepTerritory[];
+    },
+  });
+}
+
+export function useTravelLog() {
+  return useQuery({
+    queryKey: ["travel_log"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("travel_log")
+        .select("*")
+        .order("travel_date", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as DbTravelLog[];
     },
   });
 }
