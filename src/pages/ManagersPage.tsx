@@ -1,5 +1,9 @@
 import { useState, useMemo } from "react";
-import { Map, Store, ArrowLeft, Filter, X, DollarSign, Target, TrendingUp, TrendingDown } from "lucide-react";
+import { Map, Store, ArrowLeft, Filter, X, DollarSign, Target, TrendingUp, TrendingDown, CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   useSalesReps, useTerritories, useDealers, useManagers,
   useRepTerritories, useDealerSales, useTravelLog,
@@ -12,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -32,7 +35,9 @@ export default function ManagersPage() {
   const [selectedRepIds, setSelectedRepIds] = useState<string[]>([]);
   const [selectedDealerIds, setSelectedDealerIds] = useState<string[]>([]);
   const [selectedTrip, setSelectedTrip] = useState<DbTravelLog | null>(null);
-
+  const [travelPage, setTravelPage] = useState(0);
+  const [travelDateFrom, setTravelDateFrom] = useState<Date | undefined>();
+  const [travelDateTo, setTravelDateTo] = useState<Date | undefined>();
   const isLoading = mgrLoading || repsLoading;
 
   if (isLoading) {
@@ -151,49 +156,119 @@ export default function ManagersPage() {
           {/* Last Traveled Table */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Last Traveled</CardTitle>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-base">Last Traveled</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1", !travelDateFrom && "text-muted-foreground")}>
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        {travelDateFrom ? format(travelDateFrom, "MMM d, yyyy") : "From"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar mode="single" selected={travelDateFrom} onSelect={(d) => { setTravelDateFrom(d); setTravelPage(0); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1", !travelDateTo && "text-muted-foreground")}>
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        {travelDateTo ? format(travelDateTo, "MMM d, yyyy") : "To"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar mode="single" selected={travelDateTo} onSelect={(d) => { setTravelDateTo(d); setTravelPage(0); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                  {(travelDateFrom || travelDateTo) && (
+                    <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => { setTravelDateFrom(undefined); setTravelDateTo(undefined); setTravelPage(0); }}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="table-container">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/30">
-                      <th className="text-left p-3 font-medium text-muted-foreground">Trip</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Salesperson</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mgrTravelLog.map(trip => {
-                      const tripName = trip.notes?.split(" — ")[0] || trip.notes || "Trip";
-                      return (
-                        <tr key={trip.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                          <td className="p-3 font-medium">{tripName}</td>
-                          <td className="p-3">
-                            <button
-                              className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
-                              onClick={() => setSelectedTrip(trip)}
+              {(() => {
+                const filtered = mgrTravelLog.filter(t => {
+                  if (travelDateFrom && new Date(t.travel_date) < travelDateFrom) return false;
+                  if (travelDateTo && new Date(t.travel_date) > travelDateTo) return false;
+                  return true;
+                });
+                const pageSize = 7;
+                const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+                const paginated = filtered.slice(travelPage * pageSize, (travelPage + 1) * pageSize);
+
+                return (
+                  <>
+                    <div className="table-container">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/30">
+                            <th className="text-left p-3 font-medium text-muted-foreground">Trip</th>
+                            <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
+                            <th className="text-left p-3 font-medium text-muted-foreground">Salesperson</th>
+                            <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginated.map(trip => {
+                            const tripName = trip.notes?.split(" — ")[0] || trip.notes || "Trip";
+                            return (
+                              <tr key={trip.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                                <td className="p-3 font-medium">{tripName}</td>
+                                <td className="p-3">
+                                  <button
+                                    className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+                                    onClick={() => setSelectedTrip(trip)}
+                                  >
+                                    {new Date(trip.travel_date).toLocaleDateString()}
+                                    {trip.travel_end_date ? ` – ${new Date(trip.travel_end_date).toLocaleDateString()}` : ""}
+                                  </button>
+                                </td>
+                                <td className="p-3 text-sm">{trip.salesperson_name || "—"}</td>
+                                <td className="p-3">
+                                  {trip.approval_status ? (
+                                    <Badge variant={trip.approval_status === "Approved" ? "default" : "secondary"}>{trip.approval_status}</Badge>
+                                  ) : "—"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {filtered.length === 0 && (
+                            <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No travel data for this date range.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-4 py-3 border-t">
+                        <p className="text-xs text-muted-foreground">{filtered.length} entries</p>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={travelPage === 0} onClick={() => setTravelPage(p => p - 1)}>
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <Button
+                              key={i}
+                              variant={travelPage === i ? "default" : "ghost"}
+                              size="sm"
+                              className="h-7 w-7 p-0 text-xs"
+                              onClick={() => setTravelPage(i)}
                             >
-                              {new Date(trip.travel_date).toLocaleDateString()}
-                              {trip.travel_end_date ? ` – ${new Date(trip.travel_end_date).toLocaleDateString()}` : ""}
-                            </button>
-                          </td>
-                          <td className="p-3 text-sm">{trip.salesperson_name || "—"}</td>
-                          <td className="p-3">
-                            {trip.approval_status ? (
-                              <Badge variant={trip.approval_status === "Approved" ? "default" : "secondary"}>{trip.approval_status}</Badge>
-                            ) : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {mgrTravelLog.length === 0 && (
-                      <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No travel data yet.</td></tr>
+                              {i + 1}
+                            </Button>
+                          ))}
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={travelPage >= totalPages - 1} onClick={() => setTravelPage(p => p + 1)}>
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     )}
-                  </tbody>
-                </table>
-              </div>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
 
