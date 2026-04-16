@@ -500,36 +500,74 @@ export default function SalesReport({ metric }: SalesReportProps) {
   );
 }
 
-interface FilterPopoverProps {
+interface FilterSectionProps {
   label: string;
   count: number;
   items: Array<{ id: string; label: string }>;
   selected: string[];
   onToggle: (id: string) => void;
-  wide?: boolean;
+  onClear: () => void;
 }
 
-function FilterPopover({ label, count, items, selected, onToggle, wide }: FilterPopoverProps) {
+function FilterSection({ label, count, items, selected, onToggle, onClear }: FilterSectionProps) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const sorted = useMemo(
+    () => [...items].sort((a, b) => a.label.localeCompare(b.label)),
+    [items],
+  );
+  const filtered = useMemo(
+    () => sorted.filter(i => i.label.toLowerCase().includes(query.toLowerCase())),
+    [sorted, query],
+  );
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-1">
-          <Filter className="h-3.5 w-3.5" />
-          {label}
-          {count > 0 && <Badge variant="secondary" className="ml-1 px-1.5 text-[10px]">{count}</Badge>}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className={wide ? "w-72 p-2" : "w-56 p-2"} align="start">
-        <ScrollArea className="max-h-64">
-          {items.length === 0 && <p className="p-2 text-xs text-muted-foreground">No options</p>}
-          {[...items].sort((a, b) => a.label.localeCompare(b.label)).map(it => (
-            <label key={it.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm">
-              <Checkbox checked={selected.includes(it.id)} onCheckedChange={() => onToggle(it.id)} />
-              <span className="truncate">{it.label}</span>
-            </label>
-          ))}
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
+    <div className="border rounded-md">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/40 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <span className="font-medium">{label}</span>
+          {count > 0 && <Badge variant="secondary" className="px-1.5 text-[10px]">{count}</Badge>}
+        </span>
+        <span className="flex items-center gap-2">
+          {count > 0 && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </span>
+          )}
+          <span className="text-muted-foreground text-xs">{open ? "−" : "+"}</span>
+        </span>
+      </button>
+      {open && (
+        <div className="border-t p-2 space-y-2">
+          {items.length > 6 && (
+            <input
+              type="text"
+              placeholder={`Search ${label.toLowerCase()}…`}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full h-8 px-2 text-xs border rounded bg-background"
+            />
+          )}
+          <ScrollArea className="max-h-48">
+            {filtered.length === 0 && <p className="p-2 text-xs text-muted-foreground">No matches</p>}
+            {filtered.map(it => (
+              <label key={it.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm">
+                <Checkbox checked={selected.includes(it.id)} onCheckedChange={() => onToggle(it.id)} />
+                <span className="truncate">{it.label}</span>
+              </label>
+            ))}
+          </ScrollArea>
+        </div>
+      )}
+    </div>
   );
 }
