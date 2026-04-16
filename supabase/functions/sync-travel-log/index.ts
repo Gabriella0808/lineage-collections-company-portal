@@ -11,6 +11,7 @@ const COL = {
   purpose: "dropdown_mkz8tgvx",
   approvalStatus: "color_mkz82ffa",
   notes: "long_text_mkz847ha",
+  repCode: "dropdown_mm2fdwa3",
 };
 
 interface MondayItem {
