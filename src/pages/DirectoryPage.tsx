@@ -124,6 +124,17 @@ export default function DirectoryPage() {
                   </Button>
                 </div>
               )}
+              {c.address && (
+                <div className="flex items-start justify-between group gap-2">
+                  <div className="flex items-start gap-1.5 text-muted-foreground min-w-0">
+                    <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                    <span className="truncate">{c.address}</span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0" onClick={() => copyToClipboard(c.address, 'Address')}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-1.5 pt-2 border-t">
