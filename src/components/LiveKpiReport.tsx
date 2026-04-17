@@ -399,12 +399,11 @@ export function LiveKpiReport() {
                   fill: "hsl(var(--muted-foreground))",
                   formatter: (v: number) => v > 0 ? formatCurrency(v) : "",
                 }}>
-                  {filteredReps.map((r, i) => (
-                    <Cell
-                      key={i}
-                      fill={r.pct >= 1 ? "hsl(var(--success))" : r.pct >= 0.5 ? "hsl(var(--primary))" : "hsl(var(--warning))"}
-                    />
-                  ))}
+                  {filteredReps.map((r, i) => {
+                    const base = r.pct >= 1 ? "hsl(var(--success))" : r.pct >= 0.5 ? "hsl(var(--primary))" : "hsl(var(--warning))";
+                    const dim = selectedRep && r.name !== selectedRep.name;
+                    return <Cell key={i} fill={base} fillOpacity={dim ? 0.25 : 1} />;
+                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
