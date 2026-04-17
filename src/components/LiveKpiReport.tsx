@@ -311,7 +311,11 @@ export function LiveKpiReport() {
       {/* Monthly Results */}
       <div className="glass-card p-5">
         <h3 className="text-base font-semibold mb-1">Monthly Results</h3>
-        <p className="text-xs text-muted-foreground mb-4">Bookings & Invoiced — 2025 actual vs 2026 projection vs YTD</p>
+        <p className="text-xs text-muted-foreground mb-4">
+          Bookings & Invoiced — 2025 actual vs 2026 projection vs YTD ·{" "}
+          <span className="text-primary">Click any 2026 P value to edit</span>
+          {!canEdit && <span className="ml-1 text-warning">(disabled while a rep filter is active)</span>}
+        </p>
 
         {/* Filter bar */}
         <div className="flex flex-wrap items-center gap-3 mb-4 pb-4 border-b">
