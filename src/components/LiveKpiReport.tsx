@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/hooks/usePortalData";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
 
 // Static seed data mirroring KPI_2026.01.15_Live.xlsx → Summary tab
 // Wire to live aggregates once monthly_projections + bookings_by_line tables exist.
