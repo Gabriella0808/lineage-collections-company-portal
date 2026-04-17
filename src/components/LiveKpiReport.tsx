@@ -579,7 +579,11 @@ export function LiveKpiReport() {
                   <tr key={r.m} className="border-b last:border-0 hover:bg-muted/20">
                     <td className="p-2 font-medium">{idx + 1}. {r.m}</td>
                     {showLux && <>
-                      <td className="p-2 text-right border-l">{formatCurrency(r.luxP)}</td>
+                      <td className="p-2 text-right border-l">
+                        {canEdit ? (
+                          <EditableCurrency value={r.luxP} onSave={(v) => updateLine(r.m, "luxP", v)} />
+                        ) : formatCurrency(r.luxP)}
+                      </td>
                       <td className="p-2 text-right">{formatCurrency(r.luxA)}</td>
                       <td className="p-2 text-right">{fmtPct(r.luxA / r.luxP)}</td>
                     </>}
