@@ -51,12 +51,14 @@ export default function KpiPage() {
       </div>
 
       <div className="flex gap-1 mb-6 bg-muted p-1 rounded-lg w-fit">
-        {(['overview', 'reps', 'territories'] as const).map(t => (
+        {(['overview', 'reps', 'territories', 'live report'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${tab === t ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
             {t}
           </button>
         ))}
       </div>
+
+      {tab === 'live report' && <LiveKpiReport />}
 
       {tab === 'overview' && (
         <>
