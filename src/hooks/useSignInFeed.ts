@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SignInEvent {
@@ -9,6 +10,25 @@ export interface SignInEvent {
 }
 
 export function useSignInFeed(limit = 10) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("sign-in-feed-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "sign_in_log" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["sign-in-feed"] });
+          queryClient.invalidateQueries({ queryKey: ["last-seen-users"] });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["sign-in-feed", limit],
     queryFn: async (): Promise<SignInEvent[]> => {
