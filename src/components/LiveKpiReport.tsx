@@ -155,24 +155,57 @@ export function LiveKpiReport() {
   const [goalFilter, setGoalFilter] = useState<GoalFilter>("all");
   const [lineFilter, setLineFilter] = useState<LineFilter>("all");
   const [lineMonthFilter, setLineMonthFilter] = useState<MonthFilter>("All");
+  const [overrides, setOverrides] = useState<ProjOverrides>(() => loadOverrides());
+
+  useEffect(() => {
+    try { localStorage.setItem(PROJ_STORAGE_KEY, JSON.stringify(overrides)); } catch { /* ignore */ }
+  }, [overrides]);
+
+  const updateMonthly = (month: string, key: "b26p" | "i26p", val: number) => {
+    setOverrides((prev) => ({
+      ...prev,
+      monthly: { ...(prev.monthly ?? {}), [month]: { ...(prev.monthly?.[month] ?? {}), [key]: val } },
+    }));
+  };
+  const updateLine = (month: string, key: "luxP" | "swP" | "flP", val: number) => {
+    setOverrides((prev) => ({
+      ...prev,
+      line: { ...(prev.line ?? {}), [month]: { ...(prev.line?.[month] ?? {}), [key]: val } },
+    }));
+  };
+
+  // Apply user-entered projection overrides to base data
+  const baseMonthly = useMemo(() => MONTHLY.map((r) => ({
+    ...r,
+    b26p: overrides.monthly?.[r.m]?.b26p ?? r.b26p,
+    i26p: overrides.monthly?.[r.m]?.i26p ?? r.i26p,
+  })), [overrides]);
+
+  const baseLine = useMemo(() => LINE_BOOK.map((r) => ({
+    ...r,
+    luxP: overrides.line?.[r.m]?.luxP ?? r.luxP,
+    swP: overrides.line?.[r.m]?.swP ?? r.swP,
+    flP: overrides.line?.[r.m]?.flP ?? r.flP,
+  })), [overrides]);
 
   // Per-rep slicing: scale aggregate monthly + line totals by selected rep's share of all bookings.
   const totalRepBook = REP_BOOK.reduce((s, r) => s + r.book, 0);
   const selectedRep = repFilter === "all" ? null : REP_BOOK.find((r) => r.name === repFilter) ?? null;
   const repShare = selectedRep ? (totalRepBook > 0 ? selectedRep.book / totalRepBook : 0) : 1;
+  const canEdit = !selectedRep;
 
-  const scaledMonthly = useMemo(() => MONTHLY.map((r) => ({
+  const scaledMonthly = useMemo(() => baseMonthly.map((r) => ({
     ...r,
     b25: r.b25 * repShare, b26p: r.b26p * repShare, ytdB: r.ytdB * repShare,
     i25: r.i25 * repShare, i26p: r.i26p * repShare, ytdI: r.ytdI * repShare,
-  })), [repShare]);
+  })), [repShare, baseMonthly]);
 
-  const scaledLine = useMemo(() => LINE_BOOK.map((r) => ({
+  const scaledLine = useMemo(() => baseLine.map((r) => ({
     ...r,
     luxP: r.luxP * repShare, luxA: r.luxA * repShare,
     swP: r.swP * repShare,   swA: r.swA * repShare,
     flP: r.flP * repShare,   flA: r.flA * repShare,
-  })), [repShare]);
+  })), [repShare, baseLine]);
 
   const monthly = useMemo(
     () => monthFilter === "All" ? scaledMonthly : scaledMonthly.filter((r) => r.m === monthFilter),
