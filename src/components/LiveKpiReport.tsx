@@ -192,7 +192,16 @@ export function LiveKpiReport() {
   const totalRepBook = REP_BOOK.reduce((s, r) => s + r.book, 0);
   const selectedRep = repFilter === "all" ? null : REP_BOOK.find((r) => r.name === repFilter) ?? null;
   const repShare = selectedRep ? (totalRepBook > 0 ? selectedRep.book / totalRepBook : 0) : 1;
-  const canEdit = !selectedRep;
+  // When viewing a single rep, displayed projection = base * repShare.
+  // To save the user-entered display value back to the canonical base, divide by repShare.
+  const saveMonthly = (month: string, key: "b26p" | "i26p", displayedVal: number) => {
+    const base = repShare > 0 ? displayedVal / repShare : displayedVal;
+    updateMonthly(month, key, base);
+  };
+  const saveLine = (month: string, key: "luxP" | "swP" | "flP", displayedVal: number) => {
+    const base = repShare > 0 ? displayedVal / repShare : displayedVal;
+    updateLine(month, key, base);
+  };
 
   const scaledMonthly = useMemo(() => baseMonthly.map((r) => ({
     ...r,
@@ -314,7 +323,7 @@ export function LiveKpiReport() {
         <p className="text-xs text-muted-foreground mb-4">
           Bookings & Invoiced — 2025 actual vs 2026 projection vs YTD ·{" "}
           <span className="text-primary">Click any 2026 P value to edit</span>
-          {!canEdit && <span className="ml-1 text-warning">(disabled while a rep filter is active)</span>}
+          {selectedRep && <span className="ml-1 text-muted-foreground">· edits scale to the team total</span>}
         </p>
 
         {/* Filter bar */}
@@ -371,9 +380,7 @@ export function LiveKpiReport() {
                     {showB && <>
                       <td className="p-2 text-right border-l">{formatCurrency(r.b25)}</td>
                       <td className="p-2 text-right">
-                        {canEdit ? (
-                          <EditableCurrency value={r.b26p} onSave={(v) => updateMonthly(r.m, "b26p", v)} />
-                        ) : formatCurrency(r.b26p)}
+                        <EditableCurrency value={r.b26p} onSave={(v) => saveMonthly(r.m, "b26p", v)} />
                       </td>
                       <td className="p-2 text-right">{fmtPct(growth(r.b26p, r.b25))}</td>
                       <td className="p-2 text-right">
@@ -384,9 +391,7 @@ export function LiveKpiReport() {
                     {showI && <>
                       <td className="p-2 text-right border-l">{formatCurrency(r.i25)}</td>
                       <td className="p-2 text-right">
-                        {canEdit ? (
-                          <EditableCurrency value={r.i26p} onSave={(v) => updateMonthly(r.m, "i26p", v)} />
-                        ) : formatCurrency(r.i26p)}
+                        <EditableCurrency value={r.i26p} onSave={(v) => saveMonthly(r.m, "i26p", v)} />
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.ytdI)}</td>
                       <td className="p-2 text-right">{fmtPct(r.ytdI / r.i26p)}</td>
@@ -584,27 +589,21 @@ export function LiveKpiReport() {
                     <td className="p-2 font-medium">{idx + 1}. {r.m}</td>
                     {showLux && <>
                       <td className="p-2 text-right border-l">
-                        {canEdit ? (
-                          <EditableCurrency value={r.luxP} onSave={(v) => updateLine(r.m, "luxP", v)} />
-                        ) : formatCurrency(r.luxP)}
+                        <EditableCurrency value={r.luxP} onSave={(v) => saveLine(r.m, "luxP", v)} />
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.luxA)}</td>
                       <td className="p-2 text-right">{fmtPct(r.luxA / r.luxP)}</td>
                     </>}
                     {showSW && <>
                       <td className="p-2 text-right border-l">
-                        {canEdit ? (
-                          <EditableCurrency value={r.swP} onSave={(v) => updateLine(r.m, "swP", v)} />
-                        ) : formatCurrency(r.swP)}
+                        <EditableCurrency value={r.swP} onSave={(v) => saveLine(r.m, "swP", v)} />
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.swA)}</td>
                       <td className="p-2 text-right">{fmtPct(r.swA / r.swP)}</td>
                     </>}
                     {showFL && <>
                       <td className="p-2 text-right border-l">
-                        {canEdit ? (
-                          <EditableCurrency value={r.flP} onSave={(v) => updateLine(r.m, "flP", v)} />
-                        ) : formatCurrency(r.flP)}
+                        <EditableCurrency value={r.flP} onSave={(v) => saveLine(r.m, "flP", v)} />
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.flA)}</td>
                       <td className="p-2 text-right">{fmtPct(r.flA / r.flP)}</td>
