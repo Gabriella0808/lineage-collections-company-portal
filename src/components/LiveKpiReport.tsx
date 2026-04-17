@@ -167,23 +167,51 @@ export function LiveKpiReport() {
 
   return (
     <div className="space-y-6">
-      {/* Header strip */}
-      <div className="glass-card p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Today's Date</p>
-          <p className="font-semibold">{TODAY.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+      {/* Global filter + header strip */}
+      <div className="glass-card p-4 space-y-4">
+        <div className="flex flex-wrap items-center gap-3 pb-3 border-b">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Filter Report By Rep</span>
+          <select
+            value={repFilter}
+            onChange={(e) => setRepFilter(e.target.value)}
+            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[200px]"
+          >
+            <option value="all">All Reps (Combined)</option>
+            {[...REP_BOOK].sort((a, b) => a.name.localeCompare(b.name)).map((r) => (
+              <option key={r.name} value={r.name}>{r.name}</option>
+            ))}
+          </select>
+          {selectedRep && (
+            <>
+              <span className="text-xs text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{selectedRep.name}</span> · {fmtPct(repShare)} of total bookings
+              </span>
+              <button
+                onClick={() => setRepFilter("all")}
+                className="ml-auto text-xs text-primary hover:underline"
+              >
+                Clear filter
+              </button>
+            </>
+          )}
         </div>
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">End Date</p>
-          <p className="font-semibold">{END.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Days Remaining</p>
-          <p className="font-semibold">{DAYS_REMAINING}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Reporting Year</p>
-          <p className="font-semibold">2026</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Today's Date</p>
+            <p className="font-semibold">{TODAY.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">End Date</p>
+            <p className="font-semibold">{END.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Days Remaining</p>
+            <p className="font-semibold">{DAYS_REMAINING}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Reporting Year</p>
+            <p className="font-semibold">2026</p>
+          </div>
         </div>
       </div>
 
