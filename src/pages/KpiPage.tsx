@@ -2,6 +2,7 @@ import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { KpiGauge } from "@/components/KpiGauge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { LiveKpiReport } from "@/components/LiveKpiReport";
 import { useSalesReps, useTerritories, useDealers, useRepTerritories, formatCurrency, formatPercent, getInitials } from "@/hooks/usePortalData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { AlertTriangle, TrendingUp, Users, Target } from "lucide-react";
@@ -13,7 +14,7 @@ export default function KpiPage() {
   const { data: dealers = [] } = useDealers();
   const { data: repTerritories = [] } = useRepTerritories();
 
-  const [tab, setTab] = useState<'overview' | 'reps' | 'territories'>('overview');
+  const [tab, setTab] = useState<'overview' | 'reps' | 'territories' | 'live report'>('overview');
 
   const avgKpi = reps.length > 0 ? Math.round(reps.reduce((s, r) => s + (r.kpi_score ?? 0), 0) / reps.length) : 0;
   const totalRevenue = reps.reduce((s, r) => s + (r.revenue ?? 0), 0);
@@ -50,12 +51,14 @@ export default function KpiPage() {
       </div>
 
       <div className="flex gap-1 mb-6 bg-muted p-1 rounded-lg w-fit">
-        {(['overview', 'reps', 'territories'] as const).map(t => (
+        {(['overview', 'reps', 'territories', 'live report'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${tab === t ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
             {t}
           </button>
         ))}
       </div>
+
+      {tab === 'live report' && <LiveKpiReport />}
 
       {tab === 'overview' && (
         <>
