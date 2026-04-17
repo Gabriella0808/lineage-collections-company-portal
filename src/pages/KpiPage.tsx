@@ -14,7 +14,7 @@ export default function KpiPage() {
   const { data: dealers = [] } = useDealers();
   const { data: repTerritories = [] } = useRepTerritories();
 
-  const [tab, setTab] = useState<'overview' | 'reps' | 'territories'>('overview');
+  const [tab, setTab] = useState<'overview' | 'reps' | 'territories' | 'live report'>('overview');
 
   const avgKpi = reps.length > 0 ? Math.round(reps.reduce((s, r) => s + (r.kpi_score ?? 0), 0) / reps.length) : 0;
   const totalRevenue = reps.reduce((s, r) => s + (r.revenue ?? 0), 0);
