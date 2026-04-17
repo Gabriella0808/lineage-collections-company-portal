@@ -112,8 +112,8 @@ export default function DashboardPage() {
         <StatCard title="Overdue" value={totalOverdue} trend="neutral" trendValue={`${totalPending} pending`} variant={totalOverdue > 10 ? 'destructive' : 'warning'} />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-5 mb-6">
-        <div className="glass-card p-5 lg:col-span-2">
+      <div className="grid lg:grid-cols-2 gap-5 mb-6">
+        <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">Monthly Revenue ($K) — {currentYear} vs {currentYear - 1}</h3>
           <div className="h-[240px]">
             {monthlyData.some(d => (d[String(currentYear)] as number) > 0 || (d[String(currentYear - 1)] as number) > 0) ? (
