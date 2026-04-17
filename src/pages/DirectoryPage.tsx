@@ -1,5 +1,22 @@
 import { useState } from "react";
-import { Mail, Phone, ExternalLink, Copy } from "lucide-react";
+import { Mail, Phone, ExternalLink, Copy, MapPin } from "lucide-react";
+
+// Billing addresses sourced from Reps-ship_to_address spreadsheet, keyed by email
+const REP_ADDRESSES: Record<string, string> = {
+  "mjdurh@gmail.com": "2635 SE 30th Place, Ocala, FL 34471",
+  "bradrobertsonva@gmail.com": "3801 Manton Lane, Lynchburg, VA 24503",
+  "bbq1994@gmail.com": "2979 Heritage Oaks Cir, Dacula, GA 30019",
+  "sprdave2@aol.com": "730 Main St Ste 132, North Myrtle Beach, SC 29582",
+  "scamillo1@aol.com": "28 Strathmore Lane, Madison, CT 06443",
+  "jordanshindell@gmail.com": "201 Olympic Club Court, Blue Bell, PA 19422",
+  "joshua.s.jastal@gmail.com": "3634 Hazelhurst Ave, Toledo, OH 43612",
+  "peteravella@aol.com": "4 Jayne Ave, Melville, NY 11747",
+  "huntsalesrep@gmail.com": "5901 Down Valley Ct, Austin, TX 78731",
+  "fryer_gary@yahoo.com": "1667 Hwy 24, Hattieville, AR 72063",
+  "stephenbusk@cs.com": "30798 Rocking Horse Lane, Niles, MI 49120",
+  "bhholbrook@gmail.com": "18355 Fairmont Dr, Naples, FL 34114",
+  "kerryschut1@gmail.com": "4611 Thornbird Dr, Middleville, MI 49333",
+};
 import { FilterBar } from "@/components/FilterBar";
 import { useSalesReps, useTerritories, useDealers, useContacts } from "@/hooks/usePortalData";
 import { Button } from "@/components/ui/button";
