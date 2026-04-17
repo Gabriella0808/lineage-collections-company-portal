@@ -50,6 +50,29 @@ export default function DashboardPage() {
       return { name: name.length > 18 ? name.slice(0, 18) + '…' : name, revenue: Math.round(revenue / 1000) };
     });
 
+  // Sales Leaderboard — rep revenue from dealer_sales via dealer.rep_id
+  const repRevenueMap: Record<string, number> = {};
+  currentYearSales.forEach(s => {
+    const dealer = dealers.find(d => d.id === s.dealer_id);
+    if (dealer?.rep_id) {
+      repRevenueMap[dealer.rep_id] = (repRevenueMap[dealer.rep_id] ?? 0) + (s.revenue ?? 0);
+    }
+  });
+  const leaderboard = reps
+    .map(r => {
+      const territoryIds = repTerritories.filter(rt => rt.rep_id === r.id).map(rt => rt.territory_id);
+      const territoryNames = territoryIds.map(tid => territories.find(t => t.id === tid)?.name).filter(Boolean) as string[];
+      return {
+        id: r.id,
+        name: r.name,
+        territory: territoryNames.join(", ") || "—",
+        revenue: repRevenueMap[r.id] ?? 0,
+      };
+    })
+    .filter(r => r.revenue > 0)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
   const attentionItems = [
     ...reps.filter(r => (r.tasks_overdue ?? 0) > 3).map(r => ({ label: `${r.name} — ${r.tasks_overdue} overdue tasks`, type: 'rep' as const })),
     ...territories.filter(t => t.status === 'underperforming' || t.status === 'at-risk').map(t => ({ label: `${t.name} — ${t.status}`, type: 'territory' as const })),
