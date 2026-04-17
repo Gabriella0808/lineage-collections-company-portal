@@ -29,12 +29,30 @@ export default function DashboardPage() {
   const lastYearRevenue = lastYearSales.reduce((s, r) => s + (r.revenue ?? 0), 0);
   const totalOrders = currentYearSales.reduce((s, r) => s + (r.order_count ?? 0), 0);
 
-  // Monthly revenue chart
-  const monthlyData = MONTH_ORDER.map(month => {
-    const thisYear = currentYearSales.filter(s => s.month === month).reduce((sum, s) => sum + (s.revenue ?? 0), 0);
-    const prevYear = lastYearSales.filter(s => s.month === month).reduce((sum, s) => sum + (s.revenue ?? 0), 0);
-    return { month, [String(currentYear)]: Math.round(thisYear / 1000), [String(currentYear - 1)]: Math.round(prevYear / 1000) };
+  // Monthly rep performance — sales per rep, per month (top 5 reps shown)
+  const REP_COLORS = ['hsl(220 35% 22%)', 'hsl(38 75% 50%)', 'hsl(152 60% 40%)', 'hsl(0 65% 55%)', 'hsl(265 50% 55%)'];
+  const repMonthlyMap: Record<string, Record<string, number>> = {};
+  currentYearSales.forEach(s => {
+    const dealer = dealers.find(d => d.id === s.dealer_id);
+    if (!dealer?.rep_id) return;
+    if (!repMonthlyMap[dealer.rep_id]) repMonthlyMap[dealer.rep_id] = {};
+    repMonthlyMap[dealer.rep_id][s.month] = (repMonthlyMap[dealer.rep_id][s.month] ?? 0) + (s.revenue ?? 0);
   });
+  const repTotals = Object.entries(repMonthlyMap)
+    .map(([repId, months]) => ({ repId, total: Object.values(months).reduce((a, b) => a + b, 0) }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+  const topRepIds = repTotals.map(r => r.repId);
+  const repPerformanceData = MONTH_ORDER.map(month => {
+    const row: Record<string, string | number> = { month };
+    topRepIds.forEach(repId => {
+      const rep = reps.find(r => r.id === repId);
+      const name = rep?.name ?? 'Unknown';
+      row[name] = Math.round((repMonthlyMap[repId]?.[month] ?? 0) / 1000);
+    });
+    return row;
+  });
+  const topRepNames = topRepIds.map(id => reps.find(r => r.id === id)?.name ?? 'Unknown');
 
   // Top dealers by revenue
   const dealerRevenueMap: Record<string, number> = {};
@@ -114,22 +132,32 @@ export default function DashboardPage() {
 
       <div className="grid lg:grid-cols-2 gap-5 mb-6">
         <div className="glass-card p-5">
-          <h3 className="text-sm font-semibold mb-4">Monthly Revenue ($K) — {currentYear} vs {currentYear - 1}</h3>
+          <h3 className="text-sm font-semibold mb-1">Monthly Rep Performance ($K) — {currentYear}</h3>
+          <p className="text-[11px] text-muted-foreground mb-3">Top 5 reps by sales per month</p>
           <div className="h-[240px]">
-            {monthlyData.some(d => (d[String(currentYear)] as number) > 0 || (d[String(currentYear - 1)] as number) > 0) ? (
+            {topRepNames.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData} barGap={2}>
+                <BarChart data={repPerformanceData} barGap={1}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v: number) => `$${v}K`} />
-                  <Bar dataKey={String(currentYear)} fill="hsl(220 35% 22%)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey={String(currentYear - 1)} fill="hsl(38 75% 50%)" radius={[4, 4, 0, 0]} opacity={0.5} />
+                  {topRepNames.map((name, i) => (
+                    <Bar key={name} dataKey={name} fill={REP_COLORS[i]} radius={[3, 3, 0, 0]} />
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted-foreground text-center pt-20">No revenue data synced yet.</p>
+              <p className="text-sm text-muted-foreground text-center pt-20">No rep sales data synced yet.</p>
             )}
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+            {topRepNames.map((name, i) => (
+              <div key={name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <span className="h-2 w-2 rounded-sm shrink-0" style={{ background: REP_COLORS[i] }} />
+                <span className="truncate">{name}</span>
+              </div>
+            ))}
           </div>
         </div>
 
