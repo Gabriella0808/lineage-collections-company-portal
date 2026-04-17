@@ -1,6 +1,6 @@
-import { Users, Map, Store, AlertTriangle, CheckCircle, LogIn } from "lucide-react";
+import { Users, Map, Store, AlertTriangle, CheckCircle, LogIn, Trophy, TrendingUp } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
-import { useSalesReps, useTerritories, useDealers, useDealerSales, formatCurrency } from "@/hooks/usePortalData";
+import { useSalesReps, useTerritories, useDealers, useDealerSales, useRepTerritories, formatCurrency, getInitials } from "@/hooks/usePortalData";
 import { useSignInFeed } from "@/hooks/useSignInFeed";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const { data: dealers = [], isLoading: dlrLoading } = useDealers();
   const { data: signIns = [] } = useSignInFeed(8);
   const { data: dealerSales = [], isLoading: salesLoading } = useDealerSales();
+  const { data: repTerritories = [] } = useRepTerritories();
 
   const isLoading = repsLoading || terLoading || dlrLoading || salesLoading;
 
@@ -48,6 +49,29 @@ export default function DashboardPage() {
       const name = dealer?.name ?? 'Unknown';
       return { name: name.length > 18 ? name.slice(0, 18) + '…' : name, revenue: Math.round(revenue / 1000) };
     });
+
+  // Sales Leaderboard — rep revenue from dealer_sales via dealer.rep_id
+  const repRevenueMap: Record<string, number> = {};
+  currentYearSales.forEach(s => {
+    const dealer = dealers.find(d => d.id === s.dealer_id);
+    if (dealer?.rep_id) {
+      repRevenueMap[dealer.rep_id] = (repRevenueMap[dealer.rep_id] ?? 0) + (s.revenue ?? 0);
+    }
+  });
+  const leaderboard = reps
+    .map(r => {
+      const territoryIds = repTerritories.filter(rt => rt.rep_id === r.id).map(rt => rt.territory_id);
+      const territoryNames = territoryIds.map(tid => territories.find(t => t.id === tid)?.name).filter(Boolean) as string[];
+      return {
+        id: r.id,
+        name: r.name,
+        territory: territoryNames.join(", ") || "—",
+        revenue: repRevenueMap[r.id] ?? 0,
+      };
+    })
+    .filter(r => r.revenue > 0)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
 
   const attentionItems = [
     ...reps.filter(r => (r.tasks_overdue ?? 0) > 3).map(r => ({ label: `${r.name} — ${r.tasks_overdue} overdue tasks`, type: 'rep' as const })),
@@ -123,6 +147,40 @@ export default function DashboardPage() {
             {attentionItems.length === 0 && <p className="text-sm text-muted-foreground">All clear — no items need attention.</p>}
           </div>
         </div>
+      </div>
+
+      <div className="glass-card p-5 mb-6">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-accent" /> Sales Leaderboard
+          <span className="text-[11px] font-normal text-muted-foreground ml-1">— top reps by {currentYear} revenue</span>
+        </h3>
+        {leaderboard.length > 0 ? (
+          <ol className="space-y-2">
+            {leaderboard.map((rep, idx) => {
+              const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+              return (
+                <li key={rep.id} className="flex items-center gap-4 py-2 border-b border-border/40 last:border-0">
+                  <span className={`w-10 text-center ${idx <= 2 ? 'text-lg' : 'text-xs font-semibold text-muted-foreground'}`}>{medal}</span>
+                  <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <span className="text-xs font-semibold text-primary">{getInitials(rep.name)}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{rep.name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{rep.territory}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold tabular-nums">{formatCurrency(rep.revenue)}</p>
+                    <p className="text-[11px] text-success flex items-center justify-end gap-1">
+                      <TrendingUp className="h-3 w-3" /> Tracking
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="text-sm text-muted-foreground">No rep revenue data available yet.</p>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
