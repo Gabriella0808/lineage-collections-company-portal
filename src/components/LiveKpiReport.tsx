@@ -380,9 +380,7 @@ export function LiveKpiReport() {
                     {showB && <>
                       <td className="p-2 text-right border-l">{formatCurrency(r.b25)}</td>
                       <td className="p-2 text-right">
-                        {canEdit ? (
-                          <EditableCurrency value={r.b26p} onSave={(v) => updateMonthly(r.m, "b26p", v)} />
-                        ) : formatCurrency(r.b26p)}
+                        <EditableCurrency value={r.b26p} onSave={(v) => saveMonthly(r.m, "b26p", v)} />
                       </td>
                       <td className="p-2 text-right">{fmtPct(growth(r.b26p, r.b25))}</td>
                       <td className="p-2 text-right">
@@ -393,9 +391,7 @@ export function LiveKpiReport() {
                     {showI && <>
                       <td className="p-2 text-right border-l">{formatCurrency(r.i25)}</td>
                       <td className="p-2 text-right">
-                        {canEdit ? (
-                          <EditableCurrency value={r.i26p} onSave={(v) => updateMonthly(r.m, "i26p", v)} />
-                        ) : formatCurrency(r.i26p)}
+                        <EditableCurrency value={r.i26p} onSave={(v) => saveMonthly(r.m, "i26p", v)} />
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.ytdI)}</td>
                       <td className="p-2 text-right">{fmtPct(r.ytdI / r.i26p)}</td>
