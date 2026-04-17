@@ -127,7 +127,7 @@ export default function DashboardPage() {
         <StatCard title="Dealers" value={dealers.length} icon={Store} trend="neutral" subtitle="total" />
         <StatCard title={`${currentYear} Revenue`} value={formatCurrency(totalRevenue)} trend="neutral" variant="accent" />
         <StatCard title="Orders" value={totalOrders.toLocaleString()} trend="neutral" subtitle={String(currentYear)} variant="success" />
-        <StatCard title="Overdue" value={totalOverdue} trend="neutral" trendValue={`${totalPending} pending`} variant={totalOverdue > 10 ? 'destructive' : 'warning'} />
+        
       </div>
 
       <div className="grid lg:grid-cols-2 gap-5 mb-6">
