@@ -589,27 +589,21 @@ export function LiveKpiReport() {
                     <td className="p-2 font-medium">{idx + 1}. {r.m}</td>
                     {showLux && <>
                       <td className="p-2 text-right border-l">
-                        {canEdit ? (
-                          <EditableCurrency value={r.luxP} onSave={(v) => updateLine(r.m, "luxP", v)} />
-                        ) : formatCurrency(r.luxP)}
+                        <EditableCurrency value={r.luxP} onSave={(v) => saveLine(r.m, "luxP", v)} />
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.luxA)}</td>
                       <td className="p-2 text-right">{fmtPct(r.luxA / r.luxP)}</td>
                     </>}
                     {showSW && <>
                       <td className="p-2 text-right border-l">
-                        {canEdit ? (
-                          <EditableCurrency value={r.swP} onSave={(v) => updateLine(r.m, "swP", v)} />
-                        ) : formatCurrency(r.swP)}
+                        <EditableCurrency value={r.swP} onSave={(v) => saveLine(r.m, "swP", v)} />
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.swA)}</td>
                       <td className="p-2 text-right">{fmtPct(r.swA / r.swP)}</td>
                     </>}
                     {showFL && <>
                       <td className="p-2 text-right border-l">
-                        {canEdit ? (
-                          <EditableCurrency value={r.flP} onSave={(v) => updateLine(r.m, "flP", v)} />
-                        ) : formatCurrency(r.flP)}
+                        <EditableCurrency value={r.flP} onSave={(v) => saveLine(r.m, "flP", v)} />
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.flA)}</td>
                       <td className="p-2 text-right">{fmtPct(r.flA / r.flP)}</td>
