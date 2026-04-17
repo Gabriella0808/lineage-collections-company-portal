@@ -1,5 +1,22 @@
 import { useState } from "react";
-import { Mail, Phone, ExternalLink, Copy } from "lucide-react";
+import { Mail, Phone, ExternalLink, Copy, MapPin } from "lucide-react";
+
+// Billing addresses sourced from Reps-ship_to_address spreadsheet, keyed by email
+const REP_ADDRESSES: Record<string, string> = {
+  "mjdurh@gmail.com": "2635 SE 30th Place, Ocala, FL 34471",
+  "bradrobertsonva@gmail.com": "3801 Manton Lane, Lynchburg, VA 24503",
+  "bbq1994@gmail.com": "2979 Heritage Oaks Cir, Dacula, GA 30019",
+  "sprdave2@aol.com": "730 Main St Ste 132, North Myrtle Beach, SC 29582",
+  "scamillo1@aol.com": "28 Strathmore Lane, Madison, CT 06443",
+  "jordanshindell@gmail.com": "201 Olympic Club Court, Blue Bell, PA 19422",
+  "joshua.s.jastal@gmail.com": "3634 Hazelhurst Ave, Toledo, OH 43612",
+  "peteravella@aol.com": "4 Jayne Ave, Melville, NY 11747",
+  "huntsalesrep@gmail.com": "5901 Down Valley Ct, Austin, TX 78731",
+  "fryer_gary@yahoo.com": "1667 Hwy 24, Hattieville, AR 72063",
+  "stephenbusk@cs.com": "30798 Rocking Horse Lane, Niles, MI 49120",
+  "bhholbrook@gmail.com": "18355 Fairmont Dr, Naples, FL 34114",
+  "kerryschut1@gmail.com": "4611 Thornbird Dr, Middleville, MI 49333",
+};
 import { FilterBar } from "@/components/FilterBar";
 import { useSalesReps, useTerritories, useDealers, useContacts } from "@/hooks/usePortalData";
 import { Button } from "@/components/ui/button";
@@ -28,9 +45,10 @@ export default function DirectoryPage() {
     email: c.email || '',
     website: c.website || '',
     territory: c.territory || '',
+    address: REP_ADDRESSES[(c.email || '').toLowerCase()] || '',
   })) : [
-    ...reps.map(r => ({ id: `rep-${r.id}`, name: r.name, company: 'Lineage Collections', role: 'rep', title: 'Sales Representative', phone: r.phone || '', cell: '', email: r.email || '', website: '', territory: '' })),
-    ...dealers.slice(0, 200).map(d => ({ id: `dlr-${d.id}`, name: d.name, company: d.name, role: 'dealer', title: 'Dealer', phone: d.phone || '', cell: '', email: d.email || '', website: d.website || '', territory: '' })),
+    ...reps.map(r => ({ id: `rep-${r.id}`, name: r.name, company: 'Lineage Collections', role: 'rep', title: 'Sales Representative', phone: r.phone || '', cell: '', email: r.email || '', website: '', territory: '', address: REP_ADDRESSES[(r.email || '').toLowerCase()] || '' })),
+    ...dealers.slice(0, 200).map(d => ({ id: `dlr-${d.id}`, name: d.name, company: d.name, role: 'dealer', title: 'Dealer', phone: d.phone || '', cell: '', email: d.email || '', website: d.website || '', territory: '', address: '' })),
   ];
 
   const filtered = contacts.filter(c => {
@@ -102,6 +120,17 @@ export default function DirectoryPage() {
                 <div className="flex items-center justify-between group">
                   <span className="text-muted-foreground truncate">{c.email}</span>
                   <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0" onClick={() => copyToClipboard(c.email, 'Email')}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              {c.address && (
+                <div className="flex items-start justify-between group gap-2">
+                  <div className="flex items-start gap-1.5 text-muted-foreground min-w-0">
+                    <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                    <span className="truncate">{c.address}</span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 shrink-0" onClick={() => copyToClipboard(c.address, 'Address')}>
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
