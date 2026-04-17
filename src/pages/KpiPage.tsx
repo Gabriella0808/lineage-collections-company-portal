@@ -2,6 +2,7 @@ import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { KpiGauge } from "@/components/KpiGauge";
 import { StatusBadge } from "@/components/StatusBadge";
+import { LiveKpiReport } from "@/components/LiveKpiReport";
 import { useSalesReps, useTerritories, useDealers, useRepTerritories, formatCurrency, formatPercent, getInitials } from "@/hooks/usePortalData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { AlertTriangle, TrendingUp, Users, Target } from "lucide-react";
