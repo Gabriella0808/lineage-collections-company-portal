@@ -7,7 +7,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import DashboardPage from "@/pages/DashboardPage";
 import SalesRepsPage from "@/pages/SalesRepsPage";
-import TerritoriesPage from "@/pages/TerritoriesPage";
+
 import DealersPage from "@/pages/DealersPage";
 import DirectoryPage from "@/pages/DirectoryPage";
 import KpiPage from "@/pages/KpiPage";
@@ -39,7 +39,7 @@ const App = () => (
                       <Route path="/" element={<DashboardPage />} />
                       <Route path="/managers" element={<ManagersPage />} />
                       <Route path="/reps" element={<SalesRepsPage />} />
-                      <Route path="/territories" element={<TerritoriesPage />} />
+                      
                       <Route path="/dealers" element={<DealersPage />} />
                       <Route path="/directory" element={<DirectoryPage />} />
                       <Route path="/kpi" element={<KpiPage />} />
