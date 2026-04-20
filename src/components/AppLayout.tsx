@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import lineageLogo from "@/assets/lineage-logo-white.png";
 import { NavLink } from "@/components/NavLink";
+import { NotificationsBell } from "@/components/NotificationsBell";
 import {
   Sidebar,
   SidebarContent,
@@ -96,6 +97,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-xs text-muted-foreground hidden sm:inline">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
             </span>
+            <NotificationsBell />
             <SignOutButton />
           </header>
           <main className="flex-1 p-6 overflow-auto">
