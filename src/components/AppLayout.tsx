@@ -97,7 +97,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-xs text-muted-foreground hidden sm:inline">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
             </span>
-            <NotificationsBell />
             <SignOutButton />
           </header>
           <main className="flex-1 p-6 overflow-auto">
@@ -115,6 +114,7 @@ function SignOutButton() {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-muted-foreground hidden md:inline truncate max-w-[180px]">{user.email}</span>
+      <NotificationsBell />
       <Button variant="ghost" size="sm" onClick={() => signOut()} className="h-8">
         <LogOut className="h-3.5 w-3.5 mr-1" /> Sign out
       </Button>
