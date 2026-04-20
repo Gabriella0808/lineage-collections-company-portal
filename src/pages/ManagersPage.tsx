@@ -46,7 +46,9 @@ export default function ManagersPage() {
     () => managers.filter((manager) => {
       const normalizedName = manager.name.trim().toLowerCase();
       const normalizedEmail = manager.email?.trim().toLowerCase();
-      return normalizedName !== "sales" && normalizedEmail !== "sales@lineage-collections.com";
+      if (normalizedName === "sales" || normalizedEmail === "sales@lineage-collections.com") return false;
+      if (normalizedName === "scott grisack") return false;
+      return true;
     }),
     [managers],
   );
