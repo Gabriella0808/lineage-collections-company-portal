@@ -212,6 +212,18 @@ export default function TasksPage() {
                   onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                 />
               </div>
+              <Select
+                value={form.assigned_manager_id || "unassigned"}
+                onValueChange={(v) => setForm({ ...form, assigned_manager_id: v === "unassigned" ? "" : v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Assign to manager" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {managers.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
