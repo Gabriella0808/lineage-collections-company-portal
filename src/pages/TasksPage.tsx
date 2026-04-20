@@ -31,6 +31,11 @@ interface Manager {
   name: string;
 }
 
+interface Profile {
+  user_id: string;
+  full_name: string | null;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -55,6 +60,7 @@ export default function TasksPage() {
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
@@ -69,9 +75,10 @@ export default function TasksPage() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const [tasksRes, managersRes] = await Promise.all([
+    const [tasksRes, managersRes, profilesRes] = await Promise.all([
       supabase.from("manager_tasks").select("*").order("created_at", { ascending: false }),
       supabase.from("managers").select("id, name").order("name"),
+      supabase.from("profiles").select("user_id, full_name"),
     ]);
     if (tasksRes.error) {
       toast({ title: "Failed to load tasks", description: tasksRes.error.message, variant: "destructive" });
@@ -82,6 +89,9 @@ export default function TasksPage() {
       toast({ title: "Failed to load managers", description: managersRes.error.message, variant: "destructive" });
     } else {
       setManagers((managersRes.data ?? []) as Manager[]);
+    }
+    if (!profilesRes.error) {
+      setProfiles((profilesRes.data ?? []) as Profile[]);
     }
     setLoading(false);
   };
