@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Calendar, User, Bell } from "lucide-react";
+import { Plus, Trash2, Pencil, Calendar, User, Bell, Check, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 
 type Status = "todo" | "in_progress" | "blocked" | "done";
@@ -62,6 +62,36 @@ export default function TasksPage() {
   const [managers, setManagers] = useState<Manager[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const readKey = user ? `tasks_read_${user.id}` : "";
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!readKey) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem(readKey) || "[]");
+      setReadIds(new Set(stored));
+    } catch {
+      setReadIds(new Set());
+    }
+  }, [readKey]);
+
+  const persistRead = (next: Set<string>) => {
+    setReadIds(next);
+    if (readKey) localStorage.setItem(readKey, JSON.stringify([...next]));
+  };
+
+  const markRead = (id: string) => {
+    const next = new Set(readIds);
+    next.add(id);
+    persistRead(next);
+  };
+
+  const markAllRead = (ids: string[]) => {
+    const next = new Set(readIds);
+    ids.forEach((i) => next.add(i));
+    persistRead(next);
+  };
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [form, setForm] = useState<{
@@ -248,23 +278,58 @@ export default function TasksPage() {
         const assignedToMe = tasks.filter(
           (t) => t.user_id !== user.id && t.assigned_manager_id && t.status !== "done",
         );
+        const unread = assignedToMe.filter((t) => !readIds.has(t.id));
         if (assignedToMe.length === 0) return null;
         return (
           <Card className="p-4 border-l-4 border-primary bg-primary/5">
-            <div className="flex items-center gap-2 mb-2">
-              <Bell className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">Assigned to you</h2>
-              <span className="text-xs text-muted-foreground">({assignedToMe.length})</span>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold">Assigned to you</h2>
+                <span className="text-xs text-muted-foreground">
+                  ({unread.length} unread / {assignedToMe.length} total)
+                </span>
+              </div>
+              {unread.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => markAllRead(unread.map((t) => t.id))}
+                >
+                  <CheckCheck className="h-3.5 w-3.5" /> Mark all read
+                </Button>
+              )}
             </div>
             <ul className="space-y-1.5">
-              {assignedToMe.slice(0, 5).map((t) => {
+              {assignedToMe.slice(0, 8).map((t) => {
                 const creator = profiles.find((p) => p.user_id === t.user_id);
                 const creatorName = creator?.full_name?.trim() || "Someone";
+                const isRead = readIds.has(t.id);
                 return (
-                  <li key={t.id} className="text-sm">
-                    <span className="font-medium">{creatorName}</span>
-                    <span className="text-muted-foreground"> assigned a task to you: </span>
-                    <span className="font-medium">{t.title}</span>
+                  <li
+                    key={t.id}
+                    className={`text-sm flex items-center justify-between gap-2 rounded px-2 py-1 ${
+                      isRead ? "opacity-50" : "bg-background/60"
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium">{creatorName}</span>
+                      <span className="text-muted-foreground"> assigned a task to you: </span>
+                      <span className="font-medium">{t.title}</span>
+                    </div>
+                    {!isRead ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs shrink-0"
+                        onClick={() => markRead(t.id)}
+                      >
+                        <Check className="h-3.5 w-3.5" /> Mark read
+                      </Button>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground shrink-0">Read</span>
+                    )}
                   </li>
                 );
               })}
