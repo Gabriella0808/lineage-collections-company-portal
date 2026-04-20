@@ -279,57 +279,46 @@ export default function TasksPage() {
           (t) => t.user_id !== user.id && t.assigned_manager_id && t.status !== "done",
         );
         const unread = assignedToMe.filter((t) => !readIds.has(t.id));
-        if (assignedToMe.length === 0) return null;
+        if (unread.length === 0) return null;
         return (
           <Card className="p-4 border-l-4 border-primary bg-primary/5">
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
                 <Bell className="h-4 w-4 text-primary" />
                 <h2 className="text-sm font-semibold">Assigned to you</h2>
-                <span className="text-xs text-muted-foreground">
-                  ({unread.length} unread / {assignedToMe.length} total)
-                </span>
+                <span className="text-xs text-muted-foreground">({unread.length} new)</span>
               </div>
-              {unread.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs"
-                  onClick={() => markAllRead(unread.map((t) => t.id))}
-                >
-                  <CheckCheck className="h-3.5 w-3.5" /> Mark all read
-                </Button>
-              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => markAllRead(unread.map((t) => t.id))}
+              >
+                <CheckCheck className="h-3.5 w-3.5" /> Mark all read
+              </Button>
             </div>
             <ul className="space-y-1.5">
-              {assignedToMe.slice(0, 8).map((t) => {
+              {unread.slice(0, 8).map((t) => {
                 const creator = profiles.find((p) => p.user_id === t.user_id);
                 const creatorName = creator?.full_name?.trim() || "Someone";
-                const isRead = readIds.has(t.id);
                 return (
                   <li
                     key={t.id}
-                    className={`text-sm flex items-center justify-between gap-2 rounded px-2 py-1 ${
-                      isRead ? "opacity-50" : "bg-background/60"
-                    }`}
+                    className="text-sm flex items-center justify-between gap-2 rounded px-2 py-1 bg-background/60"
                   >
                     <div className="min-w-0 flex-1">
                       <span className="font-medium">{creatorName}</span>
                       <span className="text-muted-foreground"> assigned a task to you: </span>
                       <span className="font-medium">{t.title}</span>
                     </div>
-                    {!isRead ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs shrink-0"
-                        onClick={() => markRead(t.id)}
-                      >
-                        <Check className="h-3.5 w-3.5" /> Mark read
-                      </Button>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground shrink-0">Read</span>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs shrink-0"
+                      onClick={() => markRead(t.id)}
+                    >
+                      <Check className="h-3.5 w-3.5" /> Mark read
+                    </Button>
                   </li>
                 );
               })}
