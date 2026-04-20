@@ -660,7 +660,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_assigned_manager: { Args: { _manager_id: string }; Returns: boolean }
     }
     Enums: {
       manager_task_status: "todo" | "in_progress" | "blocked" | "done"
