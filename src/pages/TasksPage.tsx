@@ -276,12 +276,16 @@ export default function TasksPage() {
                           )}
                         </div>
                         <div className="flex flex-col gap-1 shrink-0">
-                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEdit(t)}>
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => remove(t.id)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          {user && t.user_id === user.id && (
+                            <>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEdit(t)}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => remove(t.id)}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                       <Select value={t.status} onValueChange={(v: Status) => updateStatus(t.id, v)}>
