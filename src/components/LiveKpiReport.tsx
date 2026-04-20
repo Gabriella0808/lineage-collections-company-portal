@@ -424,51 +424,6 @@ export function LiveKpiReport() {
             </tbody>
           </table>
         </div>
-
-        {/* Bookings — Actual vs Goal chart */}
-        <div className="mt-6 pt-5 border-t">
-          <div className="flex items-baseline justify-between mb-3">
-            <div>
-              <h4 className="text-sm font-semibold">Bookings — Actual vs Goal</h4>
-              <p className="text-xs text-muted-foreground">
-                Monthly 2026 projection (goal) vs YTD actual
-                {selectedRep ? <> · <span className="font-medium text-foreground">{selectedRep.name}</span></> : <> · all reps</>}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-primary/70" />2026 Goal</span>
-              <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-accent" />YTD 2026</span>
-            </div>
-          </div>
-          <div style={{ height: 280 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={scaledMonthly} margin={{ top: 8, right: 16, left: 8, bottom: 8 }} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis
-                  dataKey="m"
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                  tickFormatter={(v: string) => v.slice(0, 3)}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                  tickFormatter={(v: number) => v >= 1000 ? `$${Math.round(v / 1000)}k` : `$${v}`}
-                />
-                <Tooltip
-                  cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                  formatter={(v: number, name: string) => [formatCurrency(v), name]}
-                />
-                <Bar dataKey="b26p" name="2026 Goal" fill="hsl(var(--primary) / 0.7)" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="ytdB" name="YTD 2026" fill="hsl(var(--accent))" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
 
       {/* Rep Bookings */}
