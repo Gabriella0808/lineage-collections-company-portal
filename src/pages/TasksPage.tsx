@@ -264,6 +264,12 @@ export default function TasksPage() {
                               {format(new Date(t.due_date), "MMM d")}
                             </p>
                           )}
+                          {t.assigned_manager_id && (
+                            <p className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1 ml-2">
+                              <User className="h-3 w-3" />
+                              {managers.find((m) => m.id === t.assigned_manager_id)?.name ?? "Unknown"}
+                            </p>
+                          )}
                         </div>
                         <div className="flex flex-col gap-1 shrink-0">
                           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEdit(t)}>
