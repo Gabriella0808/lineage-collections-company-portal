@@ -40,6 +40,7 @@ interface Task {
   completed_at: string | null;
   created_at: string;
   assigned_manager_id: string | null;
+  user_id: string;
 }
 
 const COLUMNS: { key: Status; label: string; tone: string }[] = [
@@ -172,7 +173,7 @@ export default function TasksPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-serif font-semibold">My Tasks</h1>
-          <p className="text-sm text-muted-foreground">Personal day-to-day task list</p>
+          <p className="text-sm text-muted-foreground">Tasks you created or were assigned to you</p>
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
@@ -269,6 +270,9 @@ export default function TasksPage() {
                               <User className="h-3 w-3" />
                               {managers.find((m) => m.id === t.assigned_manager_id)?.name ?? "Unknown"}
                             </p>
+                          )}
+                          {user && t.user_id !== user.id && (
+                            <p className="text-[11px] text-primary mt-1 font-medium">Assigned to you</p>
                           )}
                         </div>
                         <div className="flex flex-col gap-1 shrink-0">
