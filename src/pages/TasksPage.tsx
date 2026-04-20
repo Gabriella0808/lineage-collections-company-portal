@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Calendar, User } from "lucide-react";
+import { Plus, Trash2, Pencil, Calendar, User, Bell } from "lucide-react";
 import { format } from "date-fns";
 
 type Status = "todo" | "in_progress" | "blocked" | "done";
@@ -243,6 +243,35 @@ export default function TasksPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {!loading && user && (() => {
+        const assignedToMe = tasks.filter(
+          (t) => t.user_id !== user.id && t.assigned_manager_id && t.status !== "done",
+        );
+        if (assignedToMe.length === 0) return null;
+        return (
+          <Card className="p-4 border-l-4 border-primary bg-primary/5">
+            <div className="flex items-center gap-2 mb-2">
+              <Bell className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">Assigned to you</h2>
+              <span className="text-xs text-muted-foreground">({assignedToMe.length})</span>
+            </div>
+            <ul className="space-y-1.5">
+              {assignedToMe.slice(0, 5).map((t) => {
+                const creator = profiles.find((p) => p.user_id === t.user_id);
+                const creatorName = creator?.full_name?.trim() || "Someone";
+                return (
+                  <li key={t.id} className="text-sm">
+                    <span className="font-medium">{creatorName}</span>
+                    <span className="text-muted-foreground"> assigned a task to you: </span>
+                    <span className="font-medium">{t.title}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        );
+      })()}
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
