@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { formatCurrency } from "@/hooks/usePortalData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Pencil } from "lucide-react";
+import { REP_MONTHLY } from "@/data/repMonthly";
 
 const PROJ_STORAGE_KEY = "kpi_projections_2026_v1";
 
@@ -182,26 +183,30 @@ export function LiveKpiReport() {
     flP: overrides.line?.[r.m]?.flP ?? r.flP,
   })), [overrides]);
 
-  // Per-rep slicing: scale aggregate monthly + line totals by selected rep's share of all bookings.
+  // Per-rep slicing: when a rep is selected, use that rep's actual monthly figures
+  // from the spreadsheet (REP_MONTHLY). Otherwise use the team Summary totals.
   const totalRepBook = REP_BOOK.reduce((s, r) => s + r.book, 0);
   const selectedRep = repFilter === "all" ? null : REP_BOOK.find((r) => r.name === repFilter) ?? null;
   const repShare = selectedRep ? (totalRepBook > 0 ? selectedRep.book / totalRepBook : 0) : 1;
-  // When viewing a single rep, displayed projection = base * repShare.
-  // To save the user-entered display value back to the canonical base, divide by repShare.
+
+  // Edits to per-rep projections aren't persisted back to the team total (real per-rep
+  // numbers come from the spreadsheet). For "All" view we still write through to MONTHLY.
   const saveMonthly = (month: string, key: "b26p" | "i26p", displayedVal: number) => {
-    const base = repShare > 0 ? displayedVal / repShare : displayedVal;
-    updateMonthly(month, key, base);
+    if (selectedRep) return; // editing disabled when viewing a single rep
+    updateMonthly(month, key, displayedVal);
   };
   const saveLine = (month: string, key: "luxP" | "swP" | "flP", displayedVal: number) => {
     const base = repShare > 0 ? displayedVal / repShare : displayedVal;
     updateLine(month, key, base);
   };
 
-  const scaledMonthly = useMemo(() => baseMonthly.map((r) => ({
-    ...r,
-    b25: r.b25 * repShare, b26p: r.b26p * repShare, ytdB: r.ytdB * repShare,
-    i25: r.i25 * repShare, i26p: r.i26p * repShare, ytdI: r.ytdI * repShare,
-  })), [repShare, baseMonthly]);
+  const scaledMonthly = useMemo(() => {
+    if (selectedRep && REP_MONTHLY[selectedRep.name]) {
+      // Real per-rep monthly bookings & invoiced from the spreadsheet
+      return REP_MONTHLY[selectedRep.name];
+    }
+    return baseMonthly;
+  }, [selectedRep, baseMonthly]);
 
   const scaledLine = useMemo(() => baseLine.map((r) => ({
     ...r,
@@ -267,7 +272,7 @@ export function LiveKpiReport() {
           {selectedRep && (
             <>
               <span className="text-xs text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{selectedRep.name}</span> · {fmtPct(repShare)} of total bookings
+                Showing <span className="font-semibold text-foreground">{selectedRep.name}</span> · live numbers from rep tab
               </span>
               <button
                 onClick={() => setRepFilter("all")}
@@ -347,9 +352,10 @@ export function LiveKpiReport() {
       <div className="glass-card p-5">
         <h3 className="text-base font-semibold mb-1">Monthly Results</h3>
         <p className="text-xs text-muted-foreground mb-4">
-          Bookings & Invoiced — 2025 actual vs 2026 projection vs YTD ·{" "}
-          <span className="text-primary">Click any 2026 P value to edit</span>
-          {selectedRep && <span className="ml-1 text-muted-foreground">· edits scale to the team total</span>}
+          Bookings & Invoiced — 2025 actual vs 2026 projection vs YTD
+          {selectedRep
+            ? <span className="ml-1">· live data from <span className="font-medium text-foreground">{selectedRep.name}</span> tab</span>
+            : <> · <span className="text-primary">Click any 2026 P value to edit</span></>}
         </p>
 
         {/* Filter bar */}
@@ -406,7 +412,9 @@ export function LiveKpiReport() {
                     {showB && <>
                       <td className="p-2 text-right border-l">{formatCurrency(r.b25)}</td>
                       <td className="p-2 text-right">
-                        <EditableCurrency value={r.b26p} onSave={(v) => saveMonthly(r.m, "b26p", v)} />
+                        {selectedRep
+                          ? formatCurrency(r.b26p)
+                          : <EditableCurrency value={r.b26p} onSave={(v) => saveMonthly(r.m, "b26p", v)} />}
                       </td>
                       <td className="p-2 text-right">{fmtPct(growth(r.b26p, r.b25))}</td>
                       <td className="p-2 text-right">
@@ -417,7 +425,9 @@ export function LiveKpiReport() {
                     {showI && <>
                       <td className="p-2 text-right border-l">{formatCurrency(r.i25)}</td>
                       <td className="p-2 text-right">
-                        <EditableCurrency value={r.i26p} onSave={(v) => saveMonthly(r.m, "i26p", v)} />
+                        {selectedRep
+                          ? formatCurrency(r.i26p)
+                          : <EditableCurrency value={r.i26p} onSave={(v) => saveMonthly(r.m, "i26p", v)} />}
                       </td>
                       <td className="p-2 text-right">{formatCurrency(r.ytdI)}</td>
                       <td className="p-2 text-right">{fmtPct(r.ytdI / r.i26p)}</td>
