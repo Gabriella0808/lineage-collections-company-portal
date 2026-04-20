@@ -272,7 +272,7 @@ export function LiveKpiReport() {
           {selectedRep && (
             <>
               <span className="text-xs text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{selectedRep.name}</span> · {fmtPct(repShare)} of total bookings
+                Showing <span className="font-semibold text-foreground">{selectedRep.name}</span> · live numbers from rep tab
               </span>
               <button
                 onClick={() => setRepFilter("all")}
