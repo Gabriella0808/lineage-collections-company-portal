@@ -92,7 +92,7 @@ export default function TasksPage() {
 
   const resetForm = () => {
     setEditing(null);
-    setForm({ title: "", description: "", status: "todo", due_date: "" });
+    setForm({ title: "", description: "", status: "todo", due_date: "", assigned_manager_id: "" });
   };
 
   const openNew = () => {
@@ -107,6 +107,7 @@ export default function TasksPage() {
       description: t.description ?? "",
       status: t.status,
       due_date: t.due_date ?? "",
+      assigned_manager_id: t.assigned_manager_id ?? "",
     });
     setOpen(true);
   };
@@ -122,7 +123,8 @@ export default function TasksPage() {
       description: form.description.trim() || null,
       status: form.status,
       due_date: form.due_date || null,
-    };
+      assigned_manager_id: form.assigned_manager_id || null,
+    } as any;
     if (editing) {
       const { error } = await supabase
         .from("manager_tasks")
