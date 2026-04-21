@@ -366,7 +366,7 @@ export default function InventoryPage() {
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Available <ArrowUpDown className="h-3 w-3" /></span></th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Avg Mo. Sales <ArrowUpDown className="h-3 w-3" /></span></th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Mo. Supply <ArrowUpDown className="h-3 w-3" /></span></th>
-                <th className="text-right px-4 py-3 font-medium">Link</th>
+                
               </tr>
             </thead>
             <tbody>
@@ -385,17 +385,12 @@ export default function InventoryPage() {
                     <td className={cn("px-4 py-3 text-right tabular-nums font-semibold", lowQty && "text-destructive")}>{it.available}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{it.avgMonthlySales}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{it.monthsSupply == null ? "—" : it.monthsSupply.toFixed(1)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Button size="icon" variant="ghost" className="h-7 w-7">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Button>
-                    </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">No SKUs match this filter.</td>
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">No SKUs match this filter.</td>
                 </tr>
               )}
             </tbody>
