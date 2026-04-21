@@ -191,7 +191,15 @@ export default function CompanyWidePage() {
             </div>
           </div>
 
-          <ReportPane reportKey={activeReport} managerId={managerParam} />
+          <ReportPane
+            reportKey={activeReport}
+            managerId={managerParam}
+            managerName={
+              managerParam === "all"
+                ? undefined
+                : visibleManagers.find((m) => m.id === managerParam)?.name
+            }
+          />
         </section>
       </div>
     </div>
