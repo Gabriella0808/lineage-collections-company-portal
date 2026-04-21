@@ -231,6 +231,60 @@ export type Database = {
           },
         ]
       }
+      inventory: {
+        Row: {
+          acctivate_id: string | null
+          available: number | null
+          avg_monthly_sales: number | null
+          collection: string | null
+          created_at: string
+          id: string
+          last_synced_at: string | null
+          link: string | null
+          months_supply: number | null
+          on_hand: number | null
+          product: string
+          sku: string
+          status: string | null
+          supplier: string | null
+          updated_at: string
+        }
+        Insert: {
+          acctivate_id?: string | null
+          available?: number | null
+          avg_monthly_sales?: number | null
+          collection?: string | null
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          link?: string | null
+          months_supply?: number | null
+          on_hand?: number | null
+          product: string
+          sku: string
+          status?: string | null
+          supplier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acctivate_id?: string | null
+          available?: number | null
+          avg_monthly_sales?: number | null
+          collection?: string | null
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          link?: string | null
+          months_supply?: number | null
+          on_hand?: number | null
+          product?: string
+          sku?: string
+          status?: string | null
+          supplier?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kpi_records: {
         Row: {
           conversion_rate: number | null
