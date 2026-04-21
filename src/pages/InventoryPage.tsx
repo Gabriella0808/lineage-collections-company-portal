@@ -152,13 +152,6 @@ export default function InventoryPage() {
     return Array.from(map.entries()).map(([collection, v]) => ({ collection, ...v }));
   }, [items]);
 
-  const lowestSupply = useMemo(() => {
-    return [...items]
-      .filter((i) => i.monthsSupply != null && i.status !== "out-of-stock")
-      .sort((a, b) => (a.monthsSupply ?? 0) - (b.monthsSupply ?? 0))
-      .slice(0, 5);
-  }, [items]);
-
   return (
     <div className="space-y-6">
       <div className="page-header flex items-start justify-between gap-4 flex-wrap">
