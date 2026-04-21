@@ -209,12 +209,11 @@ export default function CompanyWidePage() {
 
 /* ───────────────────────── Report renderer ───────────────────────── */
 
-function ReportPane({ reportKey, managerId }: { reportKey: ReportKey; managerId: string }) {
+function ReportPane({ reportKey, managerId, managerName }: { reportKey: ReportKey; managerId: string; managerName?: string }) {
   if (reportKey === "live-kpi") {
     return (
       <div>
-        {managerId !== "all" && <ManagerFilterNotice />}
-        <LiveKpiReport />
+        <LiveKpiReport managerName={managerName} />
       </div>
     );
   }
