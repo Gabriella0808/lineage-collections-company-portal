@@ -74,20 +74,21 @@ function StatTile({ label, value, icon: Icon, accent, hint }: { label: string; v
 export default function InventoryPage() {
   const [filter, setFilter] = useState<"all" | InventoryStatus>("all");
   const [query, setQuery] = useState("");
+  const { items, loading, lastSyncedAt, usingMock } = useInventory();
 
   const counts = useMemo(() => {
-    const c = { total: inventoryItems.length, critical: 0, outOfStock: 0, reorder: 0, fast: 0 };
-    for (const it of inventoryItems) {
+    const c = { total: items.length, critical: 0, outOfStock: 0, reorder: 0, fast: 0 };
+    for (const it of items) {
       if (it.status === "critical") c.critical++;
       if (it.status === "out-of-stock") c.outOfStock++;
       if (it.status === "reorder-soon") c.reorder++;
       if (it.status === "fast-moving") c.fast++;
     }
     return c;
-  }, []);
+  }, [items]);
 
   const filtered = useMemo(() => {
-    return inventoryItems.filter((it) => {
+    return items.filter((it) => {
       if (filter !== "all" && it.status !== filter) return false;
       if (query) {
         const q = query.toLowerCase();
@@ -95,11 +96,11 @@ export default function InventoryPage() {
       }
       return true;
     });
-  }, [filter, query]);
+  }, [filter, query, items]);
 
   const collectionsAttention = useMemo(() => {
     const map = new Map<string, { needs: number; total: number }>();
-    for (const it of inventoryItems) {
+    for (const it of items) {
       const entry = map.get(it.collection) ?? { needs: 0, total: 0 };
       entry.total++;
       if (["critical", "out-of-stock", "reorder-soon", "stockout-risk"].includes(it.status)) entry.needs++;
@@ -108,7 +109,7 @@ export default function InventoryPage() {
     return Array.from(map.entries())
       .filter(([, v]) => v.needs > 0)
       .sort((a, b) => b[1].needs - a[1].needs);
-  }, []);
+  }, [items]);
 
   const statusDistribution = useMemo(() => {
     const labelMap: Record<InventoryStatus, string> = {
@@ -122,30 +123,30 @@ export default function InventoryPage() {
       "healthy": "Healthy",
     };
     const counts = new Map<string, number>();
-    for (const it of inventoryItems) {
+    for (const it of items) {
       const k = labelMap[it.status];
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
     return Array.from(counts.entries()).map(([name, value]) => ({ name, value }));
-  }, []);
+  }, [items]);
 
   const collectionsHealth = useMemo(() => {
     const map = new Map<string, { critical: number; healthy: number }>();
-    for (const it of inventoryItems) {
+    for (const it of items) {
       const entry = map.get(it.collection) ?? { critical: 0, healthy: 0 };
       if (["critical", "out-of-stock", "reorder-soon", "stockout-risk"].includes(it.status)) entry.critical++;
       else entry.healthy++;
       map.set(it.collection, entry);
     }
     return Array.from(map.entries()).map(([collection, v]) => ({ collection, ...v }));
-  }, []);
+  }, [items]);
 
   const lowestSupply = useMemo(() => {
-    return [...inventoryItems]
+    return [...items]
       .filter((i) => i.monthsSupply != null && i.status !== "out-of-stock")
       .sort((a, b) => (a.monthsSupply ?? 0) - (b.monthsSupply ?? 0))
       .slice(0, 5);
-  }, []);
+  }, [items]);
 
   return (
     <div className="space-y-6">
