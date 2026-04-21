@@ -103,6 +103,16 @@ const REP_BOOK = [
   { name: "WI/IL",       book: 0,         pct: 0 },
 ];
 
+// Maps each manager (lowercased) to the REP_BOOK rep names they oversee.
+// Drives the "Filter by Rep" dropdown when a manager is selected at the page level.
+const MANAGER_TO_REPS: Record<string, string[]> = {
+  "sergio":            ["Sergio"],
+  "chris de lisa":     ["Skip", "House"],
+  "will grisack":      ["Durham", "Quillen", "Shindell 1", "Shindell 2", "Stewart H", "Fryer", "TN/KY", "Barbara J"],
+  "mateo de lisa":     ["Ervin", "Avella", "Robertson"],
+  "justin jeangerard": ["House"],
+};
+
 const LINE_BOOK = [
   { m: "January",   luxP: 95650,  luxA: 209875, swP: 814550, swA: 389727, flP: 271875, flA: 196815 },
   { m: "February",  luxP: 94125,  luxA: 0, swP: 806800, swA: 0, flP: 276200, flA: 0 },
@@ -144,8 +154,29 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-export function LiveKpiReport() {
+export function LiveKpiReport({ managerName }: { managerName?: string } = {}) {
+  const allowedRepNames = useMemo(() => {
+    if (!managerName) return null; // null = all reps
+    const list = MANAGER_TO_REPS[managerName.trim().toLowerCase()];
+    return list ?? [];
+  }, [managerName]);
+
+  const visibleReps = useMemo(
+    () => allowedRepNames === null
+      ? REP_BOOK
+      : REP_BOOK.filter((r) => allowedRepNames.includes(r.name)),
+    [allowedRepNames],
+  );
+
   const [repFilter, setRepFilter] = useState<string>("all");
+
+  // Reset rep filter when manager scope changes and current rep isn't in scope.
+  useEffect(() => {
+    if (allowedRepNames && repFilter !== "all" && !allowedRepNames.includes(repFilter)) {
+      setRepFilter("all");
+    }
+  }, [allowedRepNames, repFilter]);
+
   const [monthFilter, setMonthFilter] = useState<MonthFilter>("All");
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("both");
   const [monthlyLineFilter, setMonthlyLineFilter] = useState<LineFilter>("all");
@@ -185,10 +216,17 @@ export function LiveKpiReport() {
   })), [overrides]);
 
   // Per-rep slicing: when a rep is selected, use that rep's actual monthly figures
-  // from the spreadsheet (REP_MONTHLY). Otherwise use the team Summary totals.
+  // from the spreadsheet (REP_MONTHLY). Otherwise use the team Summary totals
+  // (or the sum of the manager's reps when scoped to a manager).
   const totalRepBook = REP_BOOK.reduce((s, r) => s + r.book, 0);
   const selectedRep = repFilter === "all" ? null : REP_BOOK.find((r) => r.name === repFilter) ?? null;
-  const repShare = selectedRep ? (totalRepBook > 0 ? selectedRep.book / totalRepBook : 0) : 1;
+  const managerRepBook = useMemo(
+    () => visibleReps.reduce((s, r) => s + r.book, 0),
+    [visibleReps],
+  );
+  const repShare = selectedRep
+    ? (totalRepBook > 0 ? selectedRep.book / totalRepBook : 0)
+    : (allowedRepNames === null ? 1 : (totalRepBook > 0 ? managerRepBook / totalRepBook : 0));
 
   // Edits to per-rep projections aren't persisted back to the team total (real per-rep
   // numbers come from the spreadsheet). For "All" view we still write through to MONTHLY.
@@ -206,8 +244,30 @@ export function LiveKpiReport() {
       // Real per-rep monthly bookings & invoiced from the spreadsheet
       return REP_MONTHLY[selectedRep.name];
     }
+    // Manager-scoped "All" view: sum the per-rep monthly figures for that manager's reps.
+    if (allowedRepNames && allowedRepNames.length > 0) {
+      const repsWithData = allowedRepNames.filter((n) => REP_MONTHLY[n]);
+      if (repsWithData.length > 0) {
+        return baseMonthly.map((row) => {
+          let b25 = 0, b26p = 0, ytdB = 0, i25 = 0, i26p = 0, ytdI = 0;
+          for (const n of repsWithData) {
+            const r = REP_MONTHLY[n].find((x) => x.m === row.m);
+            if (!r) continue;
+            b25 += r.b25; b26p += r.b26p; ytdB += r.ytdB;
+            i25 += r.i25; i26p += r.i26p; ytdI += r.ytdI;
+          }
+          return { m: row.m, b25, b26p, ytdB, i25, i26p, ytdI };
+        });
+      }
+      // Fallback: scale team totals by manager's share
+      return baseMonthly.map((r) => ({
+        ...r,
+        b25: r.b25 * repShare, b26p: r.b26p * repShare, ytdB: r.ytdB * repShare,
+        i25: r.i25 * repShare, i26p: r.i26p * repShare, ytdI: r.ytdI * repShare,
+      }));
+    }
     return baseMonthly;
-  }, [selectedRep, baseMonthly]);
+  }, [selectedRep, baseMonthly, allowedRepNames, repShare]);
 
   const scaledLine = useMemo(() => baseLine.map((r) => ({
     ...r,
@@ -282,11 +342,16 @@ export function LiveKpiReport() {
             onChange={(e) => setRepFilter(e.target.value)}
             className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[200px]"
           >
-            <option value="all">All Reps (Combined)</option>
-            {[...REP_BOOK].sort((a, b) => a.name.localeCompare(b.name)).map((r) => (
+            <option value="all">
+              {allowedRepNames === null ? "All Reps (Combined)" : `All ${managerName}'s Reps (Combined)`}
+            </option>
+            {[...visibleReps].sort((a, b) => a.name.localeCompare(b.name)).map((r) => (
               <option key={r.name} value={r.name}>{r.name}</option>
             ))}
           </select>
+          {allowedRepNames !== null && visibleReps.length === 0 && (
+            <span className="text-xs text-muted-foreground">No reps mapped for this manager yet.</span>
+          )}
           {selectedRep && (
             <>
               <span className="text-xs text-muted-foreground">

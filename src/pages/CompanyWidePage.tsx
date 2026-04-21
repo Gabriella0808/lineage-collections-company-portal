@@ -191,7 +191,15 @@ export default function CompanyWidePage() {
             </div>
           </div>
 
-          <ReportPane reportKey={activeReport} managerId={managerParam} />
+          <ReportPane
+            reportKey={activeReport}
+            managerId={managerParam}
+            managerName={
+              managerParam === "all"
+                ? undefined
+                : visibleManagers.find((m) => m.id === managerParam)?.name
+            }
+          />
         </section>
       </div>
     </div>
@@ -201,12 +209,11 @@ export default function CompanyWidePage() {
 
 /* ───────────────────────── Report renderer ───────────────────────── */
 
-function ReportPane({ reportKey, managerId }: { reportKey: ReportKey; managerId: string }) {
+function ReportPane({ reportKey, managerId, managerName }: { reportKey: ReportKey; managerId: string; managerName?: string }) {
   if (reportKey === "live-kpi") {
     return (
       <div>
-        {managerId !== "all" && <ManagerFilterNotice />}
-        <LiveKpiReport />
+        <LiveKpiReport managerName={managerName} />
       </div>
     );
   }
