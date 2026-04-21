@@ -141,6 +141,7 @@ export default function ManagersPage() {
       setDetailView(null);
       setSelectedRepIds([]);
       setSelectedDealerIds([]);
+      setSelectedLine(null);
     } else {
       setSelectedManagerId(null);
     }
@@ -454,6 +455,37 @@ export default function ManagersPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Line / channel tiles */}
+        <div>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Lines & Channels</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+            {LINE_TILES.map(({ key, label, icon: Icon, tone }) => {
+              // Deterministic placeholder revenue per manager × line
+              const seed = (selectedManager.id.charCodeAt(0) + key.length * 17) % 9;
+              const placeholder = (seed + 2) * 125000;
+              return (
+                <Card
+                  key={key}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => { setSelectedLine(key); setDetailView("line-report"); }}
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tone}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold">{formatCurrency(placeholder)}</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
