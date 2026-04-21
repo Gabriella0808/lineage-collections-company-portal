@@ -240,34 +240,6 @@ export default function InventoryPage() {
           </div>
         </Card>
 
-        <Card className="p-5">
-          <h2 className="text-base font-semibold mb-3">Lowest Months of Supply</h2>
-          {lowestSupply.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">No low-supply items</div>
-          ) : (
-            <ul className="space-y-2.5">
-              {lowestSupply.map((it) => {
-                const mos = it.monthsSupply ?? 0;
-                const pct = Math.min(100, (mos / 6) * 100);
-                const tone = mos < 1 ? "bg-destructive" : mos < 2 ? "bg-warning" : "bg-success";
-                return (
-                  <li key={it.sku}>
-                    <div className="flex items-baseline justify-between text-sm">
-                      <div className="min-w-0 truncate">
-                        <span className="font-medium">{it.product}</span>
-                        <span className="text-muted-foreground"> · {it.collection}</span>
-                      </div>
-                      <span className="tabular-nums font-semibold ml-2">{mos.toFixed(1)} mo</span>
-                    </div>
-                    <div className="h-1.5 mt-1 rounded-full bg-muted overflow-hidden">
-                      <div className={cn("h-full", tone)} style={{ width: `${pct}%` }} />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Card>
       </div>
 
       {collectionsAttention.length > 0 && (
