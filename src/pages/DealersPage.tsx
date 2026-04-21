@@ -6,6 +6,7 @@ import { useSalesReps, useTerritories, useDealers, formatCurrency, getRepName, g
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NoteToTask } from "@/components/NoteToTask";
 
 export default function DealersPage() {
   const { data: reps = [] } = useSalesReps();
@@ -132,7 +133,7 @@ export default function DealersPage() {
 
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Notes</h4>
-                  <div className="rounded-lg border border-border p-3 min-h-[60px] text-sm text-muted-foreground">No notes yet.</div>
+                  <NoteToTask refType="dealer" refName={dealer.name} refId={dealer.id} />
                 </div>
               </div>
             </>

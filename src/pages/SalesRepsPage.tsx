@@ -7,6 +7,7 @@ import { useSalesReps, useTerritories, useDealers, useRepTerritories, formatCurr
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NoteToTask } from "@/components/NoteToTask";
 
 export default function SalesRepsPage() {
   const { data: reps = [], isLoading: repsLoading } = useSalesReps();
@@ -182,7 +183,7 @@ export default function SalesRepsPage() {
 
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Notes</h4>
-                  <div className="rounded-lg border border-border p-3 min-h-[80px] text-sm text-muted-foreground">No notes yet.</div>
+                  <NoteToTask refType="rep" refName={rep.name} refId={rep.id} />
                 </div>
               </div>
             </>
