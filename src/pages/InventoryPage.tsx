@@ -390,7 +390,7 @@ export default function InventoryPage() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">No SKUs match this filter.</td>
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">No SKUs match this filter.</td>
                 </tr>
               )}
             </tbody>
