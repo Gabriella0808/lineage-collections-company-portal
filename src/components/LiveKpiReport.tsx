@@ -88,7 +88,6 @@ const REP_BOOK = [
   { name: "Hospitality",      book: 154754.19, pct: 5.9521 },
   { name: "House",            book: 66352.00,  pct: 1.4362 },
   { name: "Skip Camillo",     book: 3578.00,   pct: 0.0409 },
-  { name: "Will G",           book: 0,         pct: 0 },
   { name: "Barbara J",        book: 108997.12, pct: 0.4137 },
   { name: "Mike Durham",      book: 138486.80, pct: 0.9051 },
   { name: "Bruce Quillen",    book: 39227.50,  pct: 0.4264 },
@@ -96,7 +95,6 @@ const REP_BOOK = [
   { name: "Stewart Hunt",     book: 57005.00,  pct: 2.7145 },
   { name: "Gary Fryer",       book: 0,         pct: 0 },
   { name: "TN/KY",            book: 0,         pct: 0 },
-  { name: "Mateo",            book: 0,         pct: 0 },
   { name: "Dave Ervin",       book: 114013.26, pct: 0.5832 },
   { name: "Kerry",            book: 4075.00,   pct: 0.1663 },
   { name: "Peter Avella",     book: 2144.00,   pct: 0.0613 },
@@ -112,7 +110,6 @@ const REP_NAME_TO_MONTHLY_KEYS: Record<string, string[]> = {
   "Hospitality":      ["Sergio"],
   "House":            ["House"],
   "Skip Camillo":     ["Skip"],
-  "Will G":           ["Will G"],
   "Barbara J":        ["Barbara J"],
   "Mike Durham":      ["Durham"],
   "Bruce Quillen":    ["Quillen"],
@@ -120,7 +117,6 @@ const REP_NAME_TO_MONTHLY_KEYS: Record<string, string[]> = {
   "Stewart Hunt":     ["Stewart H"],
   "Gary Fryer":       ["Fryer"],
   "TN/KY":            ["TN/KY"],
-  "Mateo":            ["Mateo"],
   "Dave Ervin":       ["Ervin"],
   "Kerry":            ["Kerry"],
   "Peter Avella":     ["Avella"],
@@ -151,8 +147,8 @@ function sumRepMonthly(keys: string[]): RepMonthRow[] | null {
 const MANAGER_TO_REPS: Record<string, string[]> = {
   "sergio":            ["Hospitality"],
   "chris de lisa":     ["Skip Camillo", "House"],
-  "will grisack":      ["Will G", "Jordan Shindell", "Barbara J", "Stewart Hunt", "Bruce Quillen", "Mike Durham", "Gary Fryer", "TN/KY"],
-  "mateo de lisa":     ["Mateo", "Dave Ervin", "Kerry", "Brad Robertson", "Peter Avella", "Jastal", "WI/IL"],
+  "will grisack":      ["Jordan Shindell", "Barbara J", "Stewart Hunt", "Bruce Quillen", "Mike Durham", "Gary Fryer", "TN/KY"],
+  "mateo de lisa":     ["Dave Ervin", "Kerry", "Brad Robertson", "Peter Avella", "Jastal", "WI/IL"],
   "justin jeangerard": ["House"],
 };
 
