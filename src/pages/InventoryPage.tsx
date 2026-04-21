@@ -109,6 +109,43 @@ export default function InventoryPage() {
       .sort((a, b) => b[1].needs - a[1].needs);
   }, []);
 
+  const statusDistribution = useMemo(() => {
+    const labelMap: Record<InventoryStatus, string> = {
+      "fast-moving": "Fast Moving",
+      "liquidate": "Liquidate",
+      "out-of-stock": "Out of Stock",
+      "critical": "Critical",
+      "overstock": "Overstock",
+      "reorder-soon": "Reorder Soon",
+      "stockout-risk": "Stockout Risk",
+      "healthy": "Healthy",
+    };
+    const counts = new Map<string, number>();
+    for (const it of inventoryItems) {
+      const k = labelMap[it.status];
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).map(([name, value]) => ({ name, value }));
+  }, []);
+
+  const collectionsHealth = useMemo(() => {
+    const map = new Map<string, { critical: number; healthy: number }>();
+    for (const it of inventoryItems) {
+      const entry = map.get(it.collection) ?? { critical: 0, healthy: 0 };
+      if (["critical", "out-of-stock", "reorder-soon", "stockout-risk"].includes(it.status)) entry.critical++;
+      else entry.healthy++;
+      map.set(it.collection, entry);
+    }
+    return Array.from(map.entries()).map(([collection, v]) => ({ collection, ...v }));
+  }, []);
+
+  const lowestSupply = useMemo(() => {
+    return [...inventoryItems]
+      .filter((i) => i.monthsSupply != null && i.status !== "out-of-stock")
+      .sort((a, b) => (a.monthsSupply ?? 0) - (b.monthsSupply ?? 0))
+      .slice(0, 5);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="page-header">
