@@ -94,18 +94,25 @@ export default function InventoryPage() {
     return c;
   }, [items]);
 
+  const allSuppliers = useMemo(() => {
+    const s = new Set<string>();
+    for (const it of items) if (it.supplier) s.add(it.supplier);
+    return Array.from(s).sort();
+  }, [items]);
+
   const filtered = useMemo(() => {
     return items.filter((it) => {
       if (filter !== "all" && it.status !== filter) return false;
+      if (supplierFilter !== "all" && it.supplier !== supplierFilter) return false;
       if (query) {
         const q = query.toLowerCase();
         if (!it.sku.toLowerCase().includes(q) && !it.product.toLowerCase().includes(q) && !it.collection.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [filter, query, items]);
+  }, [filter, query, items, supplierFilter]);
 
-  useEffect(() => { setPage(1); }, [filter, query]);
+  useEffect(() => { setPage(1); }, [filter, query, supplierFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
