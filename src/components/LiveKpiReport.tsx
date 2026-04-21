@@ -83,34 +83,35 @@ const MONTHLY = [
 ];
 
 const REP_BOOK = [
-  { name: "Internet",    book: 58406.18,  pct: 0.5186 },
-  { name: "Sergio",      book: 154754.19, pct: 5.9521 },
-  { name: "House",       book: 66352.00,  pct: 1.4362 },
-  { name: "Skip",        book: 3578.00,   pct: 0.0409 },
-  { name: "Barbara J",   book: 108997.12, pct: 0.4137 },
-  { name: "Durham",      book: 138486.80, pct: 0.9051 },
-  { name: "Quillen",     book: 39227.50,  pct: 0.4264 },
-  { name: "Shindell 1",  book: 57996.52,  pct: 0.9206 },
-  { name: "Shindell 2",  book: 13205.60,  pct: 0.8804 },
-  { name: "Stewart H",   book: 57005.00,  pct: 2.7145 },
-  { name: "Fryer",       book: 0,         pct: 0 },
-  { name: "TN/KY",       book: 0,         pct: 0 },
-  { name: "Ervin",       book: 114013.26, pct: 0.5832 },
-  { name: "Kerry",       book: 4075.00,   pct: 0.1663 },
-  { name: "Avella",      book: 2144.00,   pct: 0.0613 },
-  { name: "Robertson",   book: 5080.00,   pct: 0.2073 },
-  { name: "Jastal",      book: 2373.00,   pct: 0.2373 },
-  { name: "WI/IL",       book: 0,         pct: 0 },
+  { name: "Internet",        book: 58406.18,  pct: 0.5186 },
+  { name: "Hospitality",     book: 154754.19, pct: 5.9521 },
+  { name: "House",           book: 66352.00,  pct: 1.4362 },
+  { name: "Skip Camillo",    book: 3578.00,   pct: 0.0409 },
+  { name: "Jordan Shindell", book: 71202.12,  pct: 0.9005 },
+  { name: "Brent H",         book: 0,         pct: 0 },
+  { name: "S Hunt",          book: 57005.00,  pct: 2.7145 },
+  { name: "Bruce Q",         book: 39227.50,  pct: 0.4264 },
+  { name: "Mike D",          book: 0,         pct: 0 },
+  { name: "Gary Fryer",      book: 0,         pct: 0 },
+  { name: "TN/KY",           book: 0,         pct: 0 },
+  { name: "MS/LA",           book: 0,         pct: 0 },
+  { name: "Steven Busk",     book: 0,         pct: 0 },
+  { name: "Dave Ervin",      book: 114013.26, pct: 0.5832 },
+  { name: "Brad R",          book: 5080.00,   pct: 0.2073 },
+  { name: "Peter Avella",    book: 2144.00,   pct: 0.0613 },
+  { name: "MI (open)",       book: 0,         pct: 0 },
+  { name: "Indiana (open)",  book: 0,         pct: 0 },
+  { name: "Justin",          book: 0,         pct: 0 },
 ];
 
 // Maps each manager (lowercased) to the REP_BOOK rep names they oversee.
 // Drives the "Filter by Rep" dropdown when a manager is selected at the page level.
 const MANAGER_TO_REPS: Record<string, string[]> = {
-  "sergio":            ["Sergio"],
-  "chris de lisa":     ["Skip", "House"],
-  "will grisack":      ["Durham", "Quillen", "Shindell 1", "Shindell 2", "Stewart H", "Fryer", "TN/KY", "Barbara J"],
-  "mateo de lisa":     ["Ervin", "Avella", "Robertson"],
-  "justin jeangerard": ["House"],
+  "sergio":            ["Hospitality"],
+  "chris de lisa":     ["Skip Camillo", "House"],
+  "will grisack":      ["Jordan Shindell", "Brent H", "S Hunt", "Bruce Q", "Mike D", "Gary Fryer", "TN/KY", "MS/LA"],
+  "mateo de lisa":     ["Steven Busk", "Dave Ervin", "Brad R", "Peter Avella", "MI (open)", "Indiana (open)"],
+  "justin jeangerard": ["House", "Justin"],
 };
 
 const LINE_BOOK = [
