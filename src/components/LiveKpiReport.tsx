@@ -244,8 +244,30 @@ export function LiveKpiReport({ managerName }: { managerName?: string } = {}) {
       // Real per-rep monthly bookings & invoiced from the spreadsheet
       return REP_MONTHLY[selectedRep.name];
     }
+    // Manager-scoped "All" view: sum the per-rep monthly figures for that manager's reps.
+    if (allowedRepNames && allowedRepNames.length > 0) {
+      const repsWithData = allowedRepNames.filter((n) => REP_MONTHLY[n]);
+      if (repsWithData.length > 0) {
+        return baseMonthly.map((row) => {
+          let b25 = 0, b26p = 0, ytdB = 0, i25 = 0, i26p = 0, ytdI = 0;
+          for (const n of repsWithData) {
+            const r = REP_MONTHLY[n].find((x) => x.m === row.m);
+            if (!r) continue;
+            b25 += r.b25; b26p += r.b26p; ytdB += r.ytdB;
+            i25 += r.i25; i26p += r.i26p; ytdI += r.ytdI;
+          }
+          return { m: row.m, b25, b26p, ytdB, i25, i26p, ytdI };
+        });
+      }
+      // Fallback: scale team totals by manager's share
+      return baseMonthly.map((r) => ({
+        ...r,
+        b25: r.b25 * repShare, b26p: r.b26p * repShare, ytdB: r.ytdB * repShare,
+        i25: r.i25 * repShare, i26p: r.i26p * repShare, ytdI: r.ytdI * repShare,
+      }));
+    }
     return baseMonthly;
-  }, [selectedRep, baseMonthly]);
+  }, [selectedRep, baseMonthly, allowedRepNames, repShare]);
 
   const scaledLine = useMemo(() => baseLine.map((r) => ({
     ...r,
