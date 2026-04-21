@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Map as MapIcon, Store, ArrowLeft, Filter, X, DollarSign, Target, TrendingUp, TrendingDown, CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Map as MapIcon, Store, ArrowLeft, Filter, X, DollarSign, Target, TrendingUp, TrendingDown, CalendarIcon, ChevronLeft, ChevronRight, Lightbulb, Wind, Leaf, Package, Warehouse } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,16 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-type DetailView = null | "territories" | "dealers" | "ytd-bookings" | "ytd-goal";
+type DetailView = null | "territories" | "dealers" | "ytd-bookings" | "ytd-goal" | "line-report";
+
+type LineKey = "lux26" | "sw26" | "fl26" | "dc-total" | "wc-total";
+const LINE_TILES: { key: LineKey; label: string; icon: typeof Lightbulb; tone: string }[] = [
+  { key: "lux26",    label: "Lux 26",    icon: Lightbulb, tone: "bg-primary/10 text-primary" },
+  { key: "sw26",     label: "SW 26",     icon: Wind,      tone: "bg-primary/10 text-primary" },
+  { key: "fl26",     label: "FL 26",     icon: Leaf,      tone: "bg-primary/10 text-primary" },
+  { key: "dc-total", label: "DC Total",  icon: Package,   tone: "bg-accent/20 text-accent-foreground" },
+  { key: "wc-total", label: "WC Total",  icon: Warehouse, tone: "bg-accent/20 text-accent-foreground" },
+];
 
 export default function ManagersPage() {
   const { data: managers = [], isLoading: mgrLoading } = useManagers();
