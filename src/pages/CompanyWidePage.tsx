@@ -55,6 +55,7 @@ export default function CompanyWidePage() {
   const location = useLocation();
   const reportParam = params.get("report") as ReportKey | null;
   const managerParam = params.get("manager") ?? "all";
+  const [collapsed, setCollapsed] = useState(false);
 
   // Deep-link old routes
   const pathDefault: ReportKey | null =
