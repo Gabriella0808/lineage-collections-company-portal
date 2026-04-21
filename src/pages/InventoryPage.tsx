@@ -366,7 +366,7 @@ export default function InventoryPage() {
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Available <ArrowUpDown className="h-3 w-3" /></span></th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Avg Mo. Sales <ArrowUpDown className="h-3 w-3" /></span></th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Mo. Supply <ArrowUpDown className="h-3 w-3" /></span></th>
-                <th className="text-right px-4 py-3 font-medium">Link</th>
+                
               </tr>
             </thead>
             <tbody>
