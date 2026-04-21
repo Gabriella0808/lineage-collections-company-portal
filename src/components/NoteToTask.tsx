@@ -41,11 +41,10 @@ export function NoteToTask({ refType, refName, refId }: NoteToTaskProps) {
     }
 
     setSubmitting(true);
-    const label = refType === "rep" ? "Rep" : "Dealer";
     const { error } = await supabase.from("manager_tasks").insert({
       user_id: user.id,
       title: `Note re: ${refName}`,
-      description: `[${label}: ${refName} · ${refId}]\n\n${trimmed}`,
+      description: trimmed,
       status: "todo",
     });
     setSubmitting(false);
