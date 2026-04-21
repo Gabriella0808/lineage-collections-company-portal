@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams, useLocation } from "react-router-dom";
 import {
   BarChart3, BookOpen, Receipt, Map as MapIcon, Store,
   Lightbulb, Wind, Leaf, Package, Warehouse, ChevronRight,
+  PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
