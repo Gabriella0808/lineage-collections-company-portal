@@ -6,6 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { inventoryItems, type InventoryStatus } from "@/data/inventoryMock";
 import { cn } from "@/lib/utils";
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
+} from "recharts";
+
+const STATUS_COLORS: Record<string, string> = {
+  "Fast Moving": "hsl(var(--success))",
+  "Liquidate": "hsl(var(--foreground))",
+  "Out of Stock": "hsl(var(--destructive))",
+  "Critical": "hsl(var(--destructive))",
+  "Overstock": "hsl(var(--accent))",
+  "Reorder Soon": "hsl(var(--warning))",
+  "Stockout Risk": "hsl(var(--warning))",
+  "Healthy": "hsl(var(--success))",
+};
 
 const STATUS_FILTERS: { key: "all" | InventoryStatus; label: string; tone?: string }[] = [
   { key: "all", label: "All SKUs" },
