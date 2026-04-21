@@ -277,25 +277,18 @@ export function LiveKpiReport({ managerName }: { managerName?: string } = {}) {
   };
 
   const scaledMonthly = useMemo(() => {
-    if (selectedRep && REP_MONTHLY[selectedRep.name]) {
-      // Real per-rep monthly bookings & invoiced from the spreadsheet
-      return REP_MONTHLY[selectedRep.name];
+    if (selectedRep) {
+      const keys = REP_NAME_TO_MONTHLY_KEYS[selectedRep.name];
+      const rows = keys ? sumRepMonthly(keys) : null;
+      if (rows) return rows;
+      // No spreadsheet data for this rep — show zeros (don't fall back to team totals)
+      return baseMonthly.map((r) => ({ m: r.m, b25: 0, b26p: 0, ytdB: 0, i25: 0, i26p: 0, ytdI: 0 }));
     }
     // Manager-scoped "All" view: sum the per-rep monthly figures for that manager's reps.
     if (allowedRepNames && allowedRepNames.length > 0) {
-      const repsWithData = allowedRepNames.filter((n) => REP_MONTHLY[n]);
-      if (repsWithData.length > 0) {
-        return baseMonthly.map((row) => {
-          let b25 = 0, b26p = 0, ytdB = 0, i25 = 0, i26p = 0, ytdI = 0;
-          for (const n of repsWithData) {
-            const r = REP_MONTHLY[n].find((x) => x.m === row.m);
-            if (!r) continue;
-            b25 += r.b25; b26p += r.b26p; ytdB += r.ytdB;
-            i25 += r.i25; i26p += r.i26p; ytdI += r.ytdI;
-          }
-          return { m: row.m, b25, b26p, ytdB, i25, i26p, ytdI };
-        });
-      }
+      const allKeys = allowedRepNames.flatMap((n) => REP_NAME_TO_MONTHLY_KEYS[n] ?? []);
+      const summed = sumRepMonthly(allKeys);
+      if (summed) return summed;
       // Fallback: scale team totals by manager's share
       return baseMonthly.map((r) => ({
         ...r,
