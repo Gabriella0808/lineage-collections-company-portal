@@ -16,6 +16,12 @@ const BatchPayloadSchema = z.object({
   batches: z.array(SyncPayloadSchema).min(1).max(20),
 });
 
+const PrunePayloadSchema = z.object({
+  action: z.literal("prune"),
+  table: z.enum(["inventory"]),
+  keep_acctivate_ids: z.array(z.string()).max(50000),
+});
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
