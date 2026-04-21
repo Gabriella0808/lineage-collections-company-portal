@@ -259,7 +259,7 @@ export default function InventoryPage() {
         <div className="flex flex-wrap items-center gap-2">
           {STATUS_FILTERS.map((f) => {
             const active = filter === f.key;
-            const count = f.key === "all" ? inventoryItems.length : inventoryItems.filter((i) => i.status === f.key).length;
+            const count = f.key === "all" ? items.length : items.filter((i) => i.status === f.key).length;
             return (
               <Button
                 key={f.key}
