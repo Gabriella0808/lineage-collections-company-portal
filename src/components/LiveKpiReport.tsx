@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { formatCurrency } from "@/hooks/usePortalData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Pencil } from "lucide-react";
-import { REP_MONTHLY } from "@/data/repMonthly";
+import { REP_MONTHLY, type RepMonthRow } from "@/data/repMonthly";
 
 const PROJ_STORAGE_KEY = "kpi_projections_2026_v1";
 
@@ -103,6 +103,42 @@ const REP_BOOK = [
   { name: "Indiana (open)",   book: 0,         pct: 0 },
   { name: "Justin",           book: 0,         pct: 0 },
 ];
+
+// Maps display rep names (REP_BOOK) → keys in REP_MONTHLY (spreadsheet tabs).
+// When a rep has multiple tabs (e.g. Shindell 1 + 2), list them all and they'll be summed.
+const REP_NAME_TO_MONTHLY_KEYS: Record<string, string[]> = {
+  "Internet":         ["Internet"],
+  "Hospitality":      ["Sergio"],
+  "House":            ["House"],
+  "Skip Camillo":     ["Skip"],
+  "Jordan Shindell":  ["Shindell 1", "Shindell 2"],
+  "Stewart Hunt":     ["Stewart H"],
+  "Bruce Quillen":    ["Quillen"],
+  "Mike Durham":      ["Durham"],
+  "Gary Fryer":       ["Fryer"],
+  "TN/KY":            ["TN/KY"],
+  "Dave Ervin":       ["Ervin"],
+  "Brad Robertson":   ["Robertson"],
+  "Peter Avella":     ["Avella"],
+  // No spreadsheet data for: Brent Holbrook, MS/LA, Steven Busk, MI (open), Indiana (open), Justin
+};
+
+function sumRepMonthly(keys: string[]): RepMonthRow[] | null {
+  const tabs = keys.map((k) => REP_MONTHLY[k]).filter(Boolean);
+  if (tabs.length === 0) return null;
+  if (tabs.length === 1) return tabs[0];
+  // Sum across multiple tabs by month
+  return tabs[0].map((row, i) => {
+    let b25 = 0, b26p = 0, ytdB = 0, i25 = 0, i26p = 0, ytdI = 0;
+    for (const t of tabs) {
+      const r = t[i] ?? t.find((x) => x.m === row.m);
+      if (!r) continue;
+      b25 += r.b25; b26p += r.b26p; ytdB += r.ytdB;
+      i25 += r.i25; i26p += r.i26p; ytdI += r.ytdI;
+    }
+    return { m: row.m, b25, b26p, ytdB, i25, i26p, ytdI };
+  });
+}
 
 // Maps each manager (lowercased) to the REP_BOOK rep names they oversee.
 // Drives the "Filter by Rep" dropdown when a manager is selected at the page level.
@@ -241,25 +277,18 @@ export function LiveKpiReport({ managerName }: { managerName?: string } = {}) {
   };
 
   const scaledMonthly = useMemo(() => {
-    if (selectedRep && REP_MONTHLY[selectedRep.name]) {
-      // Real per-rep monthly bookings & invoiced from the spreadsheet
-      return REP_MONTHLY[selectedRep.name];
+    if (selectedRep) {
+      const keys = REP_NAME_TO_MONTHLY_KEYS[selectedRep.name];
+      const rows = keys ? sumRepMonthly(keys) : null;
+      if (rows) return rows;
+      // No spreadsheet data for this rep — show zeros (don't fall back to team totals)
+      return baseMonthly.map((r) => ({ m: r.m, b25: 0, b26p: 0, ytdB: 0, i25: 0, i26p: 0, ytdI: 0 }));
     }
     // Manager-scoped "All" view: sum the per-rep monthly figures for that manager's reps.
     if (allowedRepNames && allowedRepNames.length > 0) {
-      const repsWithData = allowedRepNames.filter((n) => REP_MONTHLY[n]);
-      if (repsWithData.length > 0) {
-        return baseMonthly.map((row) => {
-          let b25 = 0, b26p = 0, ytdB = 0, i25 = 0, i26p = 0, ytdI = 0;
-          for (const n of repsWithData) {
-            const r = REP_MONTHLY[n].find((x) => x.m === row.m);
-            if (!r) continue;
-            b25 += r.b25; b26p += r.b26p; ytdB += r.ytdB;
-            i25 += r.i25; i26p += r.i26p; ytdI += r.ytdI;
-          }
-          return { m: row.m, b25, b26p, ytdB, i25, i26p, ytdI };
-        });
-      }
+      const allKeys = allowedRepNames.flatMap((n) => REP_NAME_TO_MONTHLY_KEYS[n] ?? []);
+      const summed = sumRepMonthly(allKeys);
+      if (summed) return summed;
       // Fallback: scale team totals by manager's share
       return baseMonthly.map((r) => ({
         ...r,
