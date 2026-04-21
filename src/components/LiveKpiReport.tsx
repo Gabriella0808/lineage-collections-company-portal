@@ -104,6 +104,42 @@ const REP_BOOK = [
   { name: "Justin",           book: 0,         pct: 0 },
 ];
 
+// Maps display rep names (REP_BOOK) → keys in REP_MONTHLY (spreadsheet tabs).
+// When a rep has multiple tabs (e.g. Shindell 1 + 2), list them all and they'll be summed.
+const REP_NAME_TO_MONTHLY_KEYS: Record<string, string[]> = {
+  "Internet":         ["Internet"],
+  "Hospitality":      ["Sergio"],
+  "House":            ["House"],
+  "Skip Camillo":     ["Skip"],
+  "Jordan Shindell":  ["Shindell 1", "Shindell 2"],
+  "Stewart Hunt":     ["Stewart H"],
+  "Bruce Quillen":    ["Quillen"],
+  "Mike Durham":      ["Durham"],
+  "Gary Fryer":       ["Fryer"],
+  "TN/KY":            ["TN/KY"],
+  "Dave Ervin":       ["Ervin"],
+  "Brad Robertson":   ["Robertson"],
+  "Peter Avella":     ["Avella"],
+  // No spreadsheet data for: Brent Holbrook, MS/LA, Steven Busk, MI (open), Indiana (open), Justin
+};
+
+function sumRepMonthly(keys: string[]): RepMonthRow[] | null {
+  const tabs = keys.map((k) => REP_MONTHLY[k]).filter(Boolean);
+  if (tabs.length === 0) return null;
+  if (tabs.length === 1) return tabs[0];
+  // Sum across multiple tabs by month
+  return tabs[0].map((row, i) => {
+    let b25 = 0, b26p = 0, ytdB = 0, i25 = 0, i26p = 0, ytdI = 0;
+    for (const t of tabs) {
+      const r = t[i] ?? t.find((x) => x.m === row.m);
+      if (!r) continue;
+      b25 += r.b25; b26p += r.b26p; ytdB += r.ytdB;
+      i25 += r.i25; i26p += r.i26p; ytdI += r.ytdI;
+    }
+    return { m: row.m, b25, b26p, ytdB, i25, i26p, ytdI };
+  });
+}
+
 // Maps each manager (lowercased) to the REP_BOOK rep names they oversee.
 // Drives the "Filter by Rep" dropdown when a manager is selected at the page level.
 const MANAGER_TO_REPS: Record<string, string[]> = {
