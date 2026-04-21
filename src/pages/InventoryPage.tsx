@@ -161,6 +161,78 @@ export default function InventoryPage() {
         <StatTile label="Fast Moving" value={counts.fast} icon={Zap} accent="text-success" />
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-5">
+          <h2 className="text-base font-semibold mb-3">Status Distribution</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={statusDistribution} dataKey="value" nameKey="name" innerRadius={50} outerRadius={85} paddingAngle={2}>
+                  {statusDistribution.map((entry) => (
+                    <Cell key={entry.name} fill={STATUS_COLORS[entry.name] ?? "hsl(var(--muted-foreground))"} />
+                  ))}
+                </Pie>
+                <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-2">
+            {statusDistribution.map((s) => (
+              <span key={s.name} className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm" style={{ background: STATUS_COLORS[s.name] ?? "hsl(var(--muted-foreground))" }} />
+                <span className="text-muted-foreground">{s.name}</span>
+              </span>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="text-base font-semibold mb-3">Collections: Critical vs Healthy</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={collectionsHealth} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis type="category" dataKey="collection" width={80} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="critical" stackId="a" fill="hsl(var(--destructive))" name="Critical" />
+                <Bar dataKey="healthy" stackId="a" fill="hsl(var(--success))" name="Healthy" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="text-base font-semibold mb-3">Lowest Months of Supply</h2>
+          {lowestSupply.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">No low-supply items</div>
+          ) : (
+            <ul className="space-y-2.5">
+              {lowestSupply.map((it) => {
+                const mos = it.monthsSupply ?? 0;
+                const pct = Math.min(100, (mos / 6) * 100);
+                const tone = mos < 1 ? "bg-destructive" : mos < 2 ? "bg-warning" : "bg-success";
+                return (
+                  <li key={it.sku}>
+                    <div className="flex items-baseline justify-between text-sm">
+                      <div className="min-w-0 truncate">
+                        <span className="font-medium">{it.product}</span>
+                        <span className="text-muted-foreground"> · {it.collection}</span>
+                      </div>
+                      <span className="tabular-nums font-semibold ml-2">{mos.toFixed(1)} mo</span>
+                    </div>
+                    <div className="h-1.5 mt-1 rounded-full bg-muted overflow-hidden">
+                      <div className={cn("h-full", tone)} style={{ width: `${pct}%` }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+      </div>
+
       {collectionsAttention.length > 0 && (
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
