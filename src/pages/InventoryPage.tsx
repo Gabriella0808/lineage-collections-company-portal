@@ -150,9 +150,19 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="page-header">
-        <h1 className="page-title">Inventory</h1>
-        <p className="page-subtitle">SKU master — health snapshot. Currently using sample data; Acctivate feed will replace once cleaned.</p>
+      <div className="page-header flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="page-title">Inventory</h1>
+          <p className="page-subtitle">
+            SKU master — health snapshot.{" "}
+            {usingMock
+              ? "Showing sample data — Acctivate sync hasn't run yet."
+              : lastSyncedAt
+                ? `Last synced ${new Date(lastSyncedAt).toLocaleString()}`
+                : "Synced from Acctivate."}
+          </p>
+        </div>
+        {loading && <span className="text-xs text-muted-foreground">Loading…</span>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
