@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const { data: signIns = [] } = useSignInFeed(8);
   const { data: dealerSales = [], isLoading: salesLoading } = useDealerSales();
   const { data: repTerritories = [] } = useRepTerritories();
+  const { data: managers = [] } = useManagers();
 
   const isLoading = repsLoading || terLoading || dlrLoading || salesLoading;
 
