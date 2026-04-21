@@ -350,14 +350,27 @@ export default function InventoryPage() {
             );
           })}
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search SKU, product, collection…"
-            className="pl-8 h-9"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
+            value={supplierFilter}
+            onChange={(e) => setSupplierFilter(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Filter by supplier"
+          >
+            <option value="all">All suppliers</option>
+            {allSuppliers.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search SKU, product, collection…"
+              className="pl-8 h-9"
+            />
+          </div>
         </div>
       </div>
 
