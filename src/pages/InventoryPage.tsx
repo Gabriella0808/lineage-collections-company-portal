@@ -338,7 +338,7 @@ export default function InventoryPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((it) => {
+              {paged.map((it) => {
                 const lowQty = it.onHand <= 4;
                 return (
                   <tr key={it.sku} className="border-t border-border hover:bg-muted/30">
