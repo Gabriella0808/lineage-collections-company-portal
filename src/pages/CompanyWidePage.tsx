@@ -35,13 +35,6 @@ const REPORT_GROUPS: ReportGroup[] = [
     ],
   },
   {
-    label: "Coverage",
-    items: [
-      { key: "territories", label: "Territories", icon: MapIcon, description: "Rep × territory performance & travel" },
-      { key: "dealers", label: "Dealers", icon: Store, description: "Dealer revenue & engagement" },
-    ],
-  },
-  {
     label: "Lines & Channels",
     items: [
       { key: "lux26",    label: "Lux 26",    icon: Lightbulb, description: "Lux line — YTD performance" },
