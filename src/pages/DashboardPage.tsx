@@ -254,27 +254,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Row: Reps by Territory + Top Dealers by Revenue */}
-      <div className="grid lg:grid-cols-2 gap-5 mb-6">
-        <div className="glass-card p-5">
-          <h3 className="text-sm font-semibold mb-4">Reps by Territory</h3>
-          <div className="h-[280px]">
-            {repsPerTerritory.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={repsPerTerritory}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={50} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="hsl(220 35% 22%)" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center pt-20">No territory data yet.</p>
-            )}
-          </div>
-        </div>
-
+      {/* Row: Top Dealers by Revenue */}
+      <div className="mb-6">
         <div className="glass-card p-5">
           <h3 className="text-sm font-semibold mb-4">Top Dealers by Revenue ($K) — {currentYear}</h3>
           <div className="h-[280px]">
