@@ -9,7 +9,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type InventoryStatus } from "@/data/inventoryMock";
 import { useInventory } from "@/hooks/useInventory";
-import { ReorderAnalysis } from "@/components/ReorderAnalysis";
 import { cn } from "@/lib/utils";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip,
@@ -322,8 +321,6 @@ export default function InventoryPage() {
           </div>
         </Card>
       )}
-
-      <ReorderAnalysis items={items} />
 
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap items-center gap-2">
