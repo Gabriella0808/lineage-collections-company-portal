@@ -92,11 +92,42 @@ export default function DashboardPage() {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
 
-  const attentionItems = [
-    ...reps.filter(r => (r.tasks_overdue ?? 0) > 3).map(r => ({ label: `${r.name} — ${r.tasks_overdue} overdue tasks`, type: 'rep' as const })),
-    ...territories.filter(t => t.status === 'underperforming' || t.status === 'at-risk').map(t => ({ label: `${t.name} — ${t.status}`, type: 'territory' as const })),
-    ...dealers.filter(d => d.status === 'at-risk').map(d => ({ label: `${d.name} — at risk`, type: 'dealer' as const })),
-  ];
+  // Top reps by total sales (horizontal bar)
+  const topRepsBar = Object.entries(repRevenueMap)
+    .map(([repId, revenue]) => ({ repId, revenue }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 8)
+    .map(({ repId, revenue }) => {
+      const rep = reps.find(r => r.id === repId);
+      const first = (rep?.name ?? 'Unknown').split(' ')[0];
+      return { name: first, revenue: Math.round(revenue) };
+    });
+
+  // Accounts by Sales Manager (donut)
+  const MANAGER_COLORS = ['hsl(38 75% 50%)', 'hsl(152 60% 40%)', 'hsl(220 35% 22%)', 'hsl(265 50% 55%)', 'hsl(0 65% 55%)'];
+  const managerAccountsMap: Record<string, number> = {};
+  dealers.forEach(d => {
+    const rep = reps.find(r => r.id === d.rep_id);
+    const managerId = rep?.manager_id ?? 'unassigned';
+    managerAccountsMap[managerId] = (managerAccountsMap[managerId] ?? 0) + 1;
+  });
+  const managerDonut = Object.entries(managerAccountsMap)
+    .map(([managerId, count]) => {
+      const mgr = managers.find(m => m.id === managerId);
+      const initials = mgr ? mgr.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 3) : 'N/A';
+      return { name: initials, value: count, fullName: mgr?.name ?? 'Unassigned' };
+    })
+    .filter(m => m.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  // Reps per Territory (vertical bar)
+  const repsPerTerritory = territories
+    .map(t => {
+      const count = repTerritories.filter(rt => rt.territory_id === t.id).length;
+      return { name: t.name, count };
+    })
+    .filter(t => t.count > 0)
+    .sort((a, b) => b.count - a.count);
 
   
 
