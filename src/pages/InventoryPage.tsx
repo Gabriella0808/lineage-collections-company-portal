@@ -369,6 +369,26 @@ export default function InventoryPage() {
             </tbody>
           </table>
         </div>
+        {filtered.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border text-sm">
+            <div className="text-muted-foreground">
+              Showing <span className="font-medium text-foreground">{(currentPage - 1) * PAGE_SIZE + 1}</span>–
+              <span className="font-medium text-foreground">{Math.min(currentPage * PAGE_SIZE, filtered.length)}</span> of{" "}
+              <span className="font-medium text-foreground">{filtered.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="h-8" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
+                Previous
+              </Button>
+              <span className="text-muted-foreground tabular-nums">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button size="sm" variant="outline" className="h-8" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
