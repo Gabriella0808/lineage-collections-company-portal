@@ -183,7 +183,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-lg font-bold tabular-nums">{formatCurrency(rep.revenue)}</p>
-                    <p className="text-[11px] font-medium text-emerald-600 flex items-center justify-end gap-0.5">
+                    <p className="text-[11px] font-medium text-success flex items-center justify-end gap-0.5">
                       <ArrowUp className="h-3 w-3" /> Tracking
                     </p>
                   </div>
