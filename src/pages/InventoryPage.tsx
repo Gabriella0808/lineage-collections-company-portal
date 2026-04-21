@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Package, XCircle, RefreshCw, Zap, Search, ExternalLink, TrendingDown, ArrowUpDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +74,8 @@ function StatTile({ label, value, icon: Icon, accent, hint }: { label: string; v
 export default function InventoryPage() {
   const [filter, setFilter] = useState<"all" | InventoryStatus>("all");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   const { items, loading, refreshing, lastSyncedAt, lastFetchedAt, usingMock, refresh } = useInventory();
 
   const counts = useMemo(() => {
@@ -97,6 +99,15 @@ export default function InventoryPage() {
       return true;
     });
   }, [filter, query, items]);
+
+  useEffect(() => { setPage(1); }, [filter, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage],
+  );
 
   const collectionsAttention = useMemo(() => {
     const map = new Map<string, { needs: number; total: number }>();
@@ -327,7 +338,7 @@ export default function InventoryPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((it) => {
+              {paged.map((it) => {
                 const lowQty = it.onHand <= 4;
                 return (
                   <tr key={it.sku} className="border-t border-border hover:bg-muted/30">
@@ -358,6 +369,26 @@ export default function InventoryPage() {
             </tbody>
           </table>
         </div>
+        {filtered.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border text-sm">
+            <div className="text-muted-foreground">
+              Showing <span className="font-medium text-foreground">{(currentPage - 1) * PAGE_SIZE + 1}</span>–
+              <span className="font-medium text-foreground">{Math.min(currentPage * PAGE_SIZE, filtered.length)}</span> of{" "}
+              <span className="font-medium text-foreground">{filtered.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="h-8" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
+                Previous
+              </Button>
+              <span className="text-muted-foreground tabular-nums">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button size="sm" variant="outline" className="h-8" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
