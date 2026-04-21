@@ -80,6 +80,7 @@ export default function InventoryPage() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
   const [collectionFilter, setCollectionFilter] = useState<Set<string> | null>(null); // null = all
+  const [supplierFilter, setSupplierFilter] = useState<string>("all"); // "all" or specific supplier name
   const { items, loading, refreshing, lastSyncedAt, lastFetchedAt, usingMock, refresh } = useInventory();
 
   const counts = useMemo(() => {
@@ -93,18 +94,25 @@ export default function InventoryPage() {
     return c;
   }, [items]);
 
+  const allSuppliers = useMemo(() => {
+    const s = new Set<string>();
+    for (const it of items) if (it.supplier) s.add(it.supplier);
+    return Array.from(s).sort();
+  }, [items]);
+
   const filtered = useMemo(() => {
     return items.filter((it) => {
       if (filter !== "all" && it.status !== filter) return false;
+      if (supplierFilter !== "all" && it.supplier !== supplierFilter) return false;
       if (query) {
         const q = query.toLowerCase();
         if (!it.sku.toLowerCase().includes(q) && !it.product.toLowerCase().includes(q) && !it.collection.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [filter, query, items]);
+  }, [filter, query, items, supplierFilter]);
 
-  useEffect(() => { setPage(1); }, [filter, query]);
+  useEffect(() => { setPage(1); }, [filter, query, supplierFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -342,14 +350,27 @@ export default function InventoryPage() {
             );
           })}
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search SKU, product, collection…"
-            className="pl-8 h-9"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
+            value={supplierFilter}
+            onChange={(e) => setSupplierFilter(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Filter by supplier"
+          >
+            <option value="all">All suppliers</option>
+            {allSuppliers.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search SKU, product, collection…"
+              className="pl-8 h-9"
+            />
+          </div>
         </div>
       </div>
 
