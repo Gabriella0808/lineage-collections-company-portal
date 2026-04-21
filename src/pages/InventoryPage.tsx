@@ -9,7 +9,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type InventoryStatus } from "@/data/inventoryMock";
 import { useInventory } from "@/hooks/useInventory";
-import { ReorderAnalysis } from "@/components/ReorderAnalysis";
 import { cn } from "@/lib/utils";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip,
