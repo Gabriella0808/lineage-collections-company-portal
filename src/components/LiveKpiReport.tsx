@@ -216,10 +216,17 @@ export function LiveKpiReport({ managerName }: { managerName?: string } = {}) {
   })), [overrides]);
 
   // Per-rep slicing: when a rep is selected, use that rep's actual monthly figures
-  // from the spreadsheet (REP_MONTHLY). Otherwise use the team Summary totals.
+  // from the spreadsheet (REP_MONTHLY). Otherwise use the team Summary totals
+  // (or the sum of the manager's reps when scoped to a manager).
   const totalRepBook = REP_BOOK.reduce((s, r) => s + r.book, 0);
   const selectedRep = repFilter === "all" ? null : REP_BOOK.find((r) => r.name === repFilter) ?? null;
-  const repShare = selectedRep ? (totalRepBook > 0 ? selectedRep.book / totalRepBook : 0) : 1;
+  const managerRepBook = useMemo(
+    () => visibleReps.reduce((s, r) => s + r.book, 0),
+    [visibleReps],
+  );
+  const repShare = selectedRep
+    ? (totalRepBook > 0 ? selectedRep.book / totalRepBook : 0)
+    : (allowedRepNames === null ? 1 : (totalRepBook > 0 ? managerRepBook / totalRepBook : 0));
 
   // Edits to per-rep projections aren't persisted back to the team total (real per-rep
   // numbers come from the spreadsheet). For "All" view we still write through to MONTHLY.
