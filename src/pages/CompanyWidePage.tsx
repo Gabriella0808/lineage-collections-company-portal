@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import {
   BarChart3, BookOpen, Receipt, Map as MapIcon, Store,
   Lightbulb, Wind, Leaf, Package, Warehouse, ChevronRight,
@@ -57,9 +57,19 @@ const ALL_REPORT_KEYS = REPORT_GROUPS.flatMap((g) => g.items.map((i) => i.key));
 
 export default function CompanyWidePage() {
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
   const reportParam = params.get("report") as ReportKey | null;
   const managerParam = params.get("manager") ?? "all";
-  const activeReport: ReportKey = reportParam && ALL_REPORT_KEYS.includes(reportParam) ? reportParam : "live-kpi";
+
+  // Deep-link old routes
+  const pathDefault: ReportKey | null =
+    location.pathname === "/reports/bookings" ? "bookings" :
+    location.pathname === "/reports/invoicing" ? "invoicing" :
+    location.pathname === "/kpi" ? "live-kpi" : null;
+
+  const activeReport: ReportKey = reportParam && ALL_REPORT_KEYS.includes(reportParam)
+    ? reportParam
+    : (pathDefault ?? "live-kpi");
 
   const { data: managers = [] } = useManagers();
   const visibleManagers = useMemo(
