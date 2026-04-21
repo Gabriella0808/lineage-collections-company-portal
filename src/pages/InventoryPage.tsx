@@ -228,7 +228,63 @@ export default function InventoryPage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-base font-semibold mb-3">Collections: Critical vs Healthy</h2>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-base font-semibold">Collections: Critical vs Healthy</h2>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                  {collectionFilter === null
+                    ? "All collections"
+                    : `${collectionFilter.size} selected`}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-2">
+                <div className="flex items-center justify-between px-2 py-1.5 text-xs">
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    onClick={() => setCollectionFilter(null)}
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:underline"
+                    onClick={() => setCollectionFilter(new Set())}
+                  >
+                    Clear
+                  </button>
+                </div>
+                <ScrollArea className="h-64">
+                  <div className="space-y-1 pr-2">
+                    {allCollections.map((c) => {
+                      const checked = collectionFilter === null ? true : collectionFilter.has(c);
+                      return (
+                        <label
+                          key={c}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer text-sm"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              setCollectionFilter((prev) => {
+                                const base = prev === null ? new Set(allCollections) : new Set(prev);
+                                if (v) base.add(c);
+                                else base.delete(c);
+                                return base;
+                              });
+                            }}
+                          />
+                          <span className="truncate">{c}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={collectionsHealth} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 4 }}>
