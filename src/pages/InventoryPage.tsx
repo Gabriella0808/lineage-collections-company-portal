@@ -74,7 +74,7 @@ function StatTile({ label, value, icon: Icon, accent, hint }: { label: string; v
 export default function InventoryPage() {
   const [filter, setFilter] = useState<"all" | InventoryStatus>("all");
   const [query, setQuery] = useState("");
-  const { items, loading, lastSyncedAt, usingMock } = useInventory();
+  const { items, loading, refreshing, lastSyncedAt, lastFetchedAt, usingMock, refresh } = useInventory();
 
   const counts = useMemo(() => {
     const c = { total: items.length, critical: 0, outOfStock: 0, reorder: 0, fast: 0 };
@@ -160,9 +160,23 @@ export default function InventoryPage() {
               : lastSyncedAt
                 ? `Last synced ${new Date(lastSyncedAt).toLocaleString()}`
                 : "Synced from Acctivate."}
+            {lastFetchedAt && !usingMock && (
+              <span className="text-xs text-muted-foreground ml-2">
+                · refreshed {new Date(lastFetchedAt).toLocaleTimeString()}
+              </span>
+            )}
           </p>
         </div>
-        {loading && <span className="text-xs text-muted-foreground">Loading…</span>}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => refresh()}
+          disabled={loading || refreshing}
+          className="h-9"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", refreshing && "animate-spin")} />
+          {refreshing ? "Refreshing…" : "Refresh inventory"}
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">

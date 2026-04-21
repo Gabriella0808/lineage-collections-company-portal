@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { InventoryItem, InventoryStatus } from "@/data/inventoryMock";
 import { inventoryItems as mockInventory } from "@/data/inventoryMock";
@@ -40,27 +40,25 @@ function normalizeStatus(raw: string | null, onHand: number, monthsSupply: numbe
 export function useInventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState<string | null>(null);
   const [usingMock, setUsingMock] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data, error } = await supabase
-        .from("inventory")
-        .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at")
-        .order("status", { ascending: true })
-        .limit(1000);
+  const load = useCallback(async (mode: "initial" | "refresh") => {
+    if (mode === "refresh") setRefreshing(true);
 
-      if (!active) return;
+    const { data, error } = await supabase
+      .from("inventory")
+      .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at")
+      .order("status", { ascending: true })
+      .limit(1000);
 
-      if (error || !data || data.length === 0) {
-        setItems(mockInventory);
-        setUsingMock(true);
-        setLoading(false);
-        return;
-      }
-
+    if (error || !data || data.length === 0) {
+      setItems(mockInventory);
+      setUsingMock(true);
+      setLastSyncedAt(null);
+    } else {
       const rows = (data as DbInventoryRow[]).map((r) => {
         const onHand = Number(r.on_hand ?? 0);
         const available = Number(r.available ?? 0);
@@ -90,10 +88,18 @@ export function useInventory() {
       setItems(rows);
       setLastSyncedAt(newest);
       setUsingMock(false);
-      setLoading(false);
-    })();
-    return () => { active = false; };
+    }
+
+    setLastFetchedAt(new Date().toISOString());
+    setLoading(false);
+    setRefreshing(false);
   }, []);
 
-  return { items, loading, lastSyncedAt, usingMock };
+  useEffect(() => {
+    void load("initial");
+  }, [load]);
+
+  const refresh = useCallback(() => load("refresh"), [load]);
+
+  return { items, loading, refreshing, lastSyncedAt, lastFetchedAt, usingMock, refresh };
 }
