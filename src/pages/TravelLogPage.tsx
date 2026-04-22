@@ -207,6 +207,32 @@ export default function TravelLogPage() {
     return tripsByDay.get(key) ?? [];
   }, [selectedDate, tripsByDay]);
 
+  // Last traveled per salesperson (most recent trip overall)
+  const lastTraveled = useMemo(() => {
+    const m = new Map<string, TravelEntry>();
+    for (const t of travel) {
+      const key = t.salesperson_name || t.rep_id || t.id;
+      const cur = m.get(key);
+      if (!cur || cur.travel_date < t.travel_date) m.set(key, t);
+    }
+    return Array.from(m.values()).sort((a, b) =>
+      a.travel_date < b.travel_date ? 1 : -1,
+    );
+  }, [travel]);
+
+  const [detailTrip, setDetailTrip] = useState<TravelEntry | null>(null);
+
+  const daysAgo = (iso: string) => {
+    const ms = Date.now() - parseISO(iso).getTime();
+    const d = Math.floor(ms / (1000 * 60 * 60 * 24));
+    if (d <= 0) return "today";
+    if (d === 1) return "yesterday";
+    if (d < 7) return `${d}d ago`;
+    if (d < 30) return `${Math.floor(d / 7)}w ago`;
+    if (d < 365) return `${Math.floor(d / 30)}mo ago`;
+    return `${Math.floor(d / 365)}y ago`;
+  };
+
   // Salesperson list for legend
   const peopleInMonth = useMemo(() => {
     const set = new Map<string, string>(); // name -> color
@@ -444,6 +470,66 @@ export default function TravelLogPage() {
         )}
       </Card>
 
+      {/* Last traveled per salesperson */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Plane className="h-4 w-4 text-primary" /> Last traveled
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            {lastTraveled.length} {lastTraveled.length === 1 ? "person" : "people"}
+          </span>
+        </div>
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : lastTraveled.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">No travel records yet.</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {lastTraveled.map((t) => {
+              const start = parseISO(t.travel_date);
+              const end = t.travel_end_date ? parseISO(t.travel_end_date) : start;
+              const isMulti = !isSameDay(start, end);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setDetailTrip(t)}
+                  className="text-left rounded-lg border p-3 hover:border-primary hover:bg-accent/40 transition-colors group"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: colorFor(t.salesperson_name) }}
+                      />
+                      <p className="font-medium text-sm truncate group-hover:text-primary">
+                        {t.salesperson_name ?? "Unknown"}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+                      {daysAgo(t.travel_date)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <CalendarDays className="h-3 w-3" />
+                    {isMulti
+                      ? `${format(start, "MMM d")} → ${format(end, "MMM d, yyyy")}`
+                      : format(start, "MMM d, yyyy")}
+                  </p>
+                  {t.purpose && (
+                    <p className="text-xs mt-1 line-clamp-1 flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                      {t.purpose}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
       {/* Trip Details for selected date */}
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
@@ -524,6 +610,82 @@ export default function TravelLogPage() {
           </div>
         )}
       </Card>
+
+      {/* Trip detail dialog (from Last traveled) */}
+      <Dialog open={!!detailTrip} onOpenChange={(o) => !o && setDetailTrip(null)}>
+        <DialogContent className="sm:max-w-lg">
+          {detailTrip && (() => {
+            const start = parseISO(detailTrip.travel_date);
+            const end = detailTrip.travel_end_date ? parseISO(detailTrip.travel_end_date) : start;
+            const isMulti = !isSameDay(start, end);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <span
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: colorFor(detailTrip.salesperson_name) }}
+                    />
+                    {detailTrip.salesperson_name ?? "Unknown"}
+                  </DialogTitle>
+                  <DialogDescription>Travel details</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1 mb-1">
+                      <CalendarDays className="h-3 w-3" /> Dates
+                    </p>
+                    <p className="text-sm">
+                      {isMulti
+                        ? `${format(start, "EEE, MMM d, yyyy")} → ${format(end, "EEE, MMM d, yyyy")}`
+                        : format(start, "EEEE, MMMM d, yyyy")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{daysAgo(detailTrip.travel_date)}</p>
+                  </div>
+                  {detailTrip.purpose && (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1 mb-1">
+                        <MapPin className="h-3 w-3" /> Purpose
+                      </p>
+                      <p className="text-sm">{detailTrip.purpose}</p>
+                    </div>
+                  )}
+                  {detailTrip.notes && (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1 mb-1">
+                        <FileText className="h-3 w-3" /> Notes
+                      </p>
+                      <p className="text-sm whitespace-pre-wrap text-muted-foreground">{detailTrip.notes}</p>
+                    </div>
+                  )}
+                  {detailTrip.approval_status && (
+                    <div>
+                      <Badge variant="secondary" className="text-[10px]">{detailTrip.approval_status}</Badge>
+                    </div>
+                  )}
+                  {detailTrip.monday_id && (
+                    <p className="text-[10px] text-muted-foreground pt-2 border-t">
+                      monday.com ID: {detailTrip.monday_id}
+                    </p>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDetailTrip(null)}>Close</Button>
+                  <Button
+                    onClick={() => {
+                      setSelectedDate(parseISO(detailTrip.travel_date));
+                      setCursor(parseISO(detailTrip.travel_date));
+                      setDetailTrip(null);
+                    }}
+                  >
+                    View on calendar
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
