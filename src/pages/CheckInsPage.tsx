@@ -337,6 +337,43 @@ export default function CheckInsPage() {
     toast({ title: "Check-in logged" });
   };
 
+  const addDealer = async () => {
+    const name = newDealer.name.trim();
+    if (!name) {
+      toast({ title: "Name required", variant: "destructive" });
+      return;
+    }
+    if (name.length > 200) {
+      toast({ title: "Name too long", description: "Max 200 characters", variant: "destructive" });
+      return;
+    }
+    setAddSaving(true);
+    const { data, error } = await supabase
+      .from("dealers")
+      .insert({
+        name,
+        city: newDealer.city.trim() || null,
+        state: newDealer.state.trim().toUpperCase() || null,
+        phone: newDealer.phone.trim() || null,
+        email: newDealer.email.trim() || null,
+        website: newDealer.website.trim() || null,
+        status: "active",
+      })
+      .select("id, name, city, state, status, rep_id, lat, lng")
+      .single();
+    setAddSaving(false);
+    if (error) {
+      toast({ title: "Failed to add dealer", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (data) {
+      setDealers((prev) => [...prev, data as Dealer]);
+    }
+    setNewDealer({ name: "", city: "", state: "", phone: "", email: "", website: "" });
+    setAddOpen(false);
+    toast({ title: "Dealer added", description: `${name} created. Geocoding will run shortly.` });
+  };
+
   const placedCount = dealersWithMeta.filter((d) => d.lat != null && d.lng != null).length;
 
   return (
