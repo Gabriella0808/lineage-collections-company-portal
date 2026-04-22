@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
-import { MapPin, Calendar, NotebookPen, Search, Loader2 } from "lucide-react";
+import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2 } from "lucide-react";
 
 interface Dealer {
   id: string;
@@ -277,6 +277,19 @@ export default function CheckInsPage() {
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
   }, [selected, checkIns]);
 
+  const deleteCheckIn = async (id: string) => {
+    if (!confirm("Delete this check-in?")) return;
+    const prev = checkIns;
+    setCheckIns((p) => p.filter((c) => c.id !== id));
+    const { error } = await supabase.from("dealer_check_ins").delete().eq("id", id);
+    if (error) {
+      setCheckIns(prev);
+      toast({ title: "Failed to delete", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Check-in deleted" });
+  };
+
   const saveCheckIn = async () => {
     if (!user || !selected) return;
     setSaving(true);
@@ -385,6 +398,7 @@ export default function CheckInsPage() {
           <ul className="divide-y">
             {checkIns.slice(0, 8).map((c) => {
               const d = dealers.find((x) => x.id === c.dealer_id);
+              const canDelete = c.user_id === user?.id;
               return (
                 <li key={c.id} className="py-2 flex items-start justify-between gap-3 text-sm">
                   <div className="min-w-0">
@@ -393,14 +407,27 @@ export default function CheckInsPage() {
                       <p className="text-xs text-muted-foreground line-clamp-1">{c.notes}</p>
                     )}
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(c.visit_date), "MMM d, yyyy")}
-                    </p>
-                    {c.outcome && (
-                      <Badge variant="secondary" className="text-[10px] mt-0.5">
-                        {OUTCOMES.find((o) => o.value === c.outcome)?.label ?? c.outcome}
-                      </Badge>
+                  <div className="flex items-start gap-2 shrink-0">
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(c.visit_date), "MMM d, yyyy")}
+                      </p>
+                      {c.outcome && (
+                        <Badge variant="secondary" className="text-[10px] mt-0.5">
+                          {OUTCOMES.find((o) => o.value === c.outcome)?.label ?? c.outcome}
+                        </Badge>
+                      )}
+                    </div>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteCheckIn(c.id)}
+                        aria-label="Delete check-in"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     )}
                   </div>
                 </li>
