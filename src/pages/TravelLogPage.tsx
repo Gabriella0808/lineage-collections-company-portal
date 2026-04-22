@@ -207,6 +207,32 @@ export default function TravelLogPage() {
     return tripsByDay.get(key) ?? [];
   }, [selectedDate, tripsByDay]);
 
+  // Last traveled per salesperson (most recent trip overall)
+  const lastTraveled = useMemo(() => {
+    const m = new Map<string, TravelEntry>();
+    for (const t of travel) {
+      const key = t.salesperson_name || t.rep_id || t.id;
+      const cur = m.get(key);
+      if (!cur || cur.travel_date < t.travel_date) m.set(key, t);
+    }
+    return Array.from(m.values()).sort((a, b) =>
+      a.travel_date < b.travel_date ? 1 : -1,
+    );
+  }, [travel]);
+
+  const [detailTrip, setDetailTrip] = useState<TravelEntry | null>(null);
+
+  const daysAgo = (iso: string) => {
+    const ms = Date.now() - parseISO(iso).getTime();
+    const d = Math.floor(ms / (1000 * 60 * 60 * 24));
+    if (d <= 0) return "today";
+    if (d === 1) return "yesterday";
+    if (d < 7) return `${d}d ago`;
+    if (d < 30) return `${Math.floor(d / 7)}w ago`;
+    if (d < 365) return `${Math.floor(d / 30)}mo ago`;
+    return `${Math.floor(d / 365)}y ago`;
+  };
+
   // Salesperson list for legend
   const peopleInMonth = useMemo(() => {
     const set = new Map<string, string>(); // name -> color
