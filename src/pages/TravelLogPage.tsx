@@ -272,9 +272,6 @@ export default function TravelLogPage() {
           <h1 className="text-2xl font-serif font-semibold flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-primary" /> Sales Calendar
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Track travel schedules for your sales team.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={syncFromMonday} disabled={syncing} className="h-9">
