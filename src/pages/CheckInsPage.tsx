@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
-import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus, Plane } from "lucide-react";
+import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus } from "lucide-react";
 
 interface Dealer {
   id: string;
@@ -55,17 +55,6 @@ interface CheckIn {
   notes: string | null;
   outcome: string | null;
   created_at: string;
-}
-
-interface TravelEntry {
-  id: string;
-  rep_id: string | null;
-  salesperson_name: string | null;
-  travel_date: string;
-  travel_end_date: string | null;
-  purpose: string | null;
-  approval_status: string | null;
-  monday_id: string | null;
 }
 
 const OUTCOMES = [
@@ -93,7 +82,6 @@ export default function CheckInsPage() {
   const [token, setToken] = useState<string | null>(null);
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
-  const [travel, setTravel] = useState<TravelEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
   const [search, setSearch] = useState("");
