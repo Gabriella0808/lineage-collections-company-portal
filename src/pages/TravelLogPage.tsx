@@ -610,6 +610,82 @@ export default function TravelLogPage() {
           </div>
         )}
       </Card>
+
+      {/* Trip detail dialog (from Last traveled) */}
+      <Dialog open={!!detailTrip} onOpenChange={(o) => !o && setDetailTrip(null)}>
+        <DialogContent className="sm:max-w-lg">
+          {detailTrip && (() => {
+            const start = parseISO(detailTrip.travel_date);
+            const end = detailTrip.travel_end_date ? parseISO(detailTrip.travel_end_date) : start;
+            const isMulti = !isSameDay(start, end);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <span
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: colorFor(detailTrip.salesperson_name) }}
+                    />
+                    {detailTrip.salesperson_name ?? "Unknown"}
+                  </DialogTitle>
+                  <DialogDescription>Travel details</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1 mb-1">
+                      <CalendarDays className="h-3 w-3" /> Dates
+                    </p>
+                    <p className="text-sm">
+                      {isMulti
+                        ? `${format(start, "EEE, MMM d, yyyy")} → ${format(end, "EEE, MMM d, yyyy")}`
+                        : format(start, "EEEE, MMMM d, yyyy")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{daysAgo(detailTrip.travel_date)}</p>
+                  </div>
+                  {detailTrip.purpose && (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1 mb-1">
+                        <MapPin className="h-3 w-3" /> Purpose
+                      </p>
+                      <p className="text-sm">{detailTrip.purpose}</p>
+                    </div>
+                  )}
+                  {detailTrip.notes && (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1 mb-1">
+                        <FileText className="h-3 w-3" /> Notes
+                      </p>
+                      <p className="text-sm whitespace-pre-wrap text-muted-foreground">{detailTrip.notes}</p>
+                    </div>
+                  )}
+                  {detailTrip.approval_status && (
+                    <div>
+                      <Badge variant="secondary" className="text-[10px]">{detailTrip.approval_status}</Badge>
+                    </div>
+                  )}
+                  {detailTrip.monday_id && (
+                    <p className="text-[10px] text-muted-foreground pt-2 border-t">
+                      monday.com ID: {detailTrip.monday_id}
+                    </p>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDetailTrip(null)}>Close</Button>
+                  <Button
+                    onClick={() => {
+                      setSelectedDate(parseISO(detailTrip.travel_date));
+                      setCursor(parseISO(detailTrip.travel_date));
+                      setDetailTrip(null);
+                    }}
+                  >
+                    View on calendar
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
