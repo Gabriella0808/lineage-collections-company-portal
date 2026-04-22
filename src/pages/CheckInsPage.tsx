@@ -57,6 +57,17 @@ interface CheckIn {
   created_at: string;
 }
 
+interface TravelEntry {
+  id: string;
+  rep_id: string | null;
+  salesperson_name: string | null;
+  travel_date: string;
+  travel_end_date: string | null;
+  purpose: string | null;
+  approval_status: string | null;
+  monday_id: string | null;
+}
+
 const OUTCOMES = [
   { value: "positive", label: "Positive" },
   { value: "neutral", label: "Neutral" },
