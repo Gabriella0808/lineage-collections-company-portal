@@ -302,7 +302,7 @@ export default function TravelLogPage() {
                     id="t-name"
                     value={form.salesperson_name}
                     onChange={(e) => setForm({ ...form, salesperson_name: e.target.value })}
-                    placeholder="e.g., Gabriella Maccioni"
+                    placeholder="Enter salesperson name"
                     maxLength={120}
                   />
                 </div>
