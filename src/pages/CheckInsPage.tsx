@@ -92,6 +92,16 @@ export default function CheckInsPage() {
     notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+  const [newDealer, setNewDealer] = useState({
+    name: "",
+    city: "",
+    state: "",
+    phone: "",
+    email: "",
+    website: "",
+  });
 
   // Last visit by dealer
   const lastVisitMap = useMemo(() => {
