@@ -280,21 +280,28 @@ export default function CheckInsPage() {
   const saveCheckIn = async () => {
     if (!user || !selected) return;
     setSaving(true);
-    const { error } = await supabase.from("dealer_check_ins").insert({
-      dealer_id: selected.id,
-      user_id: user.id,
-      visit_date: form.visit_date,
-      outcome: form.outcome,
-      notes: form.notes.trim() || null,
-    });
+    const { data, error } = await supabase
+      .from("dealer_check_ins")
+      .insert({
+        dealer_id: selected.id,
+        user_id: user.id,
+        visit_date: form.visit_date,
+        outcome: form.outcome,
+        notes: form.notes.trim() || null,
+      })
+      .select()
+      .single();
     setSaving(false);
     if (error) {
       toast({ title: "Failed to save check-in", description: error.message, variant: "destructive" });
       return;
     }
+    // Optimistically update so pin color refreshes immediately
+    if (data) {
+      setCheckIns((prev) => [data as CheckIn, ...prev]);
+    }
     setForm({ visit_date: format(new Date(), "yyyy-MM-dd"), outcome: "positive", notes: "" });
     toast({ title: "Check-in logged" });
-    load();
   };
 
   const placedCount = dealersWithMeta.filter((d) => d.lat != null && d.lng != null).length;
