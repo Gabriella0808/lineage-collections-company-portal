@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
-import { MapPin, Calendar, NotebookPen, Search, Loader2 } from "lucide-react";
+import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2 } from "lucide-react";
 
 interface Dealer {
   id: string;
@@ -276,6 +276,19 @@ export default function CheckInsPage() {
       .filter((c) => c.dealer_id === selected.id)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
   }, [selected, checkIns]);
+
+  const deleteCheckIn = async (id: string) => {
+    if (!confirm("Delete this check-in?")) return;
+    const prev = checkIns;
+    setCheckIns((p) => p.filter((c) => c.id !== id));
+    const { error } = await supabase.from("dealer_check_ins").delete().eq("id", id);
+    if (error) {
+      setCheckIns(prev);
+      toast({ title: "Failed to delete", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Check-in deleted" });
+  };
 
   const saveCheckIn = async () => {
     if (!user || !selected) return;
