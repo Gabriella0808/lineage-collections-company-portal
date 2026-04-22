@@ -228,6 +228,8 @@ export default function CheckInsPage() {
     };
   }, [token]);
 
+  const didFitRef = useRef(false);
+
   // Render markers
   useEffect(() => {
     const map = mapRef.current;
@@ -248,6 +250,7 @@ export default function CheckInsPage() {
         border: 2px solid white;
         box-shadow: 0 1px 4px rgba(0,0,0,0.35);
         cursor: pointer; padding: 0;
+        transition: background-color 200ms ease;
       `;
       el.onclick = (e) => {
         e.stopPropagation();
@@ -260,8 +263,10 @@ export default function CheckInsPage() {
       bounds.extend([d.lng, d.lat]);
       added++;
     }
-    if (added > 0 && !bounds.isEmpty()) {
+    // Only auto-fit on first render so logging a check-in doesn't jump the map
+    if (added > 0 && !bounds.isEmpty() && !didFitRef.current) {
       map.fitBounds(bounds, { padding: 60, maxZoom: 9, duration: 600 });
+      didFitRef.current = true;
     }
   }, [filteredDealers]);
 
