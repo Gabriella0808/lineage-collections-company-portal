@@ -470,6 +470,66 @@ export default function TravelLogPage() {
         )}
       </Card>
 
+      {/* Last traveled per salesperson */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Plane className="h-4 w-4 text-primary" /> Last traveled
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            {lastTraveled.length} {lastTraveled.length === 1 ? "person" : "people"}
+          </span>
+        </div>
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : lastTraveled.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">No travel records yet.</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {lastTraveled.map((t) => {
+              const start = parseISO(t.travel_date);
+              const end = t.travel_end_date ? parseISO(t.travel_end_date) : start;
+              const isMulti = !isSameDay(start, end);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setDetailTrip(t)}
+                  className="text-left rounded-lg border p-3 hover:border-primary hover:bg-accent/40 transition-colors group"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: colorFor(t.salesperson_name) }}
+                      />
+                      <p className="font-medium text-sm truncate group-hover:text-primary">
+                        {t.salesperson_name ?? "Unknown"}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+                      {daysAgo(t.travel_date)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <CalendarDays className="h-3 w-3" />
+                    {isMulti
+                      ? `${format(start, "MMM d")} → ${format(end, "MMM d, yyyy")}`
+                      : format(start, "MMM d, yyyy")}
+                  </p>
+                  {t.purpose && (
+                    <p className="text-xs mt-1 line-clamp-1 flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                      {t.purpose}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
       {/* Trip Details for selected date */}
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
