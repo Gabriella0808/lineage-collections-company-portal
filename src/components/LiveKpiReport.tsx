@@ -377,16 +377,19 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
           <select
             value={repFilter}
             onChange={(e) => setRepFilter(e.target.value)}
-            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[200px]"
+            disabled={!!lockedRepName}
+            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[200px] disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <option value="all">
-              {allowedRepNames === null ? "All Reps (Combined)" : `All ${managerName}'s Reps (Combined)`}
-            </option>
+            {!lockedRepName && (
+              <option value="all">
+                {allowedRepNames === null ? "All Reps (Combined)" : `All ${managerName}'s Reps (Combined)`}
+              </option>
+            )}
             {[...visibleReps].sort((a, b) => a.name.localeCompare(b.name)).map((r) => (
               <option key={r.name} value={r.name}>{r.name}</option>
             ))}
           </select>
-          {allowedRepNames !== null && visibleReps.length === 0 && (
+          {!lockedRepName && allowedRepNames !== null && visibleReps.length === 0 && (
             <span className="text-xs text-muted-foreground">No reps mapped for this manager yet.</span>
           )}
           {selectedRep && (
