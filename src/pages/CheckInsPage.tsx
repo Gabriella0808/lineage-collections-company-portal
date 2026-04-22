@@ -16,6 +16,16 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
-import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2 } from "lucide-react";
+import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus } from "lucide-react";
 
 interface Dealer {
   id: string;
@@ -82,6 +92,16 @@ export default function CheckInsPage() {
     notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+  const [newDealer, setNewDealer] = useState({
+    name: "",
+    city: "",
+    state: "",
+    phone: "",
+    email: "",
+    website: "",
+  });
 
   // Last visit by dealer
   const lastVisitMap = useMemo(() => {
@@ -317,6 +337,43 @@ export default function CheckInsPage() {
     toast({ title: "Check-in logged" });
   };
 
+  const addDealer = async () => {
+    const name = newDealer.name.trim();
+    if (!name) {
+      toast({ title: "Name required", variant: "destructive" });
+      return;
+    }
+    if (name.length > 200) {
+      toast({ title: "Name too long", description: "Max 200 characters", variant: "destructive" });
+      return;
+    }
+    setAddSaving(true);
+    const { data, error } = await supabase
+      .from("dealers")
+      .insert({
+        name,
+        city: newDealer.city.trim() || null,
+        state: newDealer.state.trim().toUpperCase() || null,
+        phone: newDealer.phone.trim() || null,
+        email: newDealer.email.trim() || null,
+        website: newDealer.website.trim() || null,
+        status: "active",
+      })
+      .select("id, name, city, state, status, rep_id, lat, lng")
+      .single();
+    setAddSaving(false);
+    if (error) {
+      toast({ title: "Failed to add dealer", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (data) {
+      setDealers((prev) => [...prev, data as Dealer]);
+    }
+    setNewDealer({ name: "", city: "", state: "", phone: "", email: "", website: "" });
+    setAddOpen(false);
+    toast({ title: "Dealer added", description: `${name} created. Geocoding will run shortly.` });
+  };
+
   const placedCount = dealersWithMeta.filter((d) => d.lat != null && d.lng != null).length;
 
   return (
@@ -338,6 +395,95 @@ export default function CheckInsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="h-9">
+                <Plus className="h-4 w-4" /> Add dealer
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add a dealer account</DialogTitle>
+                <DialogDescription>
+                  Create a new dealer. Coordinates are auto-filled from city/state.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-name">Dealer name *</Label>
+                  <Input
+                    id="d-name"
+                    value={newDealer.name}
+                    onChange={(e) => setNewDealer({ ...newDealer, name: e.target.value })}
+                    maxLength={200}
+                    placeholder="Acme Furniture Co."
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2 space-y-1.5">
+                    <Label htmlFor="d-city">City</Label>
+                    <Input
+                      id="d-city"
+                      value={newDealer.city}
+                      onChange={(e) => setNewDealer({ ...newDealer, city: e.target.value })}
+                      maxLength={100}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="d-state">State</Label>
+                    <Input
+                      id="d-state"
+                      value={newDealer.state}
+                      onChange={(e) => setNewDealer({ ...newDealer, state: e.target.value })}
+                      maxLength={2}
+                      placeholder="UT"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="d-phone">Phone</Label>
+                    <Input
+                      id="d-phone"
+                      type="tel"
+                      value={newDealer.phone}
+                      onChange={(e) => setNewDealer({ ...newDealer, phone: e.target.value })}
+                      maxLength={30}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="d-email">Email</Label>
+                    <Input
+                      id="d-email"
+                      type="email"
+                      value={newDealer.email}
+                      onChange={(e) => setNewDealer({ ...newDealer, email: e.target.value })}
+                      maxLength={255}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-website">Website</Label>
+                  <Input
+                    id="d-website"
+                    type="url"
+                    value={newDealer.website}
+                    onChange={(e) => setNewDealer({ ...newDealer, website: e.target.value })}
+                    maxLength={255}
+                    placeholder="https://"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setAddOpen(false)} disabled={addSaving}>
+                  Cancel
+                </Button>
+                <Button onClick={addDealer} disabled={addSaving || !newDealer.name.trim()}>
+                  {addSaving ? "Saving..." : "Add dealer"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {geocoding && (
               <span className="inline-flex items-center gap-1">
