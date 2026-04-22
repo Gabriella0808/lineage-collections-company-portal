@@ -193,12 +193,13 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-export function LiveKpiReport({ managerName }: { managerName?: string } = {}) {
+export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: string; lockedRepName?: string | null } = {}) {
   const allowedRepNames = useMemo(() => {
+    if (lockedRepName) return [lockedRepName];
     if (!managerName) return null; // null = all reps
     const list = MANAGER_TO_REPS[managerName.trim().toLowerCase()];
     return list ?? [];
-  }, [managerName]);
+  }, [managerName, lockedRepName]);
 
   const visibleReps = useMemo(
     () => allowedRepNames === null
@@ -207,14 +208,18 @@ export function LiveKpiReport({ managerName }: { managerName?: string } = {}) {
     [allowedRepNames],
   );
 
-  const [repFilter, setRepFilter] = useState<string>("all");
+  const [repFilter, setRepFilter] = useState<string>(lockedRepName ?? "all");
 
   // Reset rep filter when manager scope changes and current rep isn't in scope.
   useEffect(() => {
+    if (lockedRepName) {
+      if (repFilter !== lockedRepName) setRepFilter(lockedRepName);
+      return;
+    }
     if (allowedRepNames && repFilter !== "all" && !allowedRepNames.includes(repFilter)) {
       setRepFilter("all");
     }
-  }, [allowedRepNames, repFilter]);
+  }, [allowedRepNames, repFilter, lockedRepName]);
 
   const [monthFilter, setMonthFilter] = useState<MonthFilter>("All");
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("both");
