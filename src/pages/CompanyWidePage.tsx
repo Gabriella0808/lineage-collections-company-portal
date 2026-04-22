@@ -69,16 +69,30 @@ export default function CompanyWidePage() {
     : (pathDefault ?? "live-kpi");
 
   const { data: managers = [] } = useManagers();
+  const { data: reps = [] } = useSalesReps();
+  const { data: roleInfo } = useUserRole();
+  const isRep = !!roleInfo?.isRep;
+  const currentRep = useMemo(
+    () => (roleInfo?.repId ? reps.find((r) => r.id === roleInfo.repId) ?? null : null),
+    [reps, roleInfo?.repId],
+  );
+  const repManagerId = currentRep?.manager_id ?? null;
+
   const visibleManagers = useMemo(
     () => managers.filter((m) => {
+      // For sales reps, only show their own manager.
+      if (isRep) return repManagerId ? m.id === repManagerId : false;
       const n = m.name.trim().toLowerCase();
       const e = m.email?.trim().toLowerCase();
       if (n === "sales" || e === "sales@lineage-collections.com") return false;
       if (n === "scott grisack") return false;
       return true;
     }),
-    [managers],
+    [managers, isRep, repManagerId],
   );
+
+  // Force the manager filter to the rep's manager when logged in as a rep.
+  const effectiveManagerId = isRep && repManagerId ? repManagerId : managerParam;
 
   const setReport = (key: ReportKey) => {
     const next = new URLSearchParams(params);
