@@ -187,7 +187,9 @@ export default function CheckInsPage() {
   // Geocode missing dealers
   useEffect(() => {
     if (!token || dealers.length === 0) return;
-    const missing = dealers.filter((d) => (d.lat == null || d.lng == null) && (d.city || d.state));
+    const missing = dealers.filter(
+      (d) => (d.lat == null || d.lng == null) && (d.street_address || d.city || d.state),
+    );
     if (missing.length === 0) return;
 
     let cancelled = false;
