@@ -682,6 +682,17 @@ export default function CheckInsPage() {
                 </div>
 
                 <div className="border-t pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => deleteDealer(selected)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete this pin
+                  </Button>
+                </div>
+
+                <div className="border-t pt-4">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
                     <NotebookPen className="h-3.5 w-3.5" /> Log a check-in
                   </h3>
