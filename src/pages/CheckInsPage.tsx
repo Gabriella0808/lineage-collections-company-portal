@@ -39,6 +39,7 @@ import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus } from "lu
 interface Dealer {
   id: string;
   name: string;
+  street_address?: string | null;
   city: string | null;
   state: string | null;
   status: string;
@@ -97,6 +98,7 @@ export default function CheckInsPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [newDealer, setNewDealer] = useState({
     name: "",
+    street_address: "",
     city: "",
     state: "",
     phone: "",
@@ -157,7 +159,7 @@ export default function CheckInsPage() {
     const [dealersRes, checkInsRes] = await Promise.all([
       supabase
         .from("dealers")
-        .select("id, name, city, state, status, rep_id, lat, lng")
+        .select("id, name, street_address, city, state, status, rep_id, lat, lng")
         .order("name"),
       supabase
         .from("dealer_check_ins")
@@ -185,7 +187,9 @@ export default function CheckInsPage() {
   // Geocode missing dealers
   useEffect(() => {
     if (!token || dealers.length === 0) return;
-    const missing = dealers.filter((d) => (d.lat == null || d.lng == null) && (d.city || d.state));
+    const missing = dealers.filter(
+      (d) => (d.lat == null || d.lng == null) && (d.street_address || d.city || d.state),
+    );
     if (missing.length === 0) return;
 
     let cancelled = false;
@@ -196,7 +200,7 @@ export default function CheckInsPage() {
       for (const d of missing) {
         if (cancelled) break;
         const q = encodeURIComponent(
-          [d.city, d.state, "USA"].filter(Boolean).join(", "),
+          [d.street_address, d.city, d.state, "USA"].filter(Boolean).join(", "),
         );
         try {
           const res = await fetch(
@@ -403,6 +407,9 @@ export default function CheckInsPage() {
 
   const addDealer = async () => {
     const name = newDealer.name.trim();
+    const street = newDealer.street_address.trim();
+    const city = newDealer.city.trim();
+    const state = newDealer.state.trim().toUpperCase();
     if (!name) {
       toast({ title: "Name required", variant: "destructive" });
       return;
@@ -411,19 +418,36 @@ export default function CheckInsPage() {
       toast({ title: "Name too long", description: "Max 200 characters", variant: "destructive" });
       return;
     }
+    if (!street) {
+      toast({ title: "Street address required", description: "Please enter the dealer's street address.", variant: "destructive" });
+      return;
+    }
+    if (street.length > 200) {
+      toast({ title: "Address too long", description: "Max 200 characters", variant: "destructive" });
+      return;
+    }
+    if (!city) {
+      toast({ title: "City required", variant: "destructive" });
+      return;
+    }
+    if (!state) {
+      toast({ title: "State required", variant: "destructive" });
+      return;
+    }
     setAddSaving(true);
     const { data, error } = await supabase
       .from("dealers")
       .insert({
         name,
-        city: newDealer.city.trim() || null,
-        state: newDealer.state.trim().toUpperCase() || null,
+        street_address: street,
+        city,
+        state,
         phone: newDealer.phone.trim() || null,
         email: newDealer.email.trim() || null,
         website: newDealer.website.trim() || null,
         status: "active",
       })
-      .select("id, name, city, state, status, rep_id, lat, lng")
+      .select("id, name, street_address, city, state, status, rep_id, lat, lng")
       .single();
     setAddSaving(false);
     if (error) {
@@ -433,7 +457,7 @@ export default function CheckInsPage() {
     if (data) {
       setDealers((prev) => [...prev, data as Dealer]);
     }
-    setNewDealer({ name: "", city: "", state: "", phone: "", email: "", website: "" });
+    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "" });
     setAddOpen(false);
     toast({ title: "Dealer added", description: `${name} created. Geocoding will run shortly.` });
   };
@@ -469,7 +493,7 @@ export default function CheckInsPage() {
               <DialogHeader>
                 <DialogTitle>Add a dealer account</DialogTitle>
                 <DialogDescription>
-                  Create a new dealer. Coordinates are auto-filled from city/state.
+                  Create a new dealer. Coordinates are auto-filled from the address.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3 py-2">
@@ -483,9 +507,19 @@ export default function CheckInsPage() {
                     placeholder="Acme Furniture Co."
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-street">Street address *</Label>
+                  <Input
+                    id="d-street"
+                    value={newDealer.street_address}
+                    onChange={(e) => setNewDealer({ ...newDealer, street_address: e.target.value })}
+                    maxLength={200}
+                    placeholder="123 Main St"
+                  />
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="col-span-2 space-y-1.5">
-                    <Label htmlFor="d-city">City</Label>
+                    <Label htmlFor="d-city">City *</Label>
                     <Input
                       id="d-city"
                       value={newDealer.city}
@@ -494,7 +528,7 @@ export default function CheckInsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="d-state">State</Label>
+                    <Label htmlFor="d-state">State *</Label>
                     <Input
                       id="d-state"
                       value={newDealer.state}
@@ -542,7 +576,16 @@ export default function CheckInsPage() {
                 <Button variant="outline" onClick={() => setAddOpen(false)} disabled={addSaving}>
                   Cancel
                 </Button>
-                <Button onClick={addDealer} disabled={addSaving || !newDealer.name.trim()}>
+                <Button
+                  onClick={addDealer}
+                  disabled={
+                    addSaving ||
+                    !newDealer.name.trim() ||
+                    !newDealer.street_address.trim() ||
+                    !newDealer.city.trim() ||
+                    !newDealer.state.trim()
+                  }
+                >
                   {addSaving ? "Saving..." : "Add dealer"}
                 </Button>
               </DialogFooter>

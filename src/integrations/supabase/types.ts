@@ -217,6 +217,7 @@ export type Database = {
           revenue: number | null
           state: string | null
           status: string
+          street_address: string | null
           territory_id: string | null
           updated_at: string
           website: string | null
@@ -237,6 +238,7 @@ export type Database = {
           revenue?: number | null
           state?: string | null
           status?: string
+          street_address?: string | null
           territory_id?: string | null
           updated_at?: string
           website?: string | null
@@ -257,6 +259,7 @@ export type Database = {
           revenue?: number | null
           state?: string | null
           status?: string
+          street_address?: string | null
           territory_id?: string | null
           updated_at?: string
           website?: string | null
