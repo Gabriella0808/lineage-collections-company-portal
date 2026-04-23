@@ -108,7 +108,7 @@ export default function TravelLogPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("travel_log")
-      .select("id, rep_id, salesperson_name, travel_date, travel_end_date, purpose, approval_status, notes, monday_id")
+      .select("id, rep_id, manager_id, salesperson_name, travel_date, travel_end_date, purpose, approval_status, notes, monday_id")
       .order("travel_date", { ascending: false })
       .limit(1000);
     if (error) {
