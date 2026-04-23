@@ -573,7 +573,16 @@ export default function CheckInsPage() {
                 <Button variant="outline" onClick={() => setAddOpen(false)} disabled={addSaving}>
                   Cancel
                 </Button>
-                <Button onClick={addDealer} disabled={addSaving || !newDealer.name.trim()}>
+                <Button
+                  onClick={addDealer}
+                  disabled={
+                    addSaving ||
+                    !newDealer.name.trim() ||
+                    !newDealer.street_address.trim() ||
+                    !newDealer.city.trim() ||
+                    !newDealer.state.trim()
+                  }
+                >
                   {addSaving ? "Saving..." : "Add dealer"}
                 </Button>
               </DialogFooter>
