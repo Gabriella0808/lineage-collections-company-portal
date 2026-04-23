@@ -267,6 +267,7 @@ export default function CheckInsPage() {
       center: [-96, 39],
       zoom: 3.4,
       projection: { name: "mercator" } as never,
+      renderWorldCopies: false,
     });
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
     map.on("style.load", () => {
