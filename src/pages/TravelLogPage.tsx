@@ -231,6 +231,27 @@ export default function TravelLogPage() {
   }, [travel]);
 
   const [detailTrip, setDetailTrip] = useState<TravelEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const canDeleteTrip = (t: TravelEntry | null) => {
+    if (!t || !roleInfo) return false;
+    if (roleInfo.isAdmin) return true;
+    return !!roleInfo.managerId && t.manager_id === roleInfo.managerId;
+  };
+
+  const deleteTrip = async (t: TravelEntry) => {
+    if (!confirm("Delete this trip? This cannot be undone.")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("travel_log").delete().eq("id", t.id);
+    setDeleting(false);
+    if (error) {
+      toast({ title: "Failed to delete trip", description: error.message, variant: "destructive" });
+      return;
+    }
+    setTravel((p) => p.filter((x) => x.id !== t.id));
+    setDetailTrip(null);
+    toast({ title: "Trip deleted" });
+  };
 
   const daysAgo = (iso: string) => {
     const ms = Date.now() - parseISO(iso).getTime();
