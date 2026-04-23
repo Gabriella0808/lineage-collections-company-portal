@@ -281,9 +281,27 @@ export default function CheckInsPage() {
         e.stopPropagation();
         setSelected(d);
       };
+      const addressLine = [d.street_address, d.city, d.state].filter(Boolean).join(", ");
+      const escape = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const popup = new mapboxgl.Popup({
+        offset: 14,
+        closeButton: false,
+        closeOnClick: false,
+      }).setHTML(
+        `<div style="font-family: inherit; font-size: 12px; line-height: 1.35; max-width: 220px;">
+          <div style="font-weight: 600; margin-bottom: 2px;">${escape(d.name)}</div>
+          <div style="color: #475569;">${escape(addressLine || "Location unknown")}</div>
+        </div>`,
+      );
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([d.lng, d.lat])
+        .setPopup(popup)
         .addTo(map);
+      el.addEventListener("mouseenter", () => marker.togglePopup());
+      el.addEventListener("mouseleave", () => {
+        if (popup.isOpen()) popup.remove();
+      });
       markersRef.current.push(marker);
       bounds.extend([d.lng, d.lat]);
       added++;
@@ -701,7 +719,9 @@ export default function CheckInsPage() {
                   {selected.name}
                 </SheetTitle>
                 <SheetDescription>
-                  {[selected.city, selected.state].filter(Boolean).join(", ") || "Location unknown"}
+                  {[selected.street_address, selected.city, selected.state]
+                    .filter(Boolean)
+                    .join(", ") || "Location unknown"}
                 </SheetDescription>
               </SheetHeader>
 
