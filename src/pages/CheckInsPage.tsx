@@ -388,7 +388,11 @@ export default function CheckInsPage() {
 
   const saveCheckIn = async () => {
     if (!user || !selected) return;
-    if (form.outcome === "follow_up" && !form.follow_up_date) {
+    if (!form.log_type) {
+      toast({ title: "Log Type required", description: "Pick a log type.", variant: "destructive" });
+      return;
+    }
+    if (form.log_type === "follow_up" && !form.follow_up_date) {
       toast({ title: "Follow-up date required", description: "Pick a date for the follow-up task.", variant: "destructive" });
       return;
     }
@@ -399,7 +403,10 @@ export default function CheckInsPage() {
         dealer_id: selected.id,
         user_id: user.id,
         visit_date: form.visit_date,
-        outcome: form.outcome,
+        outcome: form.log_type,
+        log_type: form.log_type,
+        new_placement: form.new_placement || null,
+        brand: form.brand || null,
         notes: form.notes.trim() || null,
       })
       .select()
@@ -415,7 +422,7 @@ export default function CheckInsPage() {
     }
 
     // If follow-up, create a task + notification
-    if (form.outcome === "follow_up" && form.follow_up_date) {
+    if (form.log_type === "follow_up" && form.follow_up_date) {
       const taskTitle = `Follow up with ${selected.name}`;
       const taskDesc = form.notes.trim()
         ? `From check-in on ${form.visit_date}: ${form.notes.trim()}`
@@ -435,7 +442,6 @@ export default function CheckInsPage() {
       if (taskErr) {
         toast({ title: "Check-in saved, task failed", description: taskErr.message, variant: "destructive" });
       } else {
-        // Self-notification confirming the follow-up was scheduled
         await supabase.from("notifications").insert({
           user_id: user.id,
           type: "follow_up_scheduled",
@@ -451,7 +457,14 @@ export default function CheckInsPage() {
     }
 
     setSaving(false);
-    setForm({ visit_date: format(new Date(), "yyyy-MM-dd"), outcome: "positive", notes: "", follow_up_date: "" });
+    setForm({
+      visit_date: format(new Date(), "yyyy-MM-dd"),
+      log_type: "",
+      new_placement: "",
+      brand: "",
+      notes: "",
+      follow_up_date: "",
+    });
   };
 
   const addDealer = async () => {
