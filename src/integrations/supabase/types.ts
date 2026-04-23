@@ -108,9 +108,12 @@ export type Database = {
       }
       dealer_check_ins: {
         Row: {
+          brand: string | null
           created_at: string
           dealer_id: string
           id: string
+          log_type: string | null
+          new_placement: string | null
           notes: string | null
           outcome: string | null
           updated_at: string
@@ -118,9 +121,12 @@ export type Database = {
           visit_date: string
         }
         Insert: {
+          brand?: string | null
           created_at?: string
           dealer_id: string
           id?: string
+          log_type?: string | null
+          new_placement?: string | null
           notes?: string | null
           outcome?: string | null
           updated_at?: string
@@ -128,9 +134,12 @@ export type Database = {
           visit_date?: string
         }
         Update: {
+          brand?: string | null
           created_at?: string
           dealer_id?: string
           id?: string
+          log_type?: string | null
+          new_placement?: string | null
           notes?: string | null
           outcome?: string | null
           updated_at?: string
