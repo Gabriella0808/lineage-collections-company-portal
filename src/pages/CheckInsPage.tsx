@@ -159,7 +159,7 @@ export default function CheckInsPage() {
     const [dealersRes, checkInsRes] = await Promise.all([
       supabase
         .from("dealers")
-        .select("id, name, city, state, status, rep_id, lat, lng")
+        .select("id, name, street_address, city, state, status, rep_id, lat, lng")
         .order("name"),
       supabase
         .from("dealer_check_ins")
@@ -445,7 +445,7 @@ export default function CheckInsPage() {
         website: newDealer.website.trim() || null,
         status: "active",
       })
-      .select("id, name, city, state, status, rep_id, lat, lng")
+      .select("id, name, street_address, city, state, status, rep_id, lat, lng")
       .single();
     setAddSaving(false);
     if (error) {
