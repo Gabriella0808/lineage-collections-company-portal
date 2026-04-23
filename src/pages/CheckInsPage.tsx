@@ -803,22 +803,26 @@ export default function CheckInsPage() {
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
                     <NotebookPen className="h-3.5 w-3.5" /> Log a check-in
                   </h3>
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs font-medium mb-1.5 block">Visit date</Label>
                       <Input
                         type="date"
                         value={form.visit_date}
                         onChange={(e) => setForm({ ...form, visit_date: e.target.value })}
                       />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium mb-1.5 block">Log Type</Label>
                       <Select
-                        value={form.outcome}
-                        onValueChange={(v) => setForm({ ...form, outcome: v })}
+                        value={form.log_type}
+                        onValueChange={(v) => setForm({ ...form, log_type: v })}
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select a log type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {OUTCOMES.map((o) => (
+                          {LOG_TYPES.map((o) => (
                             <SelectItem key={o.value} value={o.value}>
                               {o.label}
                             </SelectItem>
@@ -826,7 +830,43 @@ export default function CheckInsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    {form.outcome === "follow_up" && (
+                    <div>
+                      <Label className="text-xs font-medium mb-1.5 block">New Placement</Label>
+                      <Select
+                        value={form.new_placement}
+                        onValueChange={(v) => setForm({ ...form, new_placement: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PLACEMENT_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium mb-1.5 block">Brand</Label>
+                      <Select
+                        value={form.brand}
+                        onValueChange={(v) => setForm({ ...form, brand: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a brand" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BRAND_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {form.log_type === "follow_up" && (
                       <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 space-y-1.5">
                         <Label htmlFor="follow-up-date" className="text-xs font-medium">
                           Follow-up date
