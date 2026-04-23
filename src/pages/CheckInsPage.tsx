@@ -97,6 +97,7 @@ export default function CheckInsPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [newDealer, setNewDealer] = useState({
     name: "",
+    street_address: "",
     city: "",
     state: "",
     phone: "",
