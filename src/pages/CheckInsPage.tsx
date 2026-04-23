@@ -404,6 +404,9 @@ export default function CheckInsPage() {
 
   const addDealer = async () => {
     const name = newDealer.name.trim();
+    const street = newDealer.street_address.trim();
+    const city = newDealer.city.trim();
+    const state = newDealer.state.trim().toUpperCase();
     if (!name) {
       toast({ title: "Name required", variant: "destructive" });
       return;
@@ -412,13 +415,30 @@ export default function CheckInsPage() {
       toast({ title: "Name too long", description: "Max 200 characters", variant: "destructive" });
       return;
     }
+    if (!street) {
+      toast({ title: "Street address required", description: "Please enter the dealer's street address.", variant: "destructive" });
+      return;
+    }
+    if (street.length > 200) {
+      toast({ title: "Address too long", description: "Max 200 characters", variant: "destructive" });
+      return;
+    }
+    if (!city) {
+      toast({ title: "City required", variant: "destructive" });
+      return;
+    }
+    if (!state) {
+      toast({ title: "State required", variant: "destructive" });
+      return;
+    }
     setAddSaving(true);
     const { data, error } = await supabase
       .from("dealers")
       .insert({
         name,
-        city: newDealer.city.trim() || null,
-        state: newDealer.state.trim().toUpperCase() || null,
+        street_address: street,
+        city,
+        state,
         phone: newDealer.phone.trim() || null,
         email: newDealer.email.trim() || null,
         website: newDealer.website.trim() || null,
@@ -434,7 +454,7 @@ export default function CheckInsPage() {
     if (data) {
       setDealers((prev) => [...prev, data as Dealer]);
     }
-    setNewDealer({ name: "", city: "", state: "", phone: "", email: "", website: "" });
+    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "" });
     setAddOpen(false);
     toast({ title: "Dealer added", description: `${name} created. Geocoding will run shortly.` });
   };
