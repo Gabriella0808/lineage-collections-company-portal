@@ -158,6 +158,7 @@ export default function TravelLogPage() {
         travel_end_date: form.travel_end_date || null,
         purpose: purposeText || null,
         notes: form.notes.trim() || null,
+        manager_id: roleInfo?.managerId ?? null,
       })
       .select()
       .single();
