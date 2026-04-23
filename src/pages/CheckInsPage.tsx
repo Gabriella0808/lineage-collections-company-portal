@@ -58,6 +58,26 @@ interface CheckIn {
   created_at: string;
 }
 
+const LOG_TYPES = [
+  { value: "meeting", label: "Meeting" },
+  { value: "phone_call", label: "Phone call" },
+  { value: "email", label: "Email" },
+  { value: "letter", label: "Letter" },
+  { value: "follow_up", label: "Follow-up" },
+];
+
+const PLACEMENT_OPTIONS = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+];
+
+const BRAND_OPTIONS = [
+  { value: "sea_winds", label: "Sea Winds" },
+  { value: "finn", label: "Finn" },
+  { value: "lux", label: "Lux" },
+];
+
+// Kept for backwards compatibility with existing records that used the old "outcome" field
 const OUTCOMES = [
   { value: "positive", label: "Positive" },
   { value: "neutral", label: "Neutral" },
