@@ -129,7 +129,11 @@ export default function TasksPage() {
     if (assigneesRes.error) {
       toast({ title: "Failed to load assignees", description: assigneesRes.error.message, variant: "destructive" });
     } else {
-      setAssignees((assigneesRes.data ?? []) as AssignableUser[]);
+      const HIDDEN_USER_IDS = new Set(["664c4627-764e-44ff-94ed-d887e3097265"]); // Brent
+      const filtered = ((assigneesRes.data ?? []) as AssignableUser[]).filter(
+        (a) => !HIDDEN_USER_IDS.has(a.user_id),
+      );
+      setAssignees(filtered);
     }
     if (!profilesRes.error) {
       setProfiles((profilesRes.data ?? []) as Profile[]);
