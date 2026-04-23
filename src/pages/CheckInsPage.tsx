@@ -263,7 +263,7 @@ export default function CheckInsPage() {
     mapboxgl.accessToken = token;
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [-96, 39],
       zoom: 3.4,
       projection: { name: "mercator" } as never,
