@@ -39,6 +39,7 @@ import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus } from "lu
 interface Dealer {
   id: string;
   name: string;
+  street_address?: string | null;
   city: string | null;
   state: string | null;
   status: string;
