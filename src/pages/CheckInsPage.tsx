@@ -1016,8 +1016,10 @@ export default function CheckInsPage() {
               <DialogHeader>
                 <DialogTitle>Visit details</DialogTitle>
                 <DialogDescription>
-                  {selected?.name ?? "Dealer"} •{" "}
-                  {format(new Date(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
+                  {(selected?.id === detailCheckIn.dealer_id
+                    ? selected?.name
+                    : dealers.find((d) => d.id === detailCheckIn.dealer_id)?.name) ?? "Dealer"}{" "}
+                  • {format(new Date(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
                 </DialogDescription>
               </DialogHeader>
 
