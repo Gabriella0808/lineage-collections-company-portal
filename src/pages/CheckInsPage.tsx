@@ -48,19 +48,9 @@ interface Dealer {
   state: string | null;
   status: string;
   rep_id: string | null;
-  rep_owner: string | null;
   lat: number | null;
   lng: number | null;
 }
-
-type RepOwner = "all" | "will" | "mateo" | "chris";
-
-const REP_OWNERS: { value: RepOwner; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "will", label: "Will" },
-  { value: "mateo", label: "Mateo" },
-  { value: "chris", label: "Chris" },
-];
 
 interface CheckIn {
   id: string;
@@ -118,7 +108,6 @@ export default function CheckInsPage() {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const territoryPopupRef = useRef<mapboxgl.Popup | null>(null);
   const dealerHoverRef = useRef(false);
-  const dealersDataRef = useRef<Array<Dealer & { lastVisit: string | null; daysSince: number | null }>>([]);
 
   const [token, setToken] = useState<string | null>(null);
   const [dealers, setDealers] = useState<Dealer[]>([]);
@@ -127,8 +116,6 @@ export default function CheckInsPage() {
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
   const [search, setSearch] = useState("");
-  const [repOwner, setRepOwner] = useState<RepOwner>("all");
-  const [pinsVisible, setPinsVisible] = useState(true);
   const [selected, setSelected] = useState<Dealer | null>(null);
   const [detailCheckIn, setDetailCheckIn] = useState<CheckIn | null>(null);
   const [form, setForm] = useState({
@@ -174,18 +161,14 @@ export default function CheckInsPage() {
 
   const filteredDealers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let list = dealersWithMeta;
-    if (repOwner !== "all") {
-      list = list.filter((d) => (d.rep_owner ?? "").toLowerCase() === repOwner);
-    }
-    if (!q) return list;
-    return list.filter(
+    if (!q) return dealersWithMeta;
+    return dealersWithMeta.filter(
       (d) =>
         d.name.toLowerCase().includes(q) ||
         (d.city ?? "").toLowerCase().includes(q) ||
         (d.state ?? "").toLowerCase().includes(q),
     );
-  }, [dealersWithMeta, search, repOwner]);
+  }, [dealersWithMeta, search]);
 
   // Fetch token
   useEffect(() => {
@@ -206,26 +189,11 @@ export default function CheckInsPage() {
   // Load dealers + check-ins
   const load = async () => {
     setLoading(true);
-    const fetchAllDealers = async () => {
-      const PAGE = 1000;
-      let from = 0;
-      const all: Dealer[] = [];
-      while (true) {
-        const { data, error } = await supabase
-          .from("dealers")
-          .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
-          .order("name")
-          .range(from, from + PAGE - 1);
-        if (error) return { data: null, error };
-        const batch = (data ?? []) as Dealer[];
-        all.push(...batch);
-        if (batch.length < PAGE) break;
-        from += PAGE;
-      }
-      return { data: all, error: null as null };
-    };
     const [dealersRes, checkInsRes] = await Promise.all([
-      fetchAllDealers(),
+      supabase
+        .from("dealers")
+        .select("id, name, street_address, city, state, status, rep_id, lat, lng")
+        .order("name"),
       supabase
         .from("dealer_check_ins")
         .select("*")
@@ -262,24 +230,20 @@ export default function CheckInsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Geocode missing dealers (only re-run when token changes or dealer count grows)
-  const geocodedRunRef = useRef(false);
+  // Geocode missing dealers
   useEffect(() => {
     if (!token || dealers.length === 0) return;
-    if (geocodedRunRef.current) return;
     const missing = dealers.filter(
       (d) => (d.lat == null || d.lng == null) && (d.street_address || d.city || d.state),
     );
     if (missing.length === 0) return;
-    geocodedRunRef.current = true;
 
     let cancelled = false;
     setGeocoding(true);
     (async () => {
       const updates: Array<{ id: string; lat: number; lng: number }> = [];
-      // Throttle ~5 req/s, cap at 200 per session to avoid hammering Mapbox
-      const toGeocode = missing.slice(0, 200);
-      for (const d of toGeocode) {
+      // Throttle ~5 req/s
+      for (const d of missing) {
         if (cancelled) break;
         const q = encodeURIComponent(
           [d.street_address, d.city, d.state, "USA"].filter(Boolean).join(", "),
@@ -293,6 +257,7 @@ export default function CheckInsPage() {
           if (Array.isArray(center) && center.length === 2) {
             const [lng, lat] = center;
             updates.push({ id: d.id, lat, lng });
+            // persist (RLS allows manager/admin)
             await supabase.from("dealers").update({ lat, lng }).eq("id", d.id);
           }
         } catch {
@@ -314,7 +279,7 @@ export default function CheckInsPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, dealers.length]);
+  }, [token, dealers]);
 
   // Init map
   useEffect(() => {
@@ -451,123 +416,66 @@ export default function CheckInsPage() {
 
   const didFitRef = useRef(false);
 
-  // Re-fit map when rep filter changes
-  useEffect(() => {
-    didFitRef.current = false;
-  }, [repOwner]);
-
-  // Toggle dealer pin layer visibility
+  // Render markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apply = () => {
-      if (map.getLayer("dealers-circle")) {
-        map.setLayoutProperty(
-          "dealers-circle",
-          "visibility",
-          pinsVisible ? "visible" : "none",
-        );
-      }
-    };
-    if (map.isStyleLoaded()) apply();
-    else map.once("load", apply);
-  }, [pinsVisible]);
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
 
-  // Render dealer pins as a GPU-rendered Mapbox source/layer (scales to thousands)
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const features = filteredDealers
-      .filter((d) => d.lat != null && d.lng != null)
-      .map((d) => ({
-        type: "Feature" as const,
-        properties: {
-          id: d.id,
-          color: recencyColor(d.daysSince),
-        },
-        geometry: { type: "Point" as const, coordinates: [d.lng as number, d.lat as number] },
-      }));
-
-    const data = { type: "FeatureCollection" as const, features };
-    dealersDataRef.current = filteredDealers;
-
-    const apply = () => {
-      const src = map.getSource("dealers") as mapboxgl.GeoJSONSource | undefined;
-      if (src) {
-        src.setData(data as never);
-      } else {
-        map.addSource("dealers", { type: "geojson", data: data as never });
-        map.addLayer({
-          id: "dealers-circle",
-          type: "circle",
-          source: "dealers",
-          paint: {
-            "circle-radius": [
-              "interpolate", ["linear"], ["zoom"],
-              3, 6,
-              6, 8,
-              10, 11,
-              14, 14,
-            ],
-            "circle-color": ["get", "color"],
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 2,
-            "circle-opacity": 1,
-          },
-        });
-
-        const popup = new mapboxgl.Popup({ offset: 12, closeButton: false, closeOnClick: false });
-        map.on("mouseenter", "dealers-circle", (e) => {
-          const f = e.features?.[0];
-          if (!f) return;
-          const id = (f.properties as any)?.id as string;
-          const d = dealersDataRef.current.find((x) => x.id === id);
-          if (!d) return;
-          dealerHoverRef.current = true;
-          territoryPopupRef.current?.remove();
-          map.getCanvas().style.cursor = "pointer";
-          const addressLine = [d.street_address, d.city, d.state].filter(Boolean).join(", ");
-          const escape = (s: string) =>
-            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-          popup
-            .setLngLat([d.lng as number, d.lat as number])
-            .setHTML(
-              `<div style="font-family: inherit; font-size: 12px; line-height: 1.35; max-width: 220px;">
-                <div style="font-weight: 600; margin-bottom: 2px;">${escape(d.name)}</div>
-                <div style="color: #475569;">${escape(addressLine || "Location unknown")}</div>
-              </div>`,
-            )
-            .addTo(map);
-        });
-        map.on("mouseleave", "dealers-circle", () => {
-          dealerHoverRef.current = false;
-          map.getCanvas().style.cursor = "";
-          popup.remove();
-        });
-        map.on("click", "dealers-circle", (e) => {
-          const f = e.features?.[0];
-          if (!f) return;
-          const id = (f.properties as any)?.id as string;
-          const d = dealersDataRef.current.find((x) => x.id === id);
-          if (d) setSelected(d);
-        });
-      }
-    };
-
-    if (map.isStyleLoaded()) {
-      apply();
-    } else {
-      map.once("style.load", apply);
+    const bounds = new mapboxgl.LngLatBounds();
+    let added = 0;
+    for (const d of filteredDealers) {
+      if (d.lat == null || d.lng == null) continue;
+      const el = document.createElement("button");
+      el.type = "button";
+      el.setAttribute("aria-label", `${d.name} marker`);
+      el.style.cssText = `
+        width: 18px; height: 18px; border-radius: 9999px;
+        background: ${recencyColor(d.daysSince)};
+        border: 2px solid white;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+        cursor: pointer; padding: 0;
+        transition: background-color 200ms ease;
+      `;
+      el.onclick = (e) => {
+        e.stopPropagation();
+        setSelected(d);
+      };
+      const addressLine = [d.street_address, d.city, d.state].filter(Boolean).join(", ");
+      const escape = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const popup = new mapboxgl.Popup({
+        offset: 14,
+        closeButton: false,
+        closeOnClick: false,
+      }).setHTML(
+        `<div style="font-family: inherit; font-size: 12px; line-height: 1.35; max-width: 220px;">
+          <div style="font-weight: 600; margin-bottom: 2px;">${escape(d.name)}</div>
+          <div style="color: #475569;">${escape(addressLine || "Location unknown")}</div>
+        </div>`,
+      );
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([d.lng, d.lat])
+        .setPopup(popup)
+        .addTo(map);
+      el.addEventListener("mouseenter", () => {
+        dealerHoverRef.current = true;
+        territoryPopupRef.current?.remove();
+        marker.togglePopup();
+      });
+      el.addEventListener("mouseleave", () => {
+        dealerHoverRef.current = false;
+        if (popup.isOpen()) popup.remove();
+      });
+      markersRef.current.push(marker);
+      bounds.extend([d.lng, d.lat]);
+      added++;
     }
-
-    if (features.length > 0 && !didFitRef.current) {
-      const bounds = new mapboxgl.LngLatBounds();
-      for (const f of features) bounds.extend(f.geometry.coordinates as [number, number]);
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 60, maxZoom: 9, duration: 600 });
-        didFitRef.current = true;
-      }
+    // Only auto-fit on first render so logging a check-in doesn't jump the map
+    if (added > 0 && !bounds.isEmpty() && !didFitRef.current) {
+      map.fitBounds(bounds, { padding: 60, maxZoom: 9, duration: 600 });
+      didFitRef.current = true;
     }
   }, [filteredDealers]);
 
@@ -743,9 +651,8 @@ export default function CheckInsPage() {
         email: newDealer.email.trim() || null,
         website: newDealer.website.trim() || null,
         status: "active",
-        rep_owner: repOwner === "all" ? "will" : repOwner,
       })
-      .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
+      .select("id, name, street_address, city, state, status, rep_id, lat, lng")
       .single();
     setAddSaving(false);
     if (error) {
@@ -772,32 +679,6 @@ export default function CheckInsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex rounded-md border bg-card p-0.5 shadow-sm">
-            {REP_OWNERS.map((r) => {
-              const count =
-                r.value === "all"
-                  ? dealers.length
-                  : dealers.filter((d) => (d.rep_owner ?? "").toLowerCase() === r.value).length;
-              const active = repOwner === r.value;
-              return (
-                <button
-                  key={r.value}
-                  type="button"
-                  onClick={() => setRepOwner(r.value)}
-                  className={`px-3 h-8 text-xs font-medium rounded transition-colors ${
-                    active
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  }`}
-                >
-                  {r.label}
-                  <span className={`ml-1.5 text-[10px] ${active ? "opacity-80" : "opacity-60"}`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
           <div className="relative">
             <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -807,17 +688,6 @@ export default function CheckInsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            type="button"
-            variant={pinsVisible ? "outline" : "default"}
-            size="sm"
-            className="h-9"
-            onClick={() => setPinsVisible((v) => !v)}
-            title={pinsVisible ? "Hide pins, show only territory colours" : "Show dealer pins"}
-          >
-            <MapPin className="h-4 w-4" />
-            {pinsVisible ? "Territory only" : "Show pins"}
-          </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="h-9">

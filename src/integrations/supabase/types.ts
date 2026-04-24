@@ -223,7 +223,6 @@ export type Database = {
           name: string
           phone: string | null
           rep_id: string | null
-          rep_owner: string | null
           revenue: number | null
           state: string | null
           status: string
@@ -245,7 +244,6 @@ export type Database = {
           name: string
           phone?: string | null
           rep_id?: string | null
-          rep_owner?: string | null
           revenue?: number | null
           state?: string | null
           status?: string
@@ -267,7 +265,6 @@ export type Database = {
           name?: string
           phone?: string | null
           rep_id?: string | null
-          rep_owner?: string | null
           revenue?: number | null
           state?: string | null
           status?: string
