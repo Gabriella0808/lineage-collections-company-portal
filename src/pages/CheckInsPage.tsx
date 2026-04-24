@@ -128,6 +128,7 @@ export default function CheckInsPage() {
   const [geocoding, setGeocoding] = useState(false);
   const [search, setSearch] = useState("");
   const [repOwner, setRepOwner] = useState<RepOwner>("all");
+  const [pinsVisible, setPinsVisible] = useState(true);
   const [selected, setSelected] = useState<Dealer | null>(null);
   const [detailCheckIn, setDetailCheckIn] = useState<CheckIn | null>(null);
   const [form, setForm] = useState({
@@ -454,6 +455,23 @@ export default function CheckInsPage() {
   useEffect(() => {
     didFitRef.current = false;
   }, [repOwner]);
+
+  // Toggle dealer pin layer visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (map.getLayer("dealers-circle")) {
+        map.setLayoutProperty(
+          "dealers-circle",
+          "visibility",
+          pinsVisible ? "visible" : "none",
+        );
+      }
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once("load", apply);
+  }, [pinsVisible]);
 
   // Render dealer pins as a GPU-rendered Mapbox source/layer (scales to thousands)
   useEffect(() => {
@@ -789,6 +807,17 @@ export default function CheckInsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Button
+            type="button"
+            variant={pinsVisible ? "outline" : "default"}
+            size="sm"
+            className="h-9"
+            onClick={() => setPinsVisible((v) => !v)}
+            title={pinsVisible ? "Hide pins, show only territory colours" : "Show dealer pins"}
+          >
+            <MapPin className="h-4 w-4" />
+            {pinsVisible ? "Territory only" : "Show pins"}
+          </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="h-9">
