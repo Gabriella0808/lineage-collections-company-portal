@@ -998,19 +998,19 @@ export default function CheckInsPage() {
       </Sheet>
 
       {/* Check-in details popup */}
-      <Sheet open={!!detailCheckIn} onOpenChange={(o) => !o && setDetailCheckIn(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+      <Dialog open={!!detailCheckIn} onOpenChange={(o) => !o && setDetailCheckIn(null)}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           {detailCheckIn && (
             <>
-              <SheetHeader>
-                <SheetTitle>Visit details</SheetTitle>
-                <SheetDescription>
+              <DialogHeader>
+                <DialogTitle>Visit details</DialogTitle>
+                <DialogDescription>
                   {selected?.name ?? "Dealer"} •{" "}
                   {format(new Date(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
-                </SheetDescription>
-              </SheetHeader>
+                </DialogDescription>
+              </DialogHeader>
 
-              <div className="mt-5 space-y-4 text-sm">
+              <div className="mt-2 space-y-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -1104,8 +1104,8 @@ export default function CheckInsPage() {
               </div>
             </>
           )}
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
