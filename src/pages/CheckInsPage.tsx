@@ -480,7 +480,7 @@ export default function CheckInsPage() {
       map.fitBounds(bounds, { padding: 60, maxZoom: 9, duration: 600 });
       didFitRef.current = true;
     }
-  }, [filteredDealers]);
+  }, [filteredDealers, territoriesOnly]);
 
   const dealerCheckIns = useMemo(() => {
     if (!selected) return [];
