@@ -807,6 +807,17 @@ export default function CheckInsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <Button
+            type="button"
+            variant={pinsVisible ? "outline" : "default"}
+            size="sm"
+            className="h-9"
+            onClick={() => setPinsVisible((v) => !v)}
+            title={pinsVisible ? "Hide pins, show only territory colours" : "Show dealer pins"}
+          >
+            <MapPin className="h-4 w-4" />
+            {pinsVisible ? "Territory only" : "Show pins"}
+          </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="h-9">
