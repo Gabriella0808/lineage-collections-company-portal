@@ -106,6 +106,8 @@ export default function CheckInsPage() {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const territoryPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const dealerHoverRef = useRef(false);
 
   const [token, setToken] = useState<string | null>(null);
   const [dealers, setDealers] = useState<Dealer[]>([]);
