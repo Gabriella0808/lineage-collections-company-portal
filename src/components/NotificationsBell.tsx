@@ -69,8 +69,25 @@ export function NotificationsBell() {
   };
 
   const remove = async (id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-    await supabase.from("notifications").delete().eq("id", id);
+    const prev = items;
+    setItems((p) => p.filter((i) => i.id !== id));
+    const { error } = await supabase.from("notifications").delete().eq("id", id);
+    if (error) {
+      setItems(prev);
+      console.error("Failed to delete notification", error);
+    }
+  };
+
+  const clearAll = async () => {
+    if (!user) return;
+    if (!confirm("Delete all notifications?")) return;
+    const prev = items;
+    setItems([]);
+    const { error } = await supabase.from("notifications").delete().eq("user_id", user.id);
+    if (error) {
+      setItems(prev);
+      console.error("Failed to clear notifications", error);
+    }
   };
 
   if (!user) return null;
