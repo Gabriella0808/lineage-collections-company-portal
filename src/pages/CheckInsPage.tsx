@@ -58,6 +58,9 @@ interface CheckIn {
   visit_date: string;
   notes: string | null;
   outcome: string | null;
+  log_type?: string | null;
+  brand?: string | null;
+  new_placement?: string | null;
   created_at: string;
 }
 
