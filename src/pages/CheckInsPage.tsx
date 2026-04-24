@@ -422,7 +422,7 @@ export default function CheckInsPage() {
         outcome: form.log_type,
         log_type: form.log_type,
         new_placement: form.new_placement || null,
-        brand: form.brand || null,
+        brand: form.brands.length ? form.brands.join(", ") : null,
         notes: form.notes.trim() || null,
       })
       .select()
