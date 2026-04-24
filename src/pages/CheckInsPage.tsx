@@ -56,7 +56,7 @@ interface Dealer {
 type RepOwner = "all" | "will" | "mateo" | "chris";
 
 const REP_OWNERS: { value: RepOwner; label: string }[] = [
-  { value: "all", label: "All reps" },
+  { value: "all", label: "All" },
   { value: "will", label: "Will" },
   { value: "mateo", label: "Mateo" },
   { value: "chris", label: "Chris" },
