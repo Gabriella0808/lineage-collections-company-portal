@@ -431,6 +431,11 @@ export default function CheckInsPage() {
 
   const didFitRef = useRef(false);
 
+  // Re-fit map when rep filter changes
+  useEffect(() => {
+    didFitRef.current = false;
+  }, [repOwner]);
+
   // Render markers
   useEffect(() => {
     const map = mapRef.current;
