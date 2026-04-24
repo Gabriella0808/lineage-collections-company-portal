@@ -113,7 +113,7 @@ export default function CheckInsPage() {
     visit_date: format(new Date(), "yyyy-MM-dd"),
     log_type: "",
     new_placement: "",
-    brand: "",
+    brands: [] as string[],
     notes: "",
     follow_up_date: "",
   });
