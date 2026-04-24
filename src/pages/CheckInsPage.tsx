@@ -434,6 +434,14 @@ export default function CheckInsPage() {
     // Optimistically update so pin color refreshes immediately
     if (data) {
       setCheckIns((prev) => [data as CheckIn, ...prev]);
+      if (user && !userNames[user.id]) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setUserNames((prev) => ({ ...prev, [user.id]: prof?.full_name || user.email || "You" }));
+      }
     }
 
     // If follow-up, create a task + notification
