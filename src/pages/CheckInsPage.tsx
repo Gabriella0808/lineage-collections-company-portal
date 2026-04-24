@@ -847,6 +847,15 @@ export default function CheckInsPage() {
             {x.l}
           </span>
         ))}
+        <Button
+          type="button"
+          size="sm"
+          variant={territoriesOnly ? "default" : "outline"}
+          className="ml-auto h-7 text-xs"
+          onClick={() => setTerritoriesOnly((v) => !v)}
+        >
+          {territoriesOnly ? "Show pins" : "View territories only"}
+        </Button>
       </div>
 
       <Card className="overflow-hidden">
