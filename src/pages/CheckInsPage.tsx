@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -112,7 +113,7 @@ export default function CheckInsPage() {
     visit_date: format(new Date(), "yyyy-MM-dd"),
     log_type: "",
     new_placement: "",
-    brand: "",
+    brands: [] as string[],
     notes: "",
     follow_up_date: "",
   });
@@ -421,7 +422,7 @@ export default function CheckInsPage() {
         outcome: form.log_type,
         log_type: form.log_type,
         new_placement: form.new_placement || null,
-        brand: form.brand || null,
+        brand: form.brands.length ? form.brands.join(", ") : null,
         notes: form.notes.trim() || null,
       })
       .select()
@@ -484,7 +485,7 @@ export default function CheckInsPage() {
       visit_date: format(new Date(), "yyyy-MM-dd"),
       log_type: "",
       new_placement: "",
-      brand: "",
+      brands: [],
       notes: "",
       follow_up_date: "",
     });
@@ -873,21 +874,35 @@ export default function CheckInsPage() {
                     </div>
                     <div>
                       <Label className="text-xs font-medium mb-1.5 block">Brand</Label>
-                      <Select
-                        value={form.brand}
-                        onValueChange={(v) => setForm({ ...form, brand: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a brand" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {BRAND_OPTIONS.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>
-                              {o.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="rounded-md border border-input bg-background p-2 space-y-1.5">
+                        {BRAND_OPTIONS.map((o) => {
+                          const checked = form.brands.includes(o.value);
+                          return (
+                            <label
+                              key={o.value}
+                              className="flex items-center gap-2 cursor-pointer rounded px-1.5 py-1 hover:bg-accent/50"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(v) => {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    brands: v
+                                      ? [...prev.brands, o.value]
+                                      : prev.brands.filter((b) => b !== o.value),
+                                  }));
+                                }}
+                              />
+                              <span className="text-sm">{o.label}</span>
+                            </label>
+                          );
+                        })}
+                        {form.brands.length === 0 && (
+                          <p className="text-[11px] text-muted-foreground px-1.5">
+                            Select one or more brands
+                          </p>
+                        )}
+                      </div>
                     </div>
                     {form.log_type === "follow_up" && (
                       <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 space-y-1.5">
