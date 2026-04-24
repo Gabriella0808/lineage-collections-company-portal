@@ -128,6 +128,7 @@ export default function CheckInsPage() {
   const [geocoding, setGeocoding] = useState(false);
   const [search, setSearch] = useState("");
   const [repOwner, setRepOwner] = useState<RepOwner>("all");
+  const [pinsVisible, setPinsVisible] = useState(true);
   const [selected, setSelected] = useState<Dealer | null>(null);
   const [detailCheckIn, setDetailCheckIn] = useState<CheckIn | null>(null);
   const [form, setForm] = useState({
