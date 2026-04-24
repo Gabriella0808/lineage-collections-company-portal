@@ -424,6 +424,8 @@ export default function CheckInsPage() {
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
+    if (territoriesOnly) return;
+
     const bounds = new mapboxgl.LngLatBounds();
     let added = 0;
     for (const d of filteredDealers) {
