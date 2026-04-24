@@ -197,7 +197,20 @@ export default function CheckInsPage() {
     if (checkInsRes.error) {
       toast({ title: "Failed to load check-ins", description: checkInsRes.error.message, variant: "destructive" });
     } else {
-      setCheckIns((checkInsRes.data ?? []) as CheckIn[]);
+      const ci = (checkInsRes.data ?? []) as CheckIn[];
+      setCheckIns(ci);
+      const ids = Array.from(new Set(ci.map((c) => c.user_id).filter(Boolean)));
+      if (ids.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", ids);
+        const map: Record<string, string> = {};
+        (profs ?? []).forEach((p: any) => {
+          if (p.user_id) map[p.user_id] = p.full_name || "Unknown";
+        });
+        setUserNames(map);
+      }
     }
     setLoading(false);
   };
