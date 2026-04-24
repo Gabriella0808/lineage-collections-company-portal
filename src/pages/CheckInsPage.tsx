@@ -482,6 +482,23 @@ export default function CheckInsPage() {
     }
   }, [filteredDealers, territoriesOnly]);
 
+  // Bump territory fill opacity when in "territories only" mode
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (!map.getLayer("us-states-fill")) return;
+      map.setPaintProperty("us-states-fill", "fill-opacity", [
+        "case",
+        ["==", ["get", "territory"], null], 0,
+        ["boolean", ["feature-state", "hover"], false], territoriesOnly ? 0.75 : 0.55,
+        territoriesOnly ? 0.6 : 0.35,
+      ] as never);
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once("idle", apply);
+  }, [territoriesOnly, token]);
+
   const dealerCheckIns = useMemo(() => {
     if (!selected) return [];
     return checkIns
