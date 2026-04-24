@@ -172,14 +172,18 @@ export default function CheckInsPage() {
 
   const filteredDealers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return dealersWithMeta;
-    return dealersWithMeta.filter(
+    let list = dealersWithMeta;
+    if (repOwner !== "all") {
+      list = list.filter((d) => (d.rep_owner ?? "").toLowerCase() === repOwner);
+    }
+    if (!q) return list;
+    return list.filter(
       (d) =>
         d.name.toLowerCase().includes(q) ||
         (d.city ?? "").toLowerCase().includes(q) ||
         (d.state ?? "").toLowerCase().includes(q),
     );
-  }, [dealersWithMeta, search]);
+  }, [dealersWithMeta, search, repOwner]);
 
   // Fetch token
   useEffect(() => {
