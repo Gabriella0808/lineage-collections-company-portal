@@ -129,6 +129,7 @@ export default function CheckInsPage() {
   const [saving, setSaving] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addSaving, setAddSaving] = useState(false);
+  const [territoriesOnly, setTerritoriesOnly] = useState(false);
   const [newDealer, setNewDealer] = useState({
     name: "",
     street_address: "",
