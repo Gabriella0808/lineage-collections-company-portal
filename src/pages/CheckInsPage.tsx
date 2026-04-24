@@ -745,15 +745,19 @@ export default function CheckInsPage() {
               const d = dealers.find((x) => x.id === c.dealer_id);
               const canDelete = c.user_id === user?.id;
               return (
-                <li key={c.id} className="py-2 flex items-start justify-between gap-3 text-sm">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{d?.name ?? "Unknown dealer"}</p>
-                    {c.notes && (
-                      <p className="text-xs text-muted-foreground line-clamp-1">{c.notes}</p>
-                    )}
-                  </div>
-                  <div className="flex items-start gap-2 shrink-0">
-                    <div className="text-right">
+                <li key={c.id} className="py-2 flex items-stretch justify-between gap-3 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setDetailCheckIn(c)}
+                    className="flex-1 min-w-0 flex items-start justify-between gap-3 text-left rounded-md px-2 -mx-2 py-1 hover:bg-accent/50 transition-colors cursor-pointer"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{d?.name ?? "Unknown dealer"}</p>
+                      {c.notes && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">{c.notes}</p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(c.visit_date), "MMM d, yyyy")}
                       </p>
@@ -763,18 +767,21 @@ export default function CheckInsPage() {
                         </Badge>
                       )}
                     </div>
-                    {canDelete && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteCheckIn(c.id)}
-                        aria-label="Delete check-in"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
+                  </button>
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0 self-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteCheckIn(c.id);
+                      }}
+                      aria-label="Delete check-in"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </li>
               );
             })}
@@ -1009,8 +1016,10 @@ export default function CheckInsPage() {
               <DialogHeader>
                 <DialogTitle>Visit details</DialogTitle>
                 <DialogDescription>
-                  {selected?.name ?? "Dealer"} •{" "}
-                  {format(new Date(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
+                  {(selected?.id === detailCheckIn.dealer_id
+                    ? selected?.name
+                    : dealers.find((d) => d.id === detailCheckIn.dealer_id)?.name) ?? "Dealer"}{" "}
+                  • {format(new Date(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
                 </DialogDescription>
               </DialogHeader>
 
