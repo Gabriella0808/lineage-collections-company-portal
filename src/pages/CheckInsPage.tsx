@@ -103,6 +103,7 @@ export default function CheckInsPage() {
   const [token, setToken] = useState<string | null>(null);
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
   const [search, setSearch] = useState("");
@@ -196,7 +197,20 @@ export default function CheckInsPage() {
     if (checkInsRes.error) {
       toast({ title: "Failed to load check-ins", description: checkInsRes.error.message, variant: "destructive" });
     } else {
-      setCheckIns((checkInsRes.data ?? []) as CheckIn[]);
+      const ci = (checkInsRes.data ?? []) as CheckIn[];
+      setCheckIns(ci);
+      const ids = Array.from(new Set(ci.map((c) => c.user_id).filter(Boolean)));
+      if (ids.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", ids);
+        const map: Record<string, string> = {};
+        (profs ?? []).forEach((p: any) => {
+          if (p.user_id) map[p.user_id] = p.full_name || "Unknown";
+        });
+        setUserNames(map);
+      }
     }
     setLoading(false);
   };
@@ -420,6 +434,14 @@ export default function CheckInsPage() {
     // Optimistically update so pin color refreshes immediately
     if (data) {
       setCheckIns((prev) => [data as CheckIn, ...prev]);
+      if (user && !userNames[user.id]) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setUserNames((prev) => ({ ...prev, [user.id]: prof?.full_name || user.email || "You" }));
+      }
     }
 
     // If follow-up, create a task + notification
@@ -917,6 +939,9 @@ export default function CheckInsPage() {
                               </Badge>
                             )}
                           </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Logged by {userNames[c.user_id] ?? (c.user_id === user?.id ? "You" : "Unknown")}
+                          </p>
                           {c.notes && (
                             <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">
                               {c.notes}
