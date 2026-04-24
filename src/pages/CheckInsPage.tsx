@@ -126,7 +126,7 @@ export default function CheckInsPage() {
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Dealer | null>(null);
+  const [repOwner, setRepOwner] = useState<RepOwner>("all");
   const [detailCheckIn, setDetailCheckIn] = useState<CheckIn | null>(null);
   const [form, setForm] = useState({
     visit_date: format(new Date(), "yyyy-MM-dd"),
