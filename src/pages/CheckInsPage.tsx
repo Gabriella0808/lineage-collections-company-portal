@@ -961,30 +961,146 @@ export default function CheckInsPage() {
                   ) : (
                     <ul className="space-y-2">
                       {dealerCheckIns.map((c) => (
-                        <li key={c.id} className="rounded border p-2 text-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">
-                              {format(new Date(c.visit_date), "MMM d, yyyy")}
-                            </span>
-                            {c.outcome && (
-                              <Badge variant="secondary" className="text-[10px]">
-                                {OUTCOMES.find((o) => o.value === c.outcome)?.label ?? c.outcome}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            Logged by {userNames[c.user_id] ?? (c.user_id === user?.id ? "You" : "Unknown")}
-                          </p>
-                          {c.notes && (
-                            <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">
-                              {c.notes}
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            onClick={() => setDetailCheckIn(c)}
+                            className="w-full text-left rounded border p-2 text-sm hover:bg-accent/50 hover:border-primary/40 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">
+                                {format(new Date(c.visit_date), "MMM d, yyyy")}
+                              </span>
+                              {c.outcome && (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {OUTCOMES.find((o) => o.value === c.outcome)?.label ?? c.outcome}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              Logged by {userNames[c.user_id] ?? (c.user_id === user?.id ? "You" : "Unknown")}
                             </p>
-                          )}
+                            {c.notes && (
+                              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-2">
+                                {c.notes}
+                              </p>
+                            )}
+                          </button>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Check-in details popup */}
+      <Sheet open={!!detailCheckIn} onOpenChange={(o) => !o && setDetailCheckIn(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          {detailCheckIn && (
+            <>
+              <SheetHeader>
+                <SheetTitle>Visit details</SheetTitle>
+                <SheetDescription>
+                  {selected?.name ?? "Dealer"} •{" "}
+                  {format(new Date(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-5 space-y-4 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Visit date
+                    </Label>
+                    <p className="mt-1 font-medium">
+                      {format(new Date(detailCheckIn.visit_date), "MMM d, yyyy")}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Logged by
+                    </Label>
+                    <p className="mt-1 font-medium">
+                      {userNames[detailCheckIn.user_id] ??
+                        (detailCheckIn.user_id === user?.id ? "You" : "Unknown")}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Log type
+                    </Label>
+                    <p className="mt-1 font-medium">
+                      {LOG_TYPES.find((l) => l.value === (detailCheckIn.log_type ?? detailCheckIn.outcome))?.label
+                        ?? detailCheckIn.log_type
+                        ?? detailCheckIn.outcome
+                        ?? "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      New placement
+                    </Label>
+                    <p className="mt-1 font-medium">
+                      {PLACEMENT_OPTIONS.find((p) => p.value === detailCheckIn.new_placement)?.label
+                        ?? detailCheckIn.new_placement
+                        ?? "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Brand(s)
+                  </Label>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {detailCheckIn.brand
+                      ? detailCheckIn.brand.split(",").map((b) => {
+                          const v = b.trim();
+                          const label = BRAND_OPTIONS.find((o) => o.value === v)?.label ?? v;
+                          return (
+                            <Badge key={v} variant="secondary" className="text-[11px]">
+                              {label}
+                            </Badge>
+                          );
+                        })
+                      : <span className="text-muted-foreground">—</span>}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Notes
+                  </Label>
+                  <div className="mt-1 rounded-md border bg-muted/30 p-3 min-h-[80px] whitespace-pre-wrap">
+                    {detailCheckIn.notes?.trim() ? detailCheckIn.notes : (
+                      <span className="text-muted-foreground italic">No notes</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-muted-foreground">
+                  Logged {formatDistanceToNow(new Date(detailCheckIn.created_at), { addSuffix: true })}
+                </div>
+
+                {detailCheckIn.user_id === user?.id && (
+                  <div className="pt-2 border-t">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        const id = detailCheckIn.id;
+                        setDetailCheckIn(null);
+                        await deleteCheckIn(id);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete visit
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}
