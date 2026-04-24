@@ -48,9 +48,19 @@ interface Dealer {
   state: string | null;
   status: string;
   rep_id: string | null;
+  rep_owner: string | null;
   lat: number | null;
   lng: number | null;
 }
+
+type RepOwner = "all" | "will" | "mateo" | "chris";
+
+const REP_OWNERS: { value: RepOwner; label: string }[] = [
+  { value: "all", label: "All reps" },
+  { value: "will", label: "Will" },
+  { value: "mateo", label: "Mateo" },
+  { value: "chris", label: "Chris" },
+];
 
 interface CheckIn {
   id: string;
