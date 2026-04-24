@@ -48,9 +48,19 @@ interface Dealer {
   state: string | null;
   status: string;
   rep_id: string | null;
+  rep_owner: string | null;
   lat: number | null;
   lng: number | null;
 }
+
+type RepOwner = "all" | "will" | "mateo" | "chris";
+
+const REP_OWNERS: { value: RepOwner; label: string }[] = [
+  { value: "all", label: "All reps" },
+  { value: "will", label: "Will" },
+  { value: "mateo", label: "Mateo" },
+  { value: "chris", label: "Chris" },
+];
 
 interface CheckIn {
   id: string;
@@ -116,6 +126,7 @@ export default function CheckInsPage() {
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
   const [search, setSearch] = useState("");
+  const [repOwner, setRepOwner] = useState<RepOwner>("all");
   const [selected, setSelected] = useState<Dealer | null>(null);
   const [detailCheckIn, setDetailCheckIn] = useState<CheckIn | null>(null);
   const [form, setForm] = useState({
@@ -161,14 +172,18 @@ export default function CheckInsPage() {
 
   const filteredDealers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return dealersWithMeta;
-    return dealersWithMeta.filter(
+    let list = dealersWithMeta;
+    if (repOwner !== "all") {
+      list = list.filter((d) => (d.rep_owner ?? "").toLowerCase() === repOwner);
+    }
+    if (!q) return list;
+    return list.filter(
       (d) =>
         d.name.toLowerCase().includes(q) ||
         (d.city ?? "").toLowerCase().includes(q) ||
         (d.state ?? "").toLowerCase().includes(q),
     );
-  }, [dealersWithMeta, search]);
+  }, [dealersWithMeta, search, repOwner]);
 
   // Fetch token
   useEffect(() => {
@@ -192,7 +207,7 @@ export default function CheckInsPage() {
     const [dealersRes, checkInsRes] = await Promise.all([
       supabase
         .from("dealers")
-        .select("id, name, street_address, city, state, status, rep_id, lat, lng")
+        .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
         .order("name"),
       supabase
         .from("dealer_check_ins")
@@ -415,6 +430,11 @@ export default function CheckInsPage() {
   }, [token]);
 
   const didFitRef = useRef(false);
+
+  // Re-fit map when rep filter changes
+  useEffect(() => {
+    didFitRef.current = false;
+  }, [repOwner]);
 
   // Render markers
   useEffect(() => {
@@ -651,8 +671,9 @@ export default function CheckInsPage() {
         email: newDealer.email.trim() || null,
         website: newDealer.website.trim() || null,
         status: "active",
+        rep_owner: repOwner === "all" ? "will" : repOwner,
       })
-      .select("id, name, street_address, city, state, status, rep_id, lat, lng")
+      .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
       .single();
     setAddSaving(false);
     if (error) {
@@ -679,6 +700,32 @@ export default function CheckInsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <div className="inline-flex rounded-md border bg-card p-0.5 shadow-sm">
+            {REP_OWNERS.map((r) => {
+              const count =
+                r.value === "all"
+                  ? dealers.length
+                  : dealers.filter((d) => (d.rep_owner ?? "").toLowerCase() === r.value).length;
+              const active = repOwner === r.value;
+              return (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => setRepOwner(r.value)}
+                  className={`px-3 h-8 text-xs font-medium rounded transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                >
+                  {r.label}
+                  <span className={`ml-1.5 text-[10px] ${active ? "opacity-80" : "opacity-60"}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
           <div className="relative">
             <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
