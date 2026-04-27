@@ -251,10 +251,20 @@ export default function TasksPage() {
       toast({ title: "Failed to load assignees", description: assigneesRes.error.message, variant: "destructive" });
     } else {
       const HIDDEN_USER_IDS = new Set(["664c4627-764e-44ff-94ed-d887e3097265"]); // Brent
-      const filtered = ((assigneesRes.data ?? []) as AssignableUser[]).filter(
-        (a) => !HIDDEN_USER_IDS.has(a.user_id),
-      );
-      setAssignees(filtered);
+      const rolePriority: Record<string, number> = { admin: 3, manager: 2, rep: 1 };
+      const dedupMap = new Map<string, AssignableUser>();
+      ((assigneesRes.data ?? []) as AssignableUser[])
+        .filter((a) => !HIDDEN_USER_IDS.has(a.user_id))
+        .forEach((a) => {
+          const existing = dedupMap.get(a.user_id);
+          if (
+            !existing ||
+            (rolePriority[a.role] ?? 0) > (rolePriority[existing.role] ?? 0)
+          ) {
+            dedupMap.set(a.user_id, a);
+          }
+        });
+      setAssignees([...dedupMap.values()]);
     }
     if (!profilesRes.error) {
       setProfiles((profilesRes.data ?? []) as Profile[]);
