@@ -265,7 +265,7 @@ export default function CheckInAnalyticsPage() {
         <KpiCard
           icon={<Users className="h-4 w-4" />}
           label="Active Managers"
-          value={`${totals.activeReps} / ${TEAM.length}`}
+          value={`${totals.activeReps} / ${team.length}`}
           accent="muted"
         />
       </section>
@@ -283,7 +283,7 @@ export default function CheckInAnalyticsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {TEAM.map((member, idx) => (
+          {team.map((member, idx) => (
             <RepCard
               key={member.id}
               name={member.name}
