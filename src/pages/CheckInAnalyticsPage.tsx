@@ -126,6 +126,8 @@ function inRange(dateStr: string, start: Date, end: Date) {
   return d >= s && d <= e;
 }
 
+const CHECK_INS_CHANGED_EVENT = "lineage:check-ins-changed";
+
 export default function CheckInAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [checkIns, setCheckIns] = useState<CheckInRow[]>([]);
@@ -146,6 +148,9 @@ export default function CheckInAnalyticsPage() {
     const handleVisibilityChange = () => {
       if (!document.hidden) triggerRefresh();
     };
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === CHECK_INS_CHANGED_EVENT) triggerRefresh();
+    };
 
     const channel = supabase
       .channel("check-in-analytics-live")
@@ -162,12 +167,23 @@ export default function CheckInAnalyticsPage() {
       .subscribe();
 
     window.addEventListener("focus", triggerRefresh);
+    window.addEventListener(CHECK_INS_CHANGED_EVENT, triggerRefresh);
+    window.addEventListener("storage", handleStorage);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    let broadcastChannel: BroadcastChannel | null = null;
+    if ("BroadcastChannel" in window) {
+      broadcastChannel = new BroadcastChannel(CHECK_INS_CHANGED_EVENT);
+      broadcastChannel.onmessage = triggerRefresh;
+    }
 
     return () => {
       supabase.removeChannel(channel);
       window.removeEventListener("focus", triggerRefresh);
+      window.removeEventListener(CHECK_INS_CHANGED_EVENT, triggerRefresh);
+      window.removeEventListener("storage", handleStorage);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      broadcastChannel?.close();
     };
   }, []);
 
