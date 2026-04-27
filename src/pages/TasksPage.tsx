@@ -906,7 +906,7 @@ function AssigneeMultiPicker({ assignees, selectedIds, onChange }: AssigneeMulti
               />
             </div>
           </div>
-          <ScrollArea className="max-h-72">
+          <div className="max-h-72 overflow-y-auto overscroll-contain">
             <div className="p-1">
               {filtered.map((a) => {
                 const checked = selectedIds.includes(a.user_id);
@@ -927,7 +927,7 @@ function AssigneeMultiPicker({ assignees, selectedIds, onChange }: AssigneeMulti
                 <p className="px-3 py-4 text-xs text-muted-foreground">No people found.</p>
               )}
             </div>
-          </ScrollArea>
+          </div>
           {selectedUsers.length > 0 && (
             <div className="border-t p-2 flex justify-between">
               <Button
