@@ -23,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Calendar, User, Bell, Check, CheckCheck } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Trash2, Pencil, Calendar, User, Bell, Check, CheckCheck, Search, X } from "lucide-react";
+import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, isWithinInterval, parseISO } from "date-fns";
 
 type Status = "todo" | "in_progress" | "blocked" | "done";
 
@@ -154,6 +154,60 @@ export default function TasksPage() {
     due_date: string;
     assigned_user_id: string;
   }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_id: "" });
+
+  // ---- Filters ----
+  type AssigneeFilter = "all" | "mine" | "created";
+  type DueFilter = "any" | "overdue" | "today" | "this_week" | "next_7" | "none";
+  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>("all");
+  const [dueFilter, setDueFilter] = useState<DueFilter>("any");
+  const [contextQuery, setContextQuery] = useState("");
+
+  const filtersActive =
+    assigneeFilter !== "all" || dueFilter !== "any" || contextQuery.trim() !== "";
+
+  const clearFilters = () => {
+    setAssigneeFilter("all");
+    setDueFilter("any");
+    setContextQuery("");
+  };
+
+  const matchesDue = (t: Task): boolean => {
+    if (dueFilter === "any") return true;
+    if (dueFilter === "none") return !t.due_date;
+    if (!t.due_date) return false;
+    const d = parseISO(t.due_date);
+    const now = new Date();
+    if (dueFilter === "overdue") return d < startOfDay(now) && t.status !== "done";
+    if (dueFilter === "today")
+      return isWithinInterval(d, { start: startOfDay(now), end: endOfDay(now) });
+    if (dueFilter === "this_week")
+      return isWithinInterval(d, {
+        start: startOfWeek(now, { weekStartsOn: 1 }),
+        end: endOfWeek(now, { weekStartsOn: 1 }),
+      });
+    if (dueFilter === "next_7")
+      return isWithinInterval(d, { start: startOfDay(now), end: endOfDay(addDays(now, 7)) });
+    return true;
+  };
+
+  const matchesAssignee = (t: Task): boolean => {
+    if (!user) return true;
+    if (assigneeFilter === "all") return true;
+    if (assigneeFilter === "mine") return t.assigned_user_id === user.id;
+    if (assigneeFilter === "created") return t.user_id === user.id;
+    return true;
+  };
+
+  const matchesContext = (t: Task): boolean => {
+    const q = contextQuery.trim().toLowerCase();
+    if (!q) return true;
+    const hay = `${t.title} ${t.description ?? ""}`.toLowerCase();
+    return hay.includes(q);
+  };
+
+  const filteredTasks = tasks.filter(
+    (t) => matchesAssignee(t) && matchesDue(t) && matchesContext(t),
+  );
 
   const load = async () => {
     if (!user) return;
@@ -410,6 +464,84 @@ export default function TasksPage() {
         );
       })()}
 
+      {/* Filters */}
+      {!loading && (
+        <Card className="p-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-3">
+            {/* Quick assignee chips */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {([
+                { key: "all", label: "All tasks" },
+                { key: "mine", label: "Assigned to me" },
+                { key: "created", label: "Created by me" },
+              ] as { key: AssigneeFilter; label: string }[]).map((opt) => (
+                <Button
+                  key={opt.key}
+                  size="sm"
+                  variant={assigneeFilter === opt.key ? "default" : "outline"}
+                  className="h-8 text-xs"
+                  onClick={() => setAssigneeFilter(opt.key)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+
+            <div className="hidden lg:block h-6 w-px bg-border" />
+
+            {/* Due date select */}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Select value={dueFilter} onValueChange={(v: DueFilter) => setDueFilter(v)}>
+                <SelectTrigger className="h-8 w-[170px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any" className="text-xs">Any due date</SelectItem>
+                  <SelectItem value="overdue" className="text-xs">Overdue</SelectItem>
+                  <SelectItem value="today" className="text-xs">Due today</SelectItem>
+                  <SelectItem value="this_week" className="text-xs">This week</SelectItem>
+                  <SelectItem value="next_7" className="text-xs">Next 7 days</SelectItem>
+                  <SelectItem value="none" className="text-xs">No due date</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Context search (territory / dealer) */}
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={contextQuery}
+                onChange={(e) => setContextQuery(e.target.value)}
+                placeholder="Search territory or dealer (matches title & description)"
+                className="h-8 pl-8 text-xs"
+              />
+              {contextQuery && (
+                <button
+                  type="button"
+                  onClick={() => setContextQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 lg:ml-auto">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {filteredTasks.length} of {tasks.length}
+              </span>
+              {filtersActive && (
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={clearFilters}>
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : (
@@ -426,7 +558,7 @@ export default function TasksPage() {
 
           <div className="divide-y">
             {COLUMNS.map((col) => {
-              const items = tasks.filter((t) => t.status === col.key);
+              const items = filteredTasks.filter((t) => t.status === col.key);
               return (
                 <div key={col.key} className="">
                   {/* Group header */}
