@@ -545,6 +545,29 @@ export default function TasksPage() {
               </Select>
             </div>
 
+            {/* Assigned-to user select */}
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <Select value={assigneeUserId} onValueChange={(v) => setAssigneeUserId(v)}>
+                <SelectTrigger className="h-8 w-[200px] text-xs">
+                  <SelectValue placeholder="Assigned to" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any" className="text-xs">Anyone</SelectItem>
+                  {visibleAssignees
+                    .slice()
+                    .sort((a, b) =>
+                      (a.full_name || a.email || "").localeCompare(b.full_name || b.email || ""),
+                    )
+                    .map((a) => (
+                      <SelectItem key={a.user_id} value={a.user_id} className="text-xs">
+                        {a.full_name || a.email}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Context search (territory / dealer) */}
             <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
