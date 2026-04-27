@@ -274,7 +274,7 @@ export default function CheckInAnalyticsPage() {
         <div className="flex items-center gap-3">
           <div className="h-8 w-1 rounded-full bg-accent" />
           <div>
-            <h2 className="font-display text-2xl text-foreground leading-tight">Rep Performance</h2>
+            <h2 className="font-display text-2xl text-foreground leading-tight">Manager Performance</h2>
             <p className="text-sm text-muted-foreground">
               Check-ins and new placements segmented by time period.
             </p>
