@@ -37,8 +37,32 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
-import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus } from "lucide-react";
+import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus, Users } from "lucide-react";
 import { STATE_TO_TERRITORY, STATE_NAME_TO_CODE, colorForTerritory } from "@/lib/territoryMap";
+
+// Team member → states they cover (derived from manager → reps → rep_territories)
+type TeamMemberId = "will" | "mateo" | "chris";
+const TEAM_MEMBERS: { id: TeamMemberId; name: string; states: string[] }[] = [
+  {
+    id: "will",
+    name: "Will Grisack",
+    // South Florida + North Florida + Panhandle/GA/AL + Arkansas + OH/WPA +
+    // Mid Atlantic + TN/KY + TX/OK + MS-LA
+    states: ["FL", "GA", "AL", "AR", "OH", "PA", "MD", "DE", "DC", "TN", "KY", "TX", "OK", "MS", "LA"],
+  },
+  {
+    id: "mateo",
+    name: "Mateo De Lisa",
+    // VA/WV + NC/SC + Indiana + MI + NY/NJ + IL/WI
+    states: ["VA", "WV", "NC", "SC", "IN", "MI", "NY", "NJ", "IL", "WI"],
+  },
+  {
+    id: "chris",
+    name: "Chris De Lisa",
+    // New England
+    states: ["ME", "NH", "VT", "MA", "RI", "CT"],
+  },
+];
 
 interface Dealer {
   id: string;
@@ -130,6 +154,7 @@ export default function CheckInsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [addSaving, setAddSaving] = useState(false);
   const [territoriesOnly, setTerritoriesOnly] = useState(false);
+  const [teamFilter, setTeamFilter] = useState<TeamMemberId | "all">("all");
   const [newDealer, setNewDealer] = useState({
     name: "",
     street_address: "",
@@ -162,14 +187,21 @@ export default function CheckInsPage() {
 
   const filteredDealers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return dealersWithMeta;
-    return dealersWithMeta.filter(
-      (d) =>
+    const team = teamFilter === "all" ? null : TEAM_MEMBERS.find((t) => t.id === teamFilter);
+    const stateSet = team ? new Set(team.states) : null;
+    return dealersWithMeta.filter((d) => {
+      if (stateSet) {
+        const code = (d.state ?? "").trim().toUpperCase();
+        if (!code || !stateSet.has(code)) return false;
+      }
+      if (!q) return true;
+      return (
         d.name.toLowerCase().includes(q) ||
         (d.city ?? "").toLowerCase().includes(q) ||
-        (d.state ?? "").toLowerCase().includes(q),
-    );
-  }, [dealersWithMeta, search]);
+        (d.state ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [dealersWithMeta, search, teamFilter]);
 
   // Fetch token
   useEffect(() => {
@@ -416,6 +448,7 @@ export default function CheckInsPage() {
   }, [token]);
 
   const didFitRef = useRef(false);
+  const lastFitTeamRef = useRef<TeamMemberId | "all">("all");
 
   // Render markers
   useEffect(() => {
@@ -475,12 +508,15 @@ export default function CheckInsPage() {
       bounds.extend([d.lng, d.lat]);
       added++;
     }
-    // Only auto-fit on first render so logging a check-in doesn't jump the map
-    if (added > 0 && !bounds.isEmpty() && !didFitRef.current) {
+    // Auto-fit on first render and whenever the team filter changes,
+    // so switching to a teammate re-centers the map on their dealers.
+    const teamChanged = lastFitTeamRef.current !== teamFilter;
+    if (added > 0 && !bounds.isEmpty() && (!didFitRef.current || teamChanged)) {
       map.fitBounds(bounds, { padding: 60, maxZoom: 9, duration: 600 });
       didFitRef.current = true;
+      lastFitTeamRef.current = teamFilter;
     }
-  }, [filteredDealers, territoriesOnly]);
+  }, [filteredDealers, territoriesOnly, teamFilter]);
 
   // Bump territory fill opacity when in "territories only" mode
   useEffect(() => {
@@ -857,6 +893,54 @@ export default function CheckInsPage() {
           {territoriesOnly ? "Show pins" : "View territories only"}
         </Button>
       </div>
+
+      {/* My Team — filter dealers on the map by team member */}
+      <Card className="p-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <Users className="h-3.5 w-3.5" /> My Team
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Button
+              type="button"
+              size="sm"
+              variant={teamFilter === "all" ? "default" : "outline"}
+              className="h-7 text-xs"
+              onClick={() => setTeamFilter("all")}
+            >
+              All
+            </Button>
+            {TEAM_MEMBERS.map((m) => {
+              const active = teamFilter === m.id;
+              const count = dealersWithMeta.filter((d) => {
+                const code = (d.state ?? "").trim().toUpperCase();
+                return code && m.states.includes(code);
+              }).length;
+              return (
+                <Button
+                  key={m.id}
+                  type="button"
+                  size="sm"
+                  variant={active ? "default" : "outline"}
+                  className="h-7 text-xs"
+                  onClick={() => setTeamFilter(m.id)}
+                >
+                  {m.name}
+                  <span className={`ml-1.5 rounded-full px-1.5 text-[10px] ${active ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                    {count}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+          {teamFilter !== "all" && (
+            <span className="text-xs text-muted-foreground ml-auto">
+              Showing {filteredDealers.length} dealer{filteredDealers.length === 1 ? "" : "s"} for{" "}
+              {TEAM_MEMBERS.find((m) => m.id === teamFilter)?.name}
+            </span>
+          )}
+        </div>
+      </Card>
 
       <Card className="overflow-hidden">
         <div
