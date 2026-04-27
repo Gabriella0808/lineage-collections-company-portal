@@ -118,24 +118,33 @@ export default function CheckInAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [checkIns, setCheckIns] = useState<CheckInRow[]>([]);
   const [userToTeam, setUserToTeam] = useState<Record<string, TeamId>>({});
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [debugBusy, setDebugBusy] = useState(false);
+  const [debugMsg, setDebugMsg] = useState<string | null>(null);
+  const [lastTestId, setLastTestId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const debugEnabled =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("debug") === "1";
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
 
-      const [{ data: managers }, { data: ums }, { data: cis }] = await Promise.all([
+      const [{ data: managers }, { data: ums }, { data: cis }, { data: userRes }] = await Promise.all([
         supabase.from("managers").select("id,email,name") as unknown as Promise<{ data: ManagerRow[] | null }>,
         supabase.from("user_managers").select("user_id,manager_id") as unknown as Promise<{ data: UserManagerRow[] | null }>,
         supabase
           .from("dealer_check_ins")
           .select("id,user_id,visit_date,new_placement")
           .order("visit_date", { ascending: false }) as unknown as Promise<{ data: CheckInRow[] | null }>,
+        supabase.auth.getUser() as unknown as Promise<{ data: { user: { id: string } | null } }>,
       ]);
 
       if (cancelled) return;
 
-      // map manager_id -> teamId via email
       const managerToTeam: Record<string, TeamId> = {};
       (managers ?? []).forEach((m) => {
         const email = (m.email ?? "").toLowerCase();
@@ -151,12 +160,68 @@ export default function CheckInAnalyticsPage() {
 
       setUserToTeam(uMap);
       setCheckIns(cis ?? []);
+      setCurrentUserId(userRes?.user?.id ?? null);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshTick]);
+
+  async function logTestCheckIn() {
+    if (!currentUserId) {
+      setDebugMsg("Not signed in — can't insert test check-in.");
+      return;
+    }
+    setDebugBusy(true);
+    setDebugMsg(null);
+    try {
+      const { data: dealer, error: dErr } = await supabase
+        .from("dealers")
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+      if (dErr) throw dErr;
+      if (!dealer) throw new Error("No dealers available to attach test check-in.");
+
+      const { data: inserted, error: iErr } = await supabase
+        .from("dealer_check_ins")
+        .insert({
+          dealer_id: dealer.id,
+          user_id: currentUserId,
+          visit_date: new Date().toISOString().slice(0, 10),
+          new_placement: "yes",
+          notes: "[debug] test check-in from analytics page",
+        })
+        .select("id")
+        .single();
+      if (iErr) throw iErr;
+
+      setLastTestId(inserted.id);
+      setDebugMsg(`Inserted check-in ${inserted.id.slice(0, 8)}… — analytics refreshed.`);
+      setRefreshTick((t) => t + 1);
+    } catch (e: any) {
+      setDebugMsg(`Insert failed: ${e?.message ?? String(e)}`);
+    } finally {
+      setDebugBusy(false);
+    }
+  }
+
+  async function undoLastTest() {
+    if (!lastTestId) return;
+    setDebugBusy(true);
+    try {
+      const { error } = await supabase.from("dealer_check_ins").delete().eq("id", lastTestId);
+      if (error) throw error;
+      setDebugMsg(`Removed test check-in ${lastTestId.slice(0, 8)}… — analytics refreshed.`);
+      setLastTestId(null);
+      setRefreshTick((t) => t + 1);
+    } catch (e: any) {
+      setDebugMsg(`Delete failed: ${e?.message ?? String(e)}`);
+    } finally {
+      setDebugBusy(false);
+    }
+  }
 
   const periods = useMemo(() => buildPeriods(new Date()), []);
 
@@ -271,6 +336,67 @@ export default function CheckInAnalyticsPage() {
           Individual manager performance breakdown across check-ins and new placements.
         </p>
       </header>
+
+      {debugEnabled && (
+        <Card className="border-dashed border-accent/60 bg-accent/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="font-display text-lg flex items-center gap-2">
+              <Badge variant="outline" className="uppercase text-[10px]">Debug</Badge>
+              Check-In → Analytics sync test
+            </CardTitle>
+            <CardDescription>
+              Inserts a real check-in for the signed-in user (today, new placement = yes) and refetches.
+              The matching manager's "This Week" and "YTD" counts should each increase by 1.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-md bg-background/60 p-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Live rows</div>
+                <div className="font-display text-xl tabular-nums">{checkIns.length}</div>
+              </div>
+              {TEAM.map((t) => {
+                const live = checkIns.filter((c) => userToTeam[c.user_id] === t.id).length;
+                return (
+                  <div key={t.id} className="rounded-md bg-background/60 p-2">
+                    <div className="text-[10px] uppercase text-muted-foreground">
+                      {t.name.split(" ")[0]} (live)
+                    </div>
+                    <div className="font-display text-xl tabular-nums">{live}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={logTestCheckIn}
+                disabled={debugBusy}
+                className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {debugBusy ? "Working…" : "Log test check-in"}
+              </button>
+              <button
+                onClick={undoLastTest}
+                disabled={debugBusy || !lastTestId}
+                className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted disabled:opacity-50"
+              >
+                Undo last test
+              </button>
+              <button
+                onClick={() => setRefreshTick((t) => t + 1)}
+                disabled={debugBusy}
+                className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted disabled:opacity-50"
+              >
+                Refetch
+              </button>
+            </div>
+            {debugMsg && <p className="text-xs text-muted-foreground">{debugMsg}</p>}
+            {!currentUserId && (
+              <p className="text-xs text-destructive">No authenticated user detected.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Top-level KPIs */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
