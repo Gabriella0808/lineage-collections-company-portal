@@ -128,6 +128,26 @@ function inRange(dateStr: string, start: Date, end: Date) {
 
 const CHECK_INS_CHANGED_EVENT = "lineage:check-ins-changed";
 
+const PAGE_SIZE = 1000;
+
+async function fetchAllAnalyticsRows<T>(
+  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+) {
+  let from = 0;
+  const rows: T[] = [];
+
+  while (true) {
+    const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    const batch = data ?? [];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return rows;
+}
+
 export default function CheckInAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [checkIns, setCheckIns] = useState<CheckInRow[]>([]);
@@ -192,22 +212,26 @@ export default function CheckInAnalyticsPage() {
     (async () => {
       setLoading(true);
 
-      const [
-        { data: managers },
-        { data: ums },
-        { data: cis },
-        { data: dealers },
-        { data: reps },
-        { data: userRes },
-      ] = await Promise.all([
-        supabase.from("managers").select("id,email,name") as unknown as Promise<{ data: ManagerRow[] | null }>,
-        supabase.from("user_managers").select("user_id,manager_id") as unknown as Promise<{ data: UserManagerRow[] | null }>,
-        supabase
-          .from("dealer_check_ins")
-          .select("id,user_id,dealer_id,visit_date,new_placement")
-          .order("visit_date", { ascending: false }) as unknown as Promise<{ data: CheckInRow[] | null }>,
-        supabase.from("dealers").select("id,rep_id,rep_owner") as unknown as Promise<{ data: DealerRow[] | null }>,
-        supabase.from("sales_reps").select("id,manager_id") as unknown as Promise<{ data: SalesRepRow[] | null }>,
+      const [managers, ums, cis, dealers, reps, { data: userRes }] = await Promise.all([
+        fetchAllAnalyticsRows<ManagerRow>((from, to) =>
+          supabase.from("managers").select("id,email,name").range(from, to) as unknown as Promise<{ data: ManagerRow[] | null; error: unknown }>,
+        ),
+        fetchAllAnalyticsRows<UserManagerRow>((from, to) =>
+          supabase.from("user_managers").select("user_id,manager_id").range(from, to) as unknown as Promise<{ data: UserManagerRow[] | null; error: unknown }>,
+        ),
+        fetchAllAnalyticsRows<CheckInRow>((from, to) =>
+          supabase
+            .from("dealer_check_ins")
+            .select("id,user_id,dealer_id,visit_date,new_placement")
+            .order("visit_date", { ascending: false })
+            .range(from, to) as unknown as Promise<{ data: CheckInRow[] | null; error: unknown }>,
+        ),
+        fetchAllAnalyticsRows<DealerRow>((from, to) =>
+          supabase.from("dealers").select("id,rep_id,rep_owner").range(from, to) as unknown as Promise<{ data: DealerRow[] | null; error: unknown }>,
+        ),
+        fetchAllAnalyticsRows<SalesRepRow>((from, to) =>
+          supabase.from("sales_reps").select("id,manager_id").range(from, to) as unknown as Promise<{ data: SalesRepRow[] | null; error: unknown }>,
+        ),
         supabase.auth.getUser() as unknown as Promise<{ data: { user: { id: string } | null } }>,
       ]);
 
