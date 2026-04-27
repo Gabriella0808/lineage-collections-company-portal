@@ -257,7 +257,7 @@ export default function CheckInsPage() {
       while (true) {
         const { data, error } = await supabase
           .from("dealers")
-          .select("id, name, street_address, city, state, status, rep_id, rep_owner, phone, email, website, lat, lng")
+          .select("id, name, street_address, city, state, status, rep_id, rep_owner, phone, email, website, notes, lat, lng")
           .order("name")
           .range(from, from + PAGE - 1);
         if (error) return { data: null, error };
