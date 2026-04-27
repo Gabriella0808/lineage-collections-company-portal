@@ -117,6 +117,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assignees, setAssignees] = useState<AssignableUser[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [taskAssignees, setTaskAssignees] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const readKey = user ? `tasks_read_${user.id}` : "";
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
@@ -155,8 +156,8 @@ export default function TasksPage() {
     description: string;
     status: Status;
     due_date: string;
-    assigned_user_id: string;
-  }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_id: "" });
+    assigned_user_ids: string[];
+  }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [] });
 
   // ---- Filters ----
   type AssigneeFilter = "all" | "mine" | "created";
