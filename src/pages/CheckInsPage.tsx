@@ -960,7 +960,9 @@ export default function CheckInsPage() {
               const count = dealersWithMeta.filter((d) => {
                 const owner = (d.rep_owner ?? "").trim().toLowerCase();
                 const code = (d.state ?? "").trim().toUpperCase();
-                return (owner && owners.has(owner)) || (code && states.has(code));
+                const ownerMatch = owner && owners.has(owner);
+                const stateMatch = code && states.has(code);
+                return m.ownerOnly ? ownerMatch : ownerMatch || stateMatch;
               }).length;
               return (
                 <Button
