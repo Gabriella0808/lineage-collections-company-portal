@@ -397,6 +397,32 @@ export type Database = {
           },
         ]
       }
+      manager_task_assignees: {
+        Row: {
+          created_at: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_task_assignees_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "manager_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manager_tasks: {
         Row: {
           assigned_manager_id: string | null
@@ -921,6 +947,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      can_view_manager_task: { Args: { _task_id: string }; Returns: boolean }
       current_manager_id: { Args: never; Returns: string }
       current_manager_rep_ids: { Args: never; Returns: string[] }
       current_rep_id: { Args: never; Returns: string }
@@ -933,6 +960,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_assigned_manager: { Args: { _manager_id: string }; Returns: boolean }
+      is_manager_task_creator: { Args: { _task_id: string }; Returns: boolean }
       user_id_for_manager: { Args: { _manager_id: string }; Returns: string }
     }
     Enums: {
