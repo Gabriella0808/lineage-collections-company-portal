@@ -961,6 +961,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_assigned_manager: { Args: { _manager_id: string }; Returns: boolean }
       is_manager_task_creator: { Args: { _task_id: string }; Returns: boolean }
+      tag_dealers_by_name_coord: {
+        Args: { _items: Json; _owner: string }
+        Returns: number
+      }
       user_id_for_manager: { Args: { _manager_id: string }; Returns: string }
     }
     Enums: {
