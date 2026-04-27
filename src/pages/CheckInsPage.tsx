@@ -40,12 +40,20 @@ import { format, formatDistanceToNow } from "date-fns";
 import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus, Users } from "lucide-react";
 import { STATE_TO_TERRITORY, STATE_NAME_TO_CODE, colorForTerritory } from "@/lib/territoryMap";
 
-// Team member → states they cover (derived from manager → reps → rep_territories)
+// Team member → match config. We match dealers by rep_owner (authoritative
+// when present, e.g. "will") OR by state code (so reps without a rep_owner
+// tag still get attributed to the right manager via territory).
 type TeamMemberId = "will" | "mateo" | "chris";
-const TEAM_MEMBERS: { id: TeamMemberId; name: string; states: string[] }[] = [
+const TEAM_MEMBERS: {
+  id: TeamMemberId;
+  name: string;
+  repOwners: string[]; // matched case-insensitively against dealers.rep_owner
+  states: string[];
+}[] = [
   {
     id: "will",
     name: "Will Grisack",
+    repOwners: ["will"],
     // South Florida + North Florida + Panhandle/GA/AL + Arkansas + OH/WPA +
     // Mid Atlantic + TN/KY + TX/OK + MS-LA
     states: ["FL", "GA", "AL", "AR", "OH", "PA", "MD", "DE", "DC", "TN", "KY", "TX", "OK", "MS", "LA"],
@@ -53,12 +61,14 @@ const TEAM_MEMBERS: { id: TeamMemberId; name: string; states: string[] }[] = [
   {
     id: "mateo",
     name: "Mateo De Lisa",
+    repOwners: ["mateo"],
     // VA/WV + NC/SC + Indiana + MI + NY/NJ + IL/WI
     states: ["VA", "WV", "NC", "SC", "IN", "MI", "NY", "NJ", "IL", "WI"],
   },
   {
     id: "chris",
     name: "Chris De Lisa",
+    repOwners: ["chris"],
     // New England
     states: ["ME", "NH", "VT", "MA", "RI", "CT"],
   },
@@ -72,6 +82,7 @@ interface Dealer {
   state: string | null;
   status: string;
   rep_id: string | null;
+  rep_owner?: string | null;
   lat: number | null;
   lng: number | null;
 }
@@ -189,10 +200,15 @@ export default function CheckInsPage() {
     const q = search.trim().toLowerCase();
     const team = teamFilter === "all" ? null : TEAM_MEMBERS.find((t) => t.id === teamFilter);
     const stateSet = team ? new Set(team.states) : null;
+    const ownerSet = team ? new Set(team.repOwners.map((s) => s.toLowerCase())) : null;
     return dealersWithMeta.filter((d) => {
-      if (stateSet) {
+      if (team && stateSet && ownerSet) {
+        const owner = (d.rep_owner ?? "").trim().toLowerCase();
         const code = (d.state ?? "").trim().toUpperCase();
-        if (!code || !stateSet.has(code)) return false;
+        const ownerMatch = owner && ownerSet.has(owner);
+        const stateMatch = code && stateSet.has(code);
+        // Match if EITHER signal points to this teammate.
+        if (!ownerMatch && !stateMatch) return false;
       }
       if (!q) return true;
       return (
@@ -225,7 +241,7 @@ export default function CheckInsPage() {
     const [dealersRes, checkInsRes] = await Promise.all([
       supabase
         .from("dealers")
-        .select("id, name, street_address, city, state, status, rep_id, lat, lng")
+        .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
         .order("name"),
       supabase
         .from("dealer_check_ins")
@@ -708,7 +724,7 @@ export default function CheckInsPage() {
         website: newDealer.website.trim() || null,
         status: "active",
       })
-      .select("id, name, street_address, city, state, status, rep_id, lat, lng")
+      .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
       .single();
     setAddSaving(false);
     if (error) {
@@ -912,9 +928,12 @@ export default function CheckInsPage() {
             </Button>
             {TEAM_MEMBERS.map((m) => {
               const active = teamFilter === m.id;
+              const owners = new Set(m.repOwners.map((s) => s.toLowerCase()));
+              const states = new Set(m.states);
               const count = dealersWithMeta.filter((d) => {
+                const owner = (d.rep_owner ?? "").trim().toLowerCase();
                 const code = (d.state ?? "").trim().toUpperCase();
-                return code && m.states.includes(code);
+                return (owner && owners.has(owner)) || (code && states.has(code));
               }).length;
               return (
                 <Button
