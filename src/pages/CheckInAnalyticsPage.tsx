@@ -201,6 +201,14 @@ export default function CheckInAnalyticsPage() {
       ytd: { checkIns: 97, placements: 4 },
     };
 
+    // Manual override for Will Grisack per provided stats
+    result.will = {
+      lastWeek: { checkIns: 0, placements: 0 },
+      thisWeek: { checkIns: 0, placements: 0 },
+      lastMonth: { checkIns: 41, placements: 6 },
+      ytd: { checkIns: 110, placements: 14 },
+    };
+
     return result;
   }, [checkIns, userToTeam, periods]);
 
