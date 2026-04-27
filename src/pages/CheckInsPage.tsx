@@ -48,25 +48,22 @@ const TEAM_MEMBERS: {
   id: TeamMemberId;
   name: string;
   repOwners: string[]; // matched case-insensitively against dealers.rep_owner
-  states: string[];
-  // When true, ONLY rep_owner matches are counted (used once a teammate's
-  // dealer list has been fully imported and tagged from their spreadsheet).
-  ownerOnly?: boolean;
+  states: string[]; // kept for reference; unused while ownerOnly is true
+  // Strict ownership: only dealers with matching rep_owner are shown.
+  // This guarantees no account appears in more than one teammate's section.
+  ownerOnly: true;
 }[] = [
   {
     id: "will",
     name: "Will Grisack",
     repOwners: ["will"],
-    // South Florida + North Florida + Panhandle/GA/AL + Arkansas + OH/WPA +
-    // Mid Atlantic + TN/KY + TX/OK + MS-LA
-    states: ["FL", "GA", "AL", "AR", "OH", "PA", "MD", "DE", "DC", "TN", "KY", "TX", "OK", "MS", "LA"],
+    states: [],
+    ownerOnly: true,
   },
   {
     id: "mateo",
     name: "Mateo De Lisa",
     repOwners: ["mateo"],
-    // Mateo's full dealer list has been imported and tagged via rep_owner,
-    // so we restrict to owner matches to avoid pulling in other reps' accounts.
     states: [],
     ownerOnly: true,
   },
@@ -74,8 +71,8 @@ const TEAM_MEMBERS: {
     id: "chris",
     name: "Chris De Lisa",
     repOwners: ["chris"],
-    // New England
-    states: ["ME", "NH", "VT", "MA", "RI", "CT"],
+    states: [],
+    ownerOnly: true,
   },
 ];
 
