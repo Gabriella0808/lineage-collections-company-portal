@@ -719,7 +719,7 @@ export default function CheckInsPage() {
         website: newDealer.website.trim() || null,
         status: "active",
       })
-      .select("id, name, street_address, city, state, status, rep_id, lat, lng")
+      .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
       .single();
     setAddSaving(false);
     if (error) {
