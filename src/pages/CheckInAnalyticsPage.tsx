@@ -29,12 +29,11 @@ import {
   format,
 } from "date-fns";
 
-type TeamId = "will" | "mateo" | "chris";
-const TEAM: { id: TeamId; name: string; emails: string[] }[] = [
-  { id: "will", name: "Will Grisack", emails: ["will@lineage-collections.com"] },
-  { id: "mateo", name: "Mateo De Lisa", emails: ["mateo@lineage-collections.com"] },
-  { id: "chris", name: "Chris De Lisa", emails: ["chris@lineage-collections.com"] },
-];
+interface TeamMember {
+  id: string; // manager id
+  name: string;
+  email: string | null;
+}
 
 interface CheckInRow {
   id: string;
