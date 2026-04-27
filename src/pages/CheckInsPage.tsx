@@ -508,12 +508,15 @@ export default function CheckInsPage() {
       bounds.extend([d.lng, d.lat]);
       added++;
     }
-    // Only auto-fit on first render so logging a check-in doesn't jump the map
-    if (added > 0 && !bounds.isEmpty() && !didFitRef.current) {
+    // Auto-fit on first render and whenever the team filter changes,
+    // so switching to a teammate re-centers the map on their dealers.
+    const teamChanged = lastFitTeamRef.current !== teamFilter;
+    if (added > 0 && !bounds.isEmpty() && (!didFitRef.current || teamChanged)) {
       map.fitBounds(bounds, { padding: 60, maxZoom: 9, duration: 600 });
       didFitRef.current = true;
+      lastFitTeamRef.current = teamFilter;
     }
-  }, [filteredDealers, territoriesOnly]);
+  }, [filteredDealers, territoriesOnly, teamFilter]);
 
   // Bump territory fill opacity when in "territories only" mode
   useEffect(() => {
