@@ -23,7 +23,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Calendar, User, Bell, Check, CheckCheck, Search, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Calendar, User, Bell, Check, CheckCheck, Search, X, Users } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, isWithinInterval, parseISO } from "date-fns";
 
 type Status = "todo" | "in_progress" | "blocked" | "done";
@@ -114,6 +117,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assignees, setAssignees] = useState<AssignableUser[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [taskAssignees, setTaskAssignees] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const readKey = user ? `tasks_read_${user.id}` : "";
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
@@ -152,8 +156,8 @@ export default function TasksPage() {
     description: string;
     status: Status;
     due_date: string;
-    assigned_user_id: string;
-  }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_id: "" });
+    assigned_user_ids: string[];
+  }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [] });
 
   // ---- Filters ----
   type AssigneeFilter = "all" | "mine" | "created";
@@ -190,10 +194,16 @@ export default function TasksPage() {
     return true;
   };
 
+  const getAssigneeIds = (t: Task): string[] => {
+    const ids = new Set<string>(taskAssignees[t.id] ?? []);
+    if (t.assigned_user_id) ids.add(t.assigned_user_id);
+    return [...ids];
+  };
+
   const matchesAssignee = (t: Task): boolean => {
     if (!user) return true;
     if (assigneeFilter === "all") return true;
-    if (assigneeFilter === "mine") return t.assigned_user_id === user.id;
+    if (assigneeFilter === "mine") return getAssigneeIds(t).includes(user.id);
     if (assigneeFilter === "created") return t.user_id === user.id;
     return true;
   };
@@ -212,10 +222,11 @@ export default function TasksPage() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const [tasksRes, assigneesRes, profilesRes] = await Promise.all([
+    const [tasksRes, assigneesRes, profilesRes, taRes] = await Promise.all([
       supabase.from("manager_tasks").select("*").order("created_at", { ascending: false }),
       supabase.rpc("assignable_users"),
       supabase.from("profiles").select("user_id, full_name"),
+      supabase.from("manager_task_assignees" as any).select("task_id, user_id"),
     ]);
     if (tasksRes.error) {
       toast({ title: "Failed to load tasks", description: tasksRes.error.message, variant: "destructive" });
@@ -234,6 +245,14 @@ export default function TasksPage() {
     if (!profilesRes.error) {
       setProfiles((profilesRes.data ?? []) as Profile[]);
     }
+    if (!taRes.error) {
+      const map: Record<string, string[]> = {};
+      ((taRes.data ?? []) as unknown as { task_id: string; user_id: string }[]).forEach((row) => {
+        if (!map[row.task_id]) map[row.task_id] = [];
+        map[row.task_id].push(row.user_id);
+      });
+      setTaskAssignees(map);
+    }
     setLoading(false);
   };
 
@@ -244,7 +263,7 @@ export default function TasksPage() {
 
   const resetForm = () => {
     setEditing(null);
-    setForm({ title: "", description: "", status: "todo", due_date: "", assigned_user_id: "" });
+    setForm({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [] });
   };
 
   const openNew = () => {
@@ -259,9 +278,21 @@ export default function TasksPage() {
       description: t.description ?? "",
       status: t.status,
       due_date: t.due_date ?? "",
-      assigned_user_id: t.assigned_user_id ?? "",
+      assigned_user_ids: getAssigneeIds(t),
     });
     setOpen(true);
+  };
+
+  const syncAssignees = async (taskId: string, ids: string[]) => {
+    // Replace assignees: delete all then insert chosen set
+    await supabase.from("manager_task_assignees" as any).delete().eq("task_id", taskId);
+    if (ids.length > 0) {
+      const rows = ids.map((uid) => ({ task_id: taskId, user_id: uid }));
+      const { error } = await supabase.from("manager_task_assignees" as any).insert(rows);
+      if (error) {
+        toast({ title: "Couldn't save assignees", description: error.message, variant: "destructive" });
+      }
+    }
   };
 
   const save = async () => {
@@ -270,12 +301,14 @@ export default function TasksPage() {
       toast({ title: "Title is required", variant: "destructive" });
       return;
     }
+    const ids = form.assigned_user_ids;
+    const primary = ids[0] ?? null; // keep legacy field in sync with first assignee
     const payload = {
       title: form.title.trim(),
       description: form.description.trim() || null,
       status: form.status,
       due_date: form.due_date || null,
-      assigned_user_id: form.assigned_user_id || null,
+      assigned_user_id: primary,
     } as any;
     if (editing) {
       const { error } = await supabase
@@ -286,14 +319,18 @@ export default function TasksPage() {
         toast({ title: "Update failed", description: error.message, variant: "destructive" });
         return;
       }
+      await syncAssignees(editing.id, ids);
     } else {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("manager_tasks")
-        .insert({ ...payload, user_id: user.id });
-      if (error) {
-        toast({ title: "Create failed", description: error.message, variant: "destructive" });
+        .insert({ ...payload, user_id: user.id })
+        .select("id")
+        .single();
+      if (error || !data) {
+        toast({ title: "Create failed", description: error?.message ?? "Unknown error", variant: "destructive" });
         return;
       }
+      await syncAssignees(data.id, ids);
     }
     setOpen(false);
     resetForm();
@@ -380,28 +417,11 @@ export default function TasksPage() {
                   onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                 />
               </div>
-              <Select
-                value={form.assigned_user_id || "unassigned"}
-                onValueChange={(v) => setForm({ ...form, assigned_user_id: v === "unassigned" ? "" : v })}
-              >
-                <SelectTrigger><SelectValue placeholder="Assign to..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {Array.from(
-                    new Map(assignees.map((a) => [a.user_id, a])).values(),
-                  )
-                    .sort((a, b) =>
-                      (a.full_name?.trim() || a.email || "").localeCompare(
-                        b.full_name?.trim() || b.email || "",
-                      ),
-                    )
-                    .map((a) => (
-                      <SelectItem key={a.user_id} value={a.user_id}>
-                        {a.full_name?.trim() || a.email || "Unknown"}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              <AssigneeMultiPicker
+                assignees={assignees}
+                selectedIds={form.assigned_user_ids}
+                onChange={(ids) => setForm({ ...form, assigned_user_ids: ids })}
+              />
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
@@ -413,7 +433,7 @@ export default function TasksPage() {
 
       {!loading && user && (() => {
         const assignedToMe = tasks.filter(
-          (t) => t.user_id !== user.id && t.assigned_user_id === user.id && t.status !== "done",
+          (t) => t.user_id !== user.id && getAssigneeIds(t).includes(user.id) && t.status !== "done",
         );
         const unread = assignedToMe.filter((t) => !readIds.has(t.id));
         if (unread.length === 0) return null;
@@ -578,17 +598,23 @@ export default function TasksPage() {
                   ) : (
                     <ul className="divide-y">
                       {items.map((t) => {
-                        const ownerName = assigneeName(t.assigned_user_id);
-                        const initials = (ownerName ?? "?")
-                          .split(/\s+/)
-                          .map((p) => p[0])
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .join("")
-                          .toUpperCase();
+                        const ownerIds = getAssigneeIds(t);
+                        const owners = ownerIds.map((uid) => ({
+                          id: uid,
+                          name: assigneeName(uid) ?? "Unknown",
+                        }));
+                        const primary = owners[0];
+                        const initialsOf = (n: string) =>
+                          n
+                            .split(/\s+/)
+                            .map((p) => p[0])
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .join("")
+                            .toUpperCase();
                         const isMine = !!user && t.user_id === user.id;
                         const assignedToMe =
-                          !!user && t.user_id !== user.id && t.assigned_user_id === user.id;
+                          !!user && t.user_id !== user.id && ownerIds.includes(user.id);
                         return (
                           <li
                             key={t.id}
@@ -614,12 +640,17 @@ export default function TasksPage() {
                               )}
                               {/* Mobile-only inline meta */}
                               <div className="md:hidden mt-2 flex flex-wrap items-center gap-2">
-                                {ownerName && (
+                                {primary && (
                                   <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
-                                      {initials}
+                                      {initialsOf(primary.name)}
                                     </span>
-                                    {ownerName}
+                                    {primary.name}
+                                    {owners.length > 1 && (
+                                      <span className="text-muted-foreground">
+                                        +{owners.length - 1}
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                                 <Select
@@ -654,20 +685,37 @@ export default function TasksPage() {
 
                             {/* Owner column (md+) */}
                             <div className="hidden md:flex items-center gap-2 px-3 py-2 min-w-0">
-                              {ownerName ? (
-                                <>
-                                  <span
-                                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary"
-                                    title={ownerName}
-                                  >
-                                    {initials}
-                                  </span>
-                                  <span className="truncate text-sm">{ownerName}</span>
-                                </>
-                              ) : (
+                              {owners.length === 0 ? (
                                 <span className="text-xs italic text-muted-foreground">
                                   Unassigned
                                 </span>
+                              ) : (
+                                <div className="flex items-center min-w-0">
+                                  <div className="flex -space-x-1.5">
+                                    {owners.slice(0, 3).map((o) => (
+                                      <span
+                                        key={o.id}
+                                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary ring-2 ring-background"
+                                        title={o.name}
+                                      >
+                                        {initialsOf(o.name)}
+                                      </span>
+                                    ))}
+                                    {owners.length > 3 && (
+                                      <span
+                                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground ring-2 ring-background"
+                                        title={owners.slice(3).map((o) => o.name).join(", ")}
+                                      >
+                                        +{owners.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="truncate text-sm ml-2">
+                                    {owners.length === 1
+                                      ? owners[0].name
+                                      : `${owners.length} people`}
+                                  </span>
+                                </div>
                               )}
                             </div>
 
@@ -767,3 +815,167 @@ export default function TasksPage() {
     </div>
   );
 }
+
+interface AssigneeMultiPickerProps {
+  assignees: AssignableUser[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}
+
+function AssigneeMultiPicker({ assignees, selectedIds, onChange }: AssigneeMultiPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const unique = Array.from(new Map(assignees.map((a) => [a.user_id, a])).values());
+  const filtered = unique
+    .filter((a) => {
+      const q = query.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        (a.full_name ?? "").toLowerCase().includes(q) ||
+        (a.email ?? "").toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) =>
+      (a.full_name?.trim() || a.email || "").localeCompare(
+        b.full_name?.trim() || b.email || "",
+      ),
+    );
+
+  const grouped = (["admin", "manager", "rep"] as const).map((role) => ({
+    role,
+    label: ROLE_LABEL[role],
+    items: filtered.filter((a) => a.role === role),
+  }));
+
+  const toggle = (uid: string) => {
+    if (selectedIds.includes(uid)) {
+      onChange(selectedIds.filter((id) => id !== uid));
+    } else {
+      onChange([...selectedIds, uid]);
+    }
+  };
+
+  const selectedUsers = selectedIds
+    .map((id) => unique.find((a) => a.user_id === id))
+    .filter(Boolean) as AssignableUser[];
+
+  const triggerLabel = (() => {
+    if (selectedUsers.length === 0) return "Assign to...";
+    if (selectedUsers.length === 1)
+      return selectedUsers[0].full_name?.trim() || selectedUsers[0].email || "Unknown";
+    return `${selectedUsers.length} people assigned`;
+  })();
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-between font-normal"
+          >
+            <span className="inline-flex items-center gap-2 truncate">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              {triggerLabel}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {selectedUsers.length > 0 ? `${selectedUsers.length} selected` : ""}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <div className="p-2 border-b">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search people..."
+                className="h-8 pl-7 text-xs"
+              />
+            </div>
+          </div>
+          <ScrollArea className="max-h-72">
+            <div className="p-1">
+              {grouped.map((g) =>
+                g.items.length === 0 ? null : (
+                  <div key={g.role} className="py-1">
+                    <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {g.label}
+                    </p>
+                    {g.items.map((a) => {
+                      const checked = selectedIds.includes(a.user_id);
+                      const name = a.full_name?.trim() || a.email || "Unknown";
+                      return (
+                        <button
+                          key={a.user_id}
+                          type="button"
+                          onClick={() => toggle(a.user_id)}
+                          className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                        >
+                          <Checkbox checked={checked} className="pointer-events-none" />
+                          <span className="truncate">{name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ),
+              )}
+              {filtered.length === 0 && (
+                <p className="px-3 py-4 text-xs text-muted-foreground">No people found.</p>
+              )}
+            </div>
+          </ScrollArea>
+          {selectedUsers.length > 0 && (
+            <div className="border-t p-2 flex justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => onChange([])}
+              >
+                Clear all
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setOpen(false)}
+              >
+                Done
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+
+      {selectedUsers.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selectedUsers.map((u) => {
+            const name = u.full_name?.trim() || u.email || "Unknown";
+            return (
+              <span
+                key={u.user_id}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5"
+              >
+                {name}
+                <button
+                  type="button"
+                  onClick={() => toggle(u.user_id)}
+                  className="hover:text-foreground"
+                  aria-label={`Remove ${name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
