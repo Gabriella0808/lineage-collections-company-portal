@@ -49,6 +49,9 @@ const TEAM_MEMBERS: {
   name: string;
   repOwners: string[]; // matched case-insensitively against dealers.rep_owner
   states: string[];
+  // When true, ONLY rep_owner matches are counted (used once a teammate's
+  // dealer list has been fully imported and tagged from their spreadsheet).
+  ownerOnly?: boolean;
 }[] = [
   {
     id: "will",
@@ -62,8 +65,10 @@ const TEAM_MEMBERS: {
     id: "mateo",
     name: "Mateo De Lisa",
     repOwners: ["mateo"],
-    // VA/WV + NC/SC + Indiana + MI + NY/NJ + IL/WI
-    states: ["VA", "WV", "NC", "SC", "IN", "MI", "NY", "NJ", "IL", "WI"],
+    // Mateo's full dealer list has been imported and tagged via rep_owner,
+    // so we restrict to owner matches to avoid pulling in other reps' accounts.
+    states: [],
+    ownerOnly: true,
   },
   {
     id: "chris",
