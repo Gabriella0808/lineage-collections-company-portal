@@ -200,10 +200,15 @@ export default function CheckInsPage() {
     const q = search.trim().toLowerCase();
     const team = teamFilter === "all" ? null : TEAM_MEMBERS.find((t) => t.id === teamFilter);
     const stateSet = team ? new Set(team.states) : null;
+    const ownerSet = team ? new Set(team.repOwners.map((s) => s.toLowerCase())) : null;
     return dealersWithMeta.filter((d) => {
-      if (stateSet) {
+      if (team && stateSet && ownerSet) {
+        const owner = (d.rep_owner ?? "").trim().toLowerCase();
         const code = (d.state ?? "").trim().toUpperCase();
-        if (!code || !stateSet.has(code)) return false;
+        const ownerMatch = owner && ownerSet.has(owner);
+        const stateMatch = code && stateSet.has(code);
+        // Match if EITHER signal points to this teammate.
+        if (!ownerMatch && !stateMatch) return false;
       }
       if (!q) return true;
       return (
