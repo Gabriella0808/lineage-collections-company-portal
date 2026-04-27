@@ -670,12 +670,14 @@ export default function TasksPage() {
       ) : (
         <Card className="overflow-hidden p-0">
           {(() => {
-            const customWidths = customColumns.map((c) => `${COLUMN_TYPE_META[c.type].width}px`).join("_");
-            const gridCols = `8px_minmax(0,1fr)_180px_160px_120px_${customWidths ? customWidths + "_" : ""}40px_80px`;
+            const customWidths = customColumns
+              .map((c) => `${COLUMN_TYPE_META[c.type].width}px`)
+              .join(" ");
+            const headerGrid = `8px minmax(0,1fr) 180px 160px 120px ${customWidths ? customWidths + " " : ""}40px 80px`;
             return (
               <div
                 className="hidden md:grid items-center gap-0 border-b bg-muted/30 px-0 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
-                style={{ gridTemplateColumns: gridCols.replace(/_/g, " ") }}
+                style={{ gridTemplateColumns: headerGrid }}
               >
                 <div />
                 <div className="px-3">Task</div>
