@@ -598,17 +598,23 @@ export default function TasksPage() {
                   ) : (
                     <ul className="divide-y">
                       {items.map((t) => {
-                        const ownerName = assigneeName(t.assigned_user_id);
-                        const initials = (ownerName ?? "?")
-                          .split(/\s+/)
-                          .map((p) => p[0])
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .join("")
-                          .toUpperCase();
+                        const ownerIds = getAssigneeIds(t);
+                        const owners = ownerIds.map((uid) => ({
+                          id: uid,
+                          name: assigneeName(uid) ?? "Unknown",
+                        }));
+                        const primary = owners[0];
+                        const initialsOf = (n: string) =>
+                          n
+                            .split(/\s+/)
+                            .map((p) => p[0])
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .join("")
+                            .toUpperCase();
                         const isMine = !!user && t.user_id === user.id;
                         const assignedToMe =
-                          !!user && t.user_id !== user.id && t.assigned_user_id === user.id;
+                          !!user && t.user_id !== user.id && ownerIds.includes(user.id);
                         return (
                           <li
                             key={t.id}
@@ -634,12 +640,17 @@ export default function TasksPage() {
                               )}
                               {/* Mobile-only inline meta */}
                               <div className="md:hidden mt-2 flex flex-wrap items-center gap-2">
-                                {ownerName && (
+                                {primary && (
                                   <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
-                                      {initials}
+                                      {initialsOf(primary.name)}
                                     </span>
-                                    {ownerName}
+                                    {primary.name}
+                                    {owners.length > 1 && (
+                                      <span className="text-muted-foreground">
+                                        +{owners.length - 1}
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                                 <Select
@@ -674,20 +685,37 @@ export default function TasksPage() {
 
                             {/* Owner column (md+) */}
                             <div className="hidden md:flex items-center gap-2 px-3 py-2 min-w-0">
-                              {ownerName ? (
-                                <>
-                                  <span
-                                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary"
-                                    title={ownerName}
-                                  >
-                                    {initials}
-                                  </span>
-                                  <span className="truncate text-sm">{ownerName}</span>
-                                </>
-                              ) : (
+                              {owners.length === 0 ? (
                                 <span className="text-xs italic text-muted-foreground">
                                   Unassigned
                                 </span>
+                              ) : (
+                                <div className="flex items-center min-w-0">
+                                  <div className="flex -space-x-1.5">
+                                    {owners.slice(0, 3).map((o) => (
+                                      <span
+                                        key={o.id}
+                                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary ring-2 ring-background"
+                                        title={o.name}
+                                      >
+                                        {initialsOf(o.name)}
+                                      </span>
+                                    ))}
+                                    {owners.length > 3 && (
+                                      <span
+                                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground ring-2 ring-background"
+                                        title={owners.slice(3).map((o) => o.name).join(", ")}
+                                      >
+                                        +{owners.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="truncate text-sm ml-2">
+                                    {owners.length === 1
+                                      ? owners[0].name
+                                      : `${owners.length} people`}
+                                  </span>
+                                </div>
                               )}
                             </div>
 
