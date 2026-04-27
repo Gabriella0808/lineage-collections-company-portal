@@ -370,13 +370,13 @@ export default function TasksPage() {
     return p?.full_name?.trim() || "Unknown";
   };
 
-  const groupedAssignees = (["admin", "manager", "rep"] as const).map((role) => ({
-    role,
-    label: ROLE_LABEL[role],
-    items: assignees
-      .filter((a) => a.role === role)
-      .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "")),
-  }));
+  const allowedAssigneeRoles: AssignableUser["role"][] =
+    roleInfo?.role === "admin"
+      ? ["admin", "manager"]
+      : roleInfo?.role === "manager"
+        ? ["admin", "manager", "rep"]
+        : ["admin", "manager", "rep"];
+  const visibleAssignees = assignees.filter((a) => allowedAssigneeRoles.includes(a.role));
 
   return (
     <div className="space-y-6">
