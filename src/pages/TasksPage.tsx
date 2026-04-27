@@ -177,6 +177,81 @@ export default function TasksPage() {
     persistRead(next);
   };
 
+  // ---- Custom columns (per-user, persisted in localStorage) ----
+  const colsKey = user ? `tasks_custom_columns_${user.id}` : "";
+  const valsKey = user ? `tasks_custom_values_${user.id}` : "";
+  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
+  // values[taskId][colId] = string | string[] (people = user_ids)
+  const [customValues, setCustomValues] = useState<Record<string, Record<string, any>>>({});
+  const [columnPickerOpen, setColumnPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!colsKey) return;
+    try {
+      setCustomColumns(JSON.parse(localStorage.getItem(colsKey) || "[]"));
+    } catch {
+      setCustomColumns([]);
+    }
+    try {
+      setCustomValues(JSON.parse(localStorage.getItem(valsKey) || "{}"));
+    } catch {
+      setCustomValues({});
+    }
+  }, [colsKey, valsKey]);
+
+  const persistColumns = (next: CustomColumn[]) => {
+    setCustomColumns(next);
+    if (colsKey) localStorage.setItem(colsKey, JSON.stringify(next));
+  };
+
+  const persistValues = (next: Record<string, Record<string, any>>) => {
+    setCustomValues(next);
+    if (valsKey) localStorage.setItem(valsKey, JSON.stringify(next));
+  };
+
+  const addCustomColumn = (type: CustomColumnType) => {
+    const meta = COLUMN_TYPE_META[type];
+    const id = `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const col: CustomColumn = {
+      id,
+      type,
+      label: meta.label,
+      options:
+        type === "status"
+          ? DEFAULT_STATUS_OPTIONS
+          : type === "dropdown"
+            ? [
+                { value: "Option 1", color: "bg-primary/15 text-primary" },
+                { value: "Option 2", color: "bg-muted text-foreground" },
+              ]
+            : undefined,
+    };
+    persistColumns([...customColumns, col]);
+    setColumnPickerOpen(false);
+  };
+
+  const removeCustomColumn = (id: string) => {
+    persistColumns(customColumns.filter((c) => c.id !== id));
+    const next: Record<string, Record<string, any>> = {};
+    Object.entries(customValues).forEach(([tid, row]) => {
+      const { [id]: _, ...rest } = row;
+      next[tid] = rest;
+    });
+    persistValues(next);
+  };
+
+  const renameCustomColumn = (id: string, label: string) => {
+    persistColumns(customColumns.map((c) => (c.id === id ? { ...c, label } : c)));
+  };
+
+  const setCellValue = (taskId: string, colId: string, value: any) => {
+    const row = { ...(customValues[taskId] ?? {}), [colId]: value };
+    persistValues({ ...customValues, [taskId]: row });
+  };
+
+  const getCellValue = (taskId: string, colId: string): any =>
+    customValues[taskId]?.[colId];
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [form, setForm] = useState<{
