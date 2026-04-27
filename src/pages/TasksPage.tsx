@@ -56,6 +56,34 @@ interface Task {
   user_id: string;
 }
 
+type CustomColumnType = "text" | "number" | "date" | "status" | "dropdown" | "people";
+
+interface CustomColumn {
+  id: string;
+  type: CustomColumnType;
+  label: string;
+  options?: { value: string; color: string }[]; // for status/dropdown
+}
+
+const COLUMN_TYPE_META: Record<
+  CustomColumnType,
+  { label: string; icon: typeof Type; iconBg: string; iconText: string; width: number }
+> = {
+  status: { label: "Status", icon: ListChecks, iconBg: "bg-emerald-500", iconText: "text-white", width: 140 },
+  dropdown: { label: "Dropdown", icon: ChevronDown, iconBg: "bg-emerald-600", iconText: "text-white", width: 140 },
+  text: { label: "Text", icon: Type, iconBg: "bg-amber-400", iconText: "text-white", width: 160 },
+  date: { label: "Date", icon: Calendar, iconBg: "bg-violet-500", iconText: "text-white", width: 130 },
+  people: { label: "People", icon: User, iconBg: "bg-sky-400", iconText: "text-white", width: 160 },
+  number: { label: "Numbers", icon: Hash, iconBg: "bg-amber-500", iconText: "text-white", width: 110 },
+};
+
+const DEFAULT_STATUS_OPTIONS: { value: string; color: string }[] = [
+  { value: "Not Started", color: "bg-muted-foreground/70 text-background" },
+  { value: "Working on it", color: "bg-[hsl(38_92%_50%)] text-white" },
+  { value: "Stuck", color: "bg-destructive text-destructive-foreground" },
+  { value: "Done", color: "bg-[hsl(142_71%_45%)] text-white" },
+];
+
 const COLUMNS: {
   key: Status;
   label: string;
