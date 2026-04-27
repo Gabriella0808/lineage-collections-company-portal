@@ -212,8 +212,13 @@ export default function CheckInsPage() {
         const code = (d.state ?? "").trim().toUpperCase();
         const ownerMatch = owner && ownerSet.has(owner);
         const stateMatch = code && stateSet.has(code);
-        // Match if EITHER signal points to this teammate.
-        if (!ownerMatch && !stateMatch) return false;
+        if (team.ownerOnly) {
+          // Restrict strictly to rep_owner matches (e.g. Mateo, fully tagged).
+          if (!ownerMatch) return false;
+        } else if (!ownerMatch && !stateMatch) {
+          // Match if EITHER signal points to this teammate.
+          return false;
+        }
       }
       if (!q) return true;
       return (
