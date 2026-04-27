@@ -23,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Calendar, User, Bell, Check, CheckCheck } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Trash2, Pencil, Calendar, User, Bell, Check, CheckCheck, Search, X } from "lucide-react";
+import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, isWithinInterval, parseISO } from "date-fns";
 
 type Status = "todo" | "in_progress" | "blocked" | "done";
 
