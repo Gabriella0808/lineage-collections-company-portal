@@ -337,6 +337,67 @@ export default function CheckInAnalyticsPage() {
         </p>
       </header>
 
+      {debugEnabled && (
+        <Card className="border-dashed border-accent/60 bg-accent/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="font-display text-lg flex items-center gap-2">
+              <Badge variant="outline" className="uppercase text-[10px]">Debug</Badge>
+              Check-In → Analytics sync test
+            </CardTitle>
+            <CardDescription>
+              Inserts a real check-in for the signed-in user (today, new placement = yes) and refetches.
+              The matching manager's "This Week" and "YTD" counts should each increase by 1.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-md bg-background/60 p-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Live rows</div>
+                <div className="font-display text-xl tabular-nums">{checkIns.length}</div>
+              </div>
+              {TEAM.map((t) => {
+                const live = checkIns.filter((c) => userToTeam[c.user_id] === t.id).length;
+                return (
+                  <div key={t.id} className="rounded-md bg-background/60 p-2">
+                    <div className="text-[10px] uppercase text-muted-foreground">
+                      {t.name.split(" ")[0]} (live)
+                    </div>
+                    <div className="font-display text-xl tabular-nums">{live}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={logTestCheckIn}
+                disabled={debugBusy}
+                className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {debugBusy ? "Working…" : "Log test check-in"}
+              </button>
+              <button
+                onClick={undoLastTest}
+                disabled={debugBusy || !lastTestId}
+                className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted disabled:opacity-50"
+              >
+                Undo last test
+              </button>
+              <button
+                onClick={() => setRefreshTick((t) => t + 1)}
+                disabled={debugBusy}
+                className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-muted disabled:opacity-50"
+              >
+                Refetch
+              </button>
+            </div>
+            {debugMsg && <p className="text-xs text-muted-foreground">{debugMsg}</p>}
+            {!currentUserId && (
+              <p className="text-xs text-destructive">No authenticated user detected.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Top-level KPIs */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
