@@ -119,6 +119,23 @@ const PLACEMENT_OPTIONS = [
   { value: "no", label: "No" },
 ];
 
+const CHECK_INS_CHANGED_EVENT = "lineage:check-ins-changed";
+
+function notifyCheckInsChanged() {
+  const timestamp = String(Date.now());
+  window.dispatchEvent(new CustomEvent(CHECK_INS_CHANGED_EVENT, { detail: timestamp }));
+  try {
+    localStorage.setItem(CHECK_INS_CHANGED_EVENT, timestamp);
+    if ("BroadcastChannel" in window) {
+      const channel = new BroadcastChannel(CHECK_INS_CHANGED_EVENT);
+      channel.postMessage(timestamp);
+      channel.close();
+    }
+  } catch {
+    // Best-effort refresh signal only.
+  }
+}
+
 const BRAND_OPTIONS = [
   { value: "sea_winds", label: "Sea Winds" },
   { value: "finn_and_louise", label: "Finn & Louise" },
@@ -622,6 +639,7 @@ export default function CheckInsPage() {
       toast({ title: "Failed to delete", description: error.message, variant: "destructive" });
       return;
     }
+    notifyCheckInsChanged();
     toast({ title: "Check-in deleted" });
   };
 
@@ -658,6 +676,7 @@ export default function CheckInsPage() {
     // Optimistically update so pin color refreshes immediately
     if (data) {
       setCheckIns((prev) => [data as CheckIn, ...prev]);
+      notifyCheckInsChanged();
       if (user && !userNames[user.id]) {
         const { data: prof } = await supabase
           .from("profiles")
