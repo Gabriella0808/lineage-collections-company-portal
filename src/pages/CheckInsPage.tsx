@@ -40,12 +40,20 @@ import { format, formatDistanceToNow } from "date-fns";
 import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus, Users } from "lucide-react";
 import { STATE_TO_TERRITORY, STATE_NAME_TO_CODE, colorForTerritory } from "@/lib/territoryMap";
 
-// Team member → states they cover (derived from manager → reps → rep_territories)
+// Team member → match config. We match dealers by rep_owner (authoritative
+// when present, e.g. "will") OR by state code (so reps without a rep_owner
+// tag still get attributed to the right manager via territory).
 type TeamMemberId = "will" | "mateo" | "chris";
-const TEAM_MEMBERS: { id: TeamMemberId; name: string; states: string[] }[] = [
+const TEAM_MEMBERS: {
+  id: TeamMemberId;
+  name: string;
+  repOwners: string[]; // matched case-insensitively against dealers.rep_owner
+  states: string[];
+}[] = [
   {
     id: "will",
     name: "Will Grisack",
+    repOwners: ["will"],
     // South Florida + North Florida + Panhandle/GA/AL + Arkansas + OH/WPA +
     // Mid Atlantic + TN/KY + TX/OK + MS-LA
     states: ["FL", "GA", "AL", "AR", "OH", "PA", "MD", "DE", "DC", "TN", "KY", "TX", "OK", "MS", "LA"],
@@ -53,12 +61,14 @@ const TEAM_MEMBERS: { id: TeamMemberId; name: string; states: string[] }[] = [
   {
     id: "mateo",
     name: "Mateo De Lisa",
+    repOwners: ["mateo"],
     // VA/WV + NC/SC + Indiana + MI + NY/NJ + IL/WI
     states: ["VA", "WV", "NC", "SC", "IN", "MI", "NY", "NJ", "IL", "WI"],
   },
   {
     id: "chris",
     name: "Chris De Lisa",
+    repOwners: ["chris"],
     // New England
     states: ["ME", "NH", "VT", "MA", "RI", "CT"],
   },
