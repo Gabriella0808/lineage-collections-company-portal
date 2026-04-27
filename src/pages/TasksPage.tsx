@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -115,6 +116,7 @@ const ROLE_LABEL: Record<AssignableUser["role"], string> = {
 
 export default function TasksPage() {
   const { user } = useAuth();
+  const { data: roleInfo } = useUserRole();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assignees, setAssignees] = useState<AssignableUser[]>([]);
@@ -368,13 +370,13 @@ export default function TasksPage() {
     return p?.full_name?.trim() || "Unknown";
   };
 
-  const groupedAssignees = (["admin", "manager", "rep"] as const).map((role) => ({
-    role,
-    label: ROLE_LABEL[role],
-    items: assignees
-      .filter((a) => a.role === role)
-      .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "")),
-  }));
+  const allowedAssigneeRoles: AssignableUser["role"][] =
+    roleInfo?.role === "admin"
+      ? ["admin", "manager"]
+      : roleInfo?.role === "manager"
+        ? ["admin", "manager", "rep"]
+        : ["admin", "manager", "rep"];
+  const visibleAssignees = assignees.filter((a) => allowedAssigneeRoles.includes(a.role));
 
   return (
     <div className="space-y-6">
@@ -422,7 +424,7 @@ export default function TasksPage() {
                 />
               </div>
               <AssigneeMultiPicker
-                assignees={assignees}
+                assignees={visibleAssignees}
                 selectedIds={form.assigned_user_ids}
                 onChange={(ids) => setForm({ ...form, assigned_user_ids: ids })}
               />
@@ -849,11 +851,7 @@ function AssigneeMultiPicker({ assignees, selectedIds, onChange }: AssigneeMulti
       ),
     );
 
-  const grouped = (["admin", "manager", "rep"] as const).map((role) => ({
-    role,
-    label: ROLE_LABEL[role],
-    items: filtered.filter((a) => a.role === role),
-  }));
+  // Flat list — no role grouping
 
   const toggle = (uid: string) => {
     if (selectedIds.includes(uid)) {
@@ -906,30 +904,21 @@ function AssigneeMultiPicker({ assignees, selectedIds, onChange }: AssigneeMulti
           </div>
           <ScrollArea className="max-h-72">
             <div className="p-1">
-              {grouped.map((g) =>
-                g.items.length === 0 ? null : (
-                  <div key={g.role} className="py-1">
-                    <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {g.label}
-                    </p>
-                    {g.items.map((a) => {
-                      const checked = selectedIds.includes(a.user_id);
-                      const name = a.full_name?.trim() || a.email || "Unknown";
-                      return (
-                        <button
-                          key={a.user_id}
-                          type="button"
-                          onClick={() => toggle(a.user_id)}
-                          className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
-                        >
-                          <Checkbox checked={checked} className="pointer-events-none" />
-                          <span className="truncate">{name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ),
-              )}
+              {filtered.map((a) => {
+                const checked = selectedIds.includes(a.user_id);
+                const name = a.full_name?.trim() || a.email || "Unknown";
+                return (
+                  <button
+                    key={a.user_id}
+                    type="button"
+                    onClick={() => toggle(a.user_id)}
+                    className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                  >
+                    <Checkbox checked={checked} className="pointer-events-none" />
+                    <span className="truncate">{name}</span>
+                  </button>
+                );
+              })}
               {filtered.length === 0 && (
                 <p className="px-3 py-4 text-xs text-muted-foreground">No people found.</p>
               )}
