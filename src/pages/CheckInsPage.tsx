@@ -1081,23 +1081,99 @@ export default function CheckInsPage() {
               </SheetHeader>
 
               <div className="mt-4 space-y-4">
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                    Last visit
-                  </h3>
-                  {(() => {
-                    const last = lastVisitMap.get(selected.id);
-                    if (!last) return <p className="text-sm text-muted-foreground">Never visited</p>;
-                    return (
-                      <p className="text-sm">
-                        {format(new Date(last), "MMM d, yyyy")}{" "}
-                        <span className="text-muted-foreground">
-                          ({formatDistanceToNow(new Date(last), { addSuffix: true })})
-                        </span>
-                      </p>
-                    );
-                  })()}
+                <div className="rounded-lg border bg-card">
+                  <div className="px-3 py-2 border-b bg-muted/40">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Account Details
+                    </h3>
+                  </div>
+                  <dl className="divide-y text-sm">
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Phone</dt>
+                      <dd className="mt-0.5">
+                        {selected.phone ? (
+                          <a href={`tel:${selected.phone}`} className="text-primary hover:underline">
+                            {selected.phone}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground italic">—</span>
+                        )}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Email</dt>
+                      <dd className="mt-0.5 break-all">
+                        {selected.email ? (
+                          <a href={`mailto:${selected.email}`} className="text-primary hover:underline">
+                            {selected.email}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground italic">—</span>
+                        )}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Website</dt>
+                      <dd className="mt-0.5 break-all">
+                        {selected.website ? (
+                          <a
+                            href={selected.website.startsWith("http") ? selected.website : `https://${selected.website}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {selected.website}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground italic">—</span>
+                        )}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Account Owner</dt>
+                      <dd className="mt-0.5">
+                        {(() => {
+                          const owner = (selected.rep_owner ?? "").trim().toLowerCase();
+                          const member = TEAM_MEMBERS.find((m) =>
+                            m.repOwners.some((r) => r.toLowerCase() === owner)
+                          );
+                          return member ? (
+                            <span className="font-medium">{member.name}</span>
+                          ) : (
+                            <span className="text-muted-foreground italic">Unassigned</span>
+                          );
+                        })()}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Address</dt>
+                      <dd className="mt-0.5">
+                        {[selected.street_address, selected.city, selected.state]
+                          .filter(Boolean)
+                          .join(", ") || <span className="text-muted-foreground italic">—</span>}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Last check-in</dt>
+                      <dd className="mt-0.5">
+                        {(() => {
+                          const last = lastVisitMap.get(selected.id);
+                          if (!last)
+                            return <span className="text-muted-foreground italic">No check-ins</span>;
+                          return (
+                            <>
+                              {format(new Date(last), "MMM d, yyyy")}{" "}
+                              <span className="text-muted-foreground">
+                                ({formatDistanceToNow(new Date(last), { addSuffix: true })})
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
+
 
                 <div className="border-t pt-4">
                   <Button
