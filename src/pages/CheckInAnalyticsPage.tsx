@@ -319,7 +319,7 @@ export default function CheckInAnalyticsPage() {
     });
 
     return result;
-  }, [checkIns, userToTeam, periods]);
+  }, [checkIns, userToTeam, dealerToTeam, periods]);
 
   const ytdKey = "ytd";
   const thisWeekKey = "thisWeek";
@@ -393,7 +393,7 @@ export default function CheckInAnalyticsPage() {
                 <div className="font-display text-xl tabular-nums">{checkIns.length}</div>
               </div>
               {TEAM.map((t) => {
-                const live = checkIns.filter((c) => userToTeam[c.user_id] === t.id).length;
+                const live = checkIns.filter((c) => ((c.dealer_id && dealerToTeam[c.dealer_id]) || userToTeam[c.user_id]) === t.id).length;
                 return (
                   <div key={t.id} className="rounded-md bg-background/60 p-2">
                     <div className="text-[10px] uppercase text-muted-foreground">
