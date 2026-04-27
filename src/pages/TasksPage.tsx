@@ -376,7 +376,11 @@ export default function TasksPage() {
       : roleInfo?.role === "manager"
         ? ["admin", "manager", "rep"]
         : ["admin", "manager", "rep"];
-  const visibleAssignees = assignees.filter((a) => allowedAssigneeRoles.includes(a.role));
+  const visibleAssignees = assignees.filter(
+    (a) =>
+      allowedAssigneeRoles.includes(a.role) &&
+      !(a.full_name ?? "").toLowerCase().includes("michigan (open)"),
+  );
 
   return (
     <div className="space-y-6">
