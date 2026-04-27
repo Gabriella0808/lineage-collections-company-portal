@@ -154,6 +154,7 @@ export default function CheckInsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [addSaving, setAddSaving] = useState(false);
   const [territoriesOnly, setTerritoriesOnly] = useState(false);
+  const [teamFilter, setTeamFilter] = useState<TeamMemberId | "all">("all");
   const [newDealer, setNewDealer] = useState({
     name: "",
     street_address: "",
