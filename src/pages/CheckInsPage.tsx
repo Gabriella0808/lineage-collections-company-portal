@@ -88,6 +88,7 @@ interface Dealer {
   phone?: string | null;
   email?: string | null;
   website?: string | null;
+  notes?: string | null;
   lat: number | null;
   lng: number | null;
 }
@@ -256,7 +257,7 @@ export default function CheckInsPage() {
       while (true) {
         const { data, error } = await supabase
           .from("dealers")
-          .select("id, name, street_address, city, state, status, rep_id, rep_owner, phone, email, website, lat, lng")
+          .select("id, name, street_address, city, state, status, rep_id, rep_owner, phone, email, website, notes, lat, lng")
           .order("name")
           .range(from, from + PAGE - 1);
         if (error) return { data: null, error };
@@ -1171,6 +1172,12 @@ export default function CheckInsPage() {
                         })()}
                       </dd>
                     </div>
+                    {selected.notes && (
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Notes</dt>
+                        <dd className="mt-0.5 whitespace-pre-wrap text-sm">{selected.notes}</dd>
+                      </div>
+                    )}
                   </dl>
                 </div>
 

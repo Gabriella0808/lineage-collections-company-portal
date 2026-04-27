@@ -221,6 +221,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           name: string
+          notes: string | null
           phone: string | null
           rep_id: string | null
           rep_owner: string | null
@@ -243,6 +244,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           name: string
+          notes?: string | null
           phone?: string | null
           rep_id?: string | null
           rep_owner?: string | null
@@ -265,6 +267,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           name?: string
+          notes?: string | null
           phone?: string | null
           rep_id?: string | null
           rep_owner?: string | null
