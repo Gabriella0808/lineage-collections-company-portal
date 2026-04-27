@@ -822,3 +822,166 @@ export default function TasksPage() {
   );
 }
 
+
+interface AssigneeMultiPickerProps {
+  assignees: AssignableUser[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}
+
+function AssigneeMultiPicker({ assignees, selectedIds, onChange }: AssigneeMultiPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const unique = Array.from(new Map(assignees.map((a) => [a.user_id, a])).values());
+  const filtered = unique
+    .filter((a) => {
+      const q = query.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        (a.full_name ?? "").toLowerCase().includes(q) ||
+        (a.email ?? "").toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) =>
+      (a.full_name?.trim() || a.email || "").localeCompare(
+        b.full_name?.trim() || b.email || "",
+      ),
+    );
+
+  const grouped = (["admin", "manager", "rep"] as const).map((role) => ({
+    role,
+    label: ROLE_LABEL[role],
+    items: filtered.filter((a) => a.role === role),
+  }));
+
+  const toggle = (uid: string) => {
+    if (selectedIds.includes(uid)) {
+      onChange(selectedIds.filter((id) => id !== uid));
+    } else {
+      onChange([...selectedIds, uid]);
+    }
+  };
+
+  const selectedUsers = selectedIds
+    .map((id) => unique.find((a) => a.user_id === id))
+    .filter(Boolean) as AssignableUser[];
+
+  const triggerLabel = (() => {
+    if (selectedUsers.length === 0) return "Assign to...";
+    if (selectedUsers.length === 1)
+      return selectedUsers[0].full_name?.trim() || selectedUsers[0].email || "Unknown";
+    return `${selectedUsers.length} people assigned`;
+  })();
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-between font-normal"
+          >
+            <span className="inline-flex items-center gap-2 truncate">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              {triggerLabel}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {selectedUsers.length > 0 ? `${selectedUsers.length} selected` : ""}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <div className="p-2 border-b">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search people..."
+                className="h-8 pl-7 text-xs"
+              />
+            </div>
+          </div>
+          <ScrollArea className="max-h-72">
+            <div className="p-1">
+              {grouped.map((g) =>
+                g.items.length === 0 ? null : (
+                  <div key={g.role} className="py-1">
+                    <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {g.label}
+                    </p>
+                    {g.items.map((a) => {
+                      const checked = selectedIds.includes(a.user_id);
+                      const name = a.full_name?.trim() || a.email || "Unknown";
+                      return (
+                        <button
+                          key={a.user_id}
+                          type="button"
+                          onClick={() => toggle(a.user_id)}
+                          className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                        >
+                          <Checkbox checked={checked} className="pointer-events-none" />
+                          <span className="truncate">{name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ),
+              )}
+              {filtered.length === 0 && (
+                <p className="px-3 py-4 text-xs text-muted-foreground">No people found.</p>
+              )}
+            </div>
+          </ScrollArea>
+          {selectedUsers.length > 0 && (
+            <div className="border-t p-2 flex justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => onChange([])}
+              >
+                Clear all
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setOpen(false)}
+              >
+                Done
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+
+      {selectedUsers.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selectedUsers.map((u) => {
+            const name = u.full_name?.trim() || u.email || "Unknown";
+            return (
+              <span
+                key={u.user_id}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5"
+              >
+                {name}
+                <button
+                  type="button"
+                  onClick={() => toggle(u.user_id)}
+                  className="hover:text-foreground"
+                  aria-label={`Remove ${name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
