@@ -39,6 +39,7 @@ const TEAM: { id: TeamId; name: string; emails: string[] }[] = [
 interface CheckInRow {
   id: string;
   user_id: string;
+  dealer_id: string | null;
   visit_date: string;
   new_placement: string | null;
 }
@@ -52,6 +53,16 @@ interface ManagerRow {
   id: string;
   email: string | null;
   name: string;
+}
+
+interface DealerRow {
+  id: string;
+  rep_id: string | null;
+}
+
+interface SalesRepRow {
+  id: string;
+  manager_id: string | null;
 }
 
 type Period = {
@@ -118,6 +129,7 @@ export default function CheckInAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [checkIns, setCheckIns] = useState<CheckInRow[]>([]);
   const [userToTeam, setUserToTeam] = useState<Record<string, TeamId>>({});
+  const [dealerToTeam, setDealerToTeam] = useState<Record<string, TeamId>>({});
   const [refreshTick, setRefreshTick] = useState(0);
   const [debugBusy, setDebugBusy] = useState(false);
   const [debugMsg, setDebugMsg] = useState<string | null>(null);
@@ -133,13 +145,22 @@ export default function CheckInAnalyticsPage() {
     (async () => {
       setLoading(true);
 
-      const [{ data: managers }, { data: ums }, { data: cis }, { data: userRes }] = await Promise.all([
+      const [
+        { data: managers },
+        { data: ums },
+        { data: cis },
+        { data: dealers },
+        { data: reps },
+        { data: userRes },
+      ] = await Promise.all([
         supabase.from("managers").select("id,email,name") as unknown as Promise<{ data: ManagerRow[] | null }>,
         supabase.from("user_managers").select("user_id,manager_id") as unknown as Promise<{ data: UserManagerRow[] | null }>,
         supabase
           .from("dealer_check_ins")
-          .select("id,user_id,visit_date,new_placement")
+          .select("id,user_id,dealer_id,visit_date,new_placement")
           .order("visit_date", { ascending: false }) as unknown as Promise<{ data: CheckInRow[] | null }>,
+        supabase.from("dealers").select("id,rep_id") as unknown as Promise<{ data: DealerRow[] | null }>,
+        supabase.from("sales_reps").select("id,manager_id") as unknown as Promise<{ data: SalesRepRow[] | null }>,
         supabase.auth.getUser() as unknown as Promise<{ data: { user: { id: string } | null } }>,
       ]);
 
@@ -158,7 +179,22 @@ export default function CheckInAnalyticsPage() {
         if (teamId) uMap[u.user_id] = teamId;
       });
 
+      // Build dealer -> team via rep -> manager
+      const repToTeam: Record<string, TeamId> = {};
+      (reps ?? []).forEach((r) => {
+        if (r.manager_id && managerToTeam[r.manager_id]) {
+          repToTeam[r.id] = managerToTeam[r.manager_id];
+        }
+      });
+      const dMap: Record<string, TeamId> = {};
+      (dealers ?? []).forEach((d) => {
+        if (d.rep_id && repToTeam[d.rep_id]) {
+          dMap[d.id] = repToTeam[d.rep_id];
+        }
+      });
+
       setUserToTeam(uMap);
+      setDealerToTeam(dMap);
       setCheckIns(cis ?? []);
       setCurrentUserId(userRes?.user?.id ?? null);
       setLoading(false);
@@ -238,7 +274,8 @@ export default function CheckInAnalyticsPage() {
     });
 
     checkIns.forEach((c) => {
-      const team = userToTeam[c.user_id];
+      // Attribute by dealer ownership first (rep -> manager), then by who logged it.
+      const team = (c.dealer_id && dealerToTeam[c.dealer_id]) || userToTeam[c.user_id];
       if (!team) return;
       periods.forEach((p) => {
         if (inRange(c.visit_date, p.start, p.end)) {
@@ -282,7 +319,7 @@ export default function CheckInAnalyticsPage() {
     });
 
     return result;
-  }, [checkIns, userToTeam, periods]);
+  }, [checkIns, userToTeam, dealerToTeam, periods]);
 
   const ytdKey = "ytd";
   const thisWeekKey = "thisWeek";
@@ -356,7 +393,7 @@ export default function CheckInAnalyticsPage() {
                 <div className="font-display text-xl tabular-nums">{checkIns.length}</div>
               </div>
               {TEAM.map((t) => {
-                const live = checkIns.filter((c) => userToTeam[c.user_id] === t.id).length;
+                const live = checkIns.filter((c) => ((c.dealer_id && dealerToTeam[c.dealer_id]) || userToTeam[c.user_id]) === t.id).length;
                 return (
                   <div key={t.id} className="rounded-md bg-background/60 p-2">
                     <div className="text-[10px] uppercase text-muted-foreground">
