@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -103,12 +102,11 @@ export function CollectionsMultiSelect({ value, onChange }: Props) {
               }}
             />
           </div>
-          <ScrollArea
-            className="h-72 overscroll-contain"
-            onWheelCapture={(e) => e.stopPropagation()}
-            onTouchMoveCapture={(e) => e.stopPropagation()}
+          <div
+            className="h-72 overflow-y-scroll overscroll-contain touch-pan-y py-1"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
           >
-            <div className="py-1">
             {filtered.length === 0 && !canAdd && (
               <div className="px-3 py-4 text-sm text-muted-foreground text-center">
                 No collections found
@@ -139,8 +137,7 @@ export function CollectionsMultiSelect({ value, onChange }: Props) {
                 Add "{search.trim()}"
               </button>
             )}
-            </div>
-          </ScrollArea>
+          </div>
         </PopoverContent>
       </Popover>
       {value.length > 0 && (
