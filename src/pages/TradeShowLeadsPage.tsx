@@ -102,13 +102,22 @@ export default function TradeShowLeadsPage() {
       .sort((a, b) => b.leads - a.leads).slice(0, 15);
   }, [filtered]);
 
-  const byStatus = useMemo(() => {
+  const byCollection = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((l) => {
-      const k = l.status || "Unknown";
-      map.set(k, (map.get(k) ?? 0) + 1);
+      const raw = (l.product_interest || "").trim();
+      if (!raw) {
+        map.set("Unspecified", (map.get("Unspecified") ?? 0) + 1);
+        return;
+      }
+      // product_interest may be a comma-separated list of collections
+      raw.split(/[,;|]/).map((s) => s.trim()).filter(Boolean).forEach((c) => {
+        map.set(c, (map.get(c) ?? 0) + 1);
+      });
     });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    return Array.from(map.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   }, [filtered]);
 
   return (
