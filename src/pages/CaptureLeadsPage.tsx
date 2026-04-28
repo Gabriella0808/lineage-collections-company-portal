@@ -261,9 +261,9 @@ export default function CaptureLeadsPage() {
                           <tr>
                             <th className="text-left px-3 py-2 font-medium">Contact</th>
                             <th className="text-left px-3 py-2 font-medium">Dealer</th>
+                            <th className="text-left px-3 py-2 font-medium">Dealer Email</th>
                             <th className="text-left px-3 py-2 font-medium">Rep</th>
                             <th className="text-left px-3 py-2 font-medium">Collections</th>
-                            <th className="text-left px-3 py-2 font-medium">Email</th>
                             <th className="text-left px-3 py-2 font-medium">Phone</th>
                             <th className="text-left px-3 py-2 font-medium">Status</th>
                             <th className="text-right px-3 py-2 font-medium">Order</th>
