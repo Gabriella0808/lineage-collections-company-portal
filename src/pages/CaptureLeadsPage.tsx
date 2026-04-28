@@ -275,6 +275,9 @@ export default function CaptureLeadsPage() {
                             <tr key={l.id} className="border-t hover:bg-muted/30">
                               <td className="px-3 py-2 font-medium">{l.contact_name || "—"}</td>
                               <td className="px-3 py-2 text-muted-foreground">{l.dealer || "—"}</td>
+                              <td className="px-3 py-2 text-muted-foreground truncate max-w-[200px]">
+                                {l.email ? <a href={`mailto:${l.email}`} className="hover:underline">{l.email}</a> : "—"}
+                              </td>
                               <td className="px-3 py-2">{l.sales_rep || "—"}</td>
                               <td className="px-3 py-2 text-muted-foreground max-w-[220px]">
                                 {l.product_interest ? (
@@ -285,7 +288,6 @@ export default function CaptureLeadsPage() {
                                   </div>
                                 ) : "—"}
                               </td>
-                              <td className="px-3 py-2 text-muted-foreground truncate max-w-[180px]">{l.email || "—"}</td>
                               <td className="px-3 py-2 text-muted-foreground">{l.phone || "—"}</td>
                               <td className="px-3 py-2">{l.status ? <Badge variant="secondary">{l.status}</Badge> : "—"}</td>
                               <td className="px-3 py-2 text-right font-medium">{l.order_amount ? fmt(l.order_amount) : "—"}</td>
