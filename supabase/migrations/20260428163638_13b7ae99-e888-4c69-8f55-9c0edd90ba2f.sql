@@ -1,0 +1,1 @@
+DELETE FROM public.dealer_check_ins WHERE user_id = '0d869db7-9bd9-4ee6-9d06-421a9a0a4a0e';
