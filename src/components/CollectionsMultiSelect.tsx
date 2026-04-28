@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -87,7 +88,7 @@ export function CollectionsMultiSelect({ value, onChange }: Props) {
             <ChevronsUpDown className="h-4 w-4 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 overflow-hidden" align="start">
           <div className="p-2 border-b">
             <Input
               autoFocus
@@ -102,7 +103,12 @@ export function CollectionsMultiSelect({ value, onChange }: Props) {
               }}
             />
           </div>
-          <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
+          <ScrollArea
+            className="h-72 overscroll-contain"
+            onWheelCapture={(e) => e.stopPropagation()}
+            onTouchMoveCapture={(e) => e.stopPropagation()}
+          >
+            <div className="py-1">
             {filtered.length === 0 && !canAdd && (
               <div className="px-3 py-4 text-sm text-muted-foreground text-center">
                 No collections found
@@ -133,7 +139,8 @@ export function CollectionsMultiSelect({ value, onChange }: Props) {
                 Add "{search.trim()}"
               </button>
             )}
-          </div>
+            </div>
+          </ScrollArea>
         </PopoverContent>
       </Popover>
       {value.length > 0 && (
