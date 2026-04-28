@@ -193,7 +193,16 @@ export default function CheckInsPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [territoriesOnly, setTerritoriesOnly] = useState(false);
   const [teamFilter, setTeamFilter] = useState<TeamMemberId | "all">("all");
-  const [newDealer, setNewDealer] = useState({
+  const [newDealer, setNewDealer] = useState<{
+    name: string;
+    street_address: string;
+    city: string;
+    state: string;
+    phone: string;
+    email: string;
+    website: string;
+    rep_owner: TeamMemberId | "";
+  }>({
     name: "",
     street_address: "",
     city: "",
@@ -201,7 +210,26 @@ export default function CheckInsPage() {
     phone: "",
     email: "",
     website: "",
+    rep_owner: "",
   });
+
+  // Detect which teammate is logged in from their email so new dealers
+  // automatically belong to that person's accounts.
+  const detectedOwner: TeamMemberId | "" = useMemo(() => {
+    const email = (user?.email ?? "").toLowerCase();
+    if (email.startsWith("will@")) return "will";
+    if (email.startsWith("mateo@")) return "mateo";
+    if (email.startsWith("chris@")) return "chris";
+    return "";
+  }, [user?.email]);
+
+  // When the dialog opens (or the detected user changes) preselect the owner.
+  useEffect(() => {
+    if (addOpen && !newDealer.rep_owner && detectedOwner) {
+      setNewDealer((prev) => ({ ...prev, rep_owner: detectedOwner }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addOpen, detectedOwner]);
 
   // Last visit by dealer
   const lastVisitMap = useMemo(() => {
