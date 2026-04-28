@@ -87,7 +87,7 @@ export function CollectionsMultiSelect({ value, onChange }: Props) {
             <ChevronsUpDown className="h-4 w-4 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 overflow-hidden" align="start">
           <div className="p-2 border-b">
             <Input
               autoFocus
@@ -102,7 +102,11 @@ export function CollectionsMultiSelect({ value, onChange }: Props) {
               }}
             />
           </div>
-          <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
+          <div
+            className="h-72 overflow-y-scroll overscroll-contain touch-pan-y py-1"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
             {filtered.length === 0 && !canAdd && (
               <div className="px-3 py-4 text-sm text-muted-foreground text-center">
                 No collections found
