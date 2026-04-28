@@ -62,16 +62,37 @@ Deno.serve(async (req: Request) => {
       cursor = page?.cursor ?? null;
     } while (cursor);
 
+    // Infer market name from a lead/created date when Lead Source is empty.
+    // Adjust ranges as new markets are added.
+    function inferMarketFromDate(dateStr: string | null): string | null {
+      if (!dateStr) return null;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return null;
+      const y = d.getUTCFullYear();
+      const m = d.getUTCMonth() + 1; // 1-12
+      // Atlanta Market: mid-January & mid-July
+      if (m === 1) return `Atlanta Market Winter ${y}`;
+      if (m === 7) return `Atlanta Market Summer ${y}`;
+      // High Point Market: late April (Spring) & mid-October (Fall)
+      if (m === 4 || (m === 5 && d.getUTCDate() <= 5)) return `High Point Spring ${y}`;
+      if (m === 10 || (m === 11 && d.getUTCDate() <= 5)) return `High Point Fall ${y}`;
+      // Las Vegas Market: late January (Winter) & late July (Summer)
+      if (m === 8) return `Las Vegas Market Summer ${y}`;
+      return null;
+    }
+
     const rows = items.map((it) => {
       const cols = it.column_values || [];
       const orderRaw = pickColVal(cols, ["order amount", "order value", "amount"]);
       const orderNum = parseFloat(orderRaw.replace(/[^0-9.\-]/g, "")) || 0;
-      const dateRaw = pickColVal(cols, ["created", "date", "lead date"]);
+      const dateRaw = pickColVal(cols, ["created date", "first contact", "lead date", "date"]);
       let lead_date: string | null = null;
       if (dateRaw) {
         const d = new Date(dateRaw);
         if (!isNaN(d.getTime())) lead_date = d.toISOString().slice(0, 10);
       }
+      const explicitSource = pickColVal(cols, ["lead source", "trade show", "event", "market"]);
+      const inferred = explicitSource || inferMarketFromDate(lead_date);
       return {
         monday_item_id: String(it.id),
         contact_name: it.name || pickColVal(cols, ["contact", "name"]),
@@ -79,11 +100,11 @@ Deno.serve(async (req: Request) => {
         email: pickColVal(cols, ["email"]).split(",")[0].trim() || null,
         additional_email: pickColVal(cols, ["additional email", "alternate"]) || null,
         phone: pickColVal(cols, ["phone"]) || null,
-        trade_show: pickColVal(cols, ["lead source", "trade show", "event", "market"]) || null,
+        trade_show: inferred || null,
         sales_rep: pickColVal(cols, ["sales rep", "rep ", "owner"]) || null,
         product_interest: pickColVal(cols, ["collection interest", "product"]) || null,
         order_amount: orderNum,
-        status: pickColVal(cols, ["status", "stage"]) || null,
+        status: pickColVal(cols, ["lead status", "status", "stage"]) || null,
         notes: pickColVal(cols, ["notes", "comments"]) || null,
         lead_date,
         raw: { id: it.id, name: it.name, column_values: cols },
