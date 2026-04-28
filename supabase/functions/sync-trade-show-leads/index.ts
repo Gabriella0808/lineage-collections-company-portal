@@ -43,9 +43,10 @@ Deno.serve(async (req: Request) => {
     let cursor: string | null = null;
 
     do {
+      const colFrag = `column_values { id text column { title } ... on BoardRelationValue { display_value } ... on MirrorValue { display_value } ... on DropdownValue { values { label } } }`;
       const query = cursor
-        ? `{ next_items_page(limit: 100, cursor: "${cursor}") { cursor items { id name column_values { id text column { title } } } } }`
-        : `{ boards(ids: ${BOARD_ID}) { items_page(limit: 100) { cursor items { id name column_values { id text column { title } } } } } }`;
+        ? `{ next_items_page(limit: 100, cursor: "${cursor}") { cursor items { id name ${colFrag} } } }`
+        : `{ boards(ids: ${BOARD_ID}) { items_page(limit: 100) { cursor items { id name ${colFrag} } } } }`;
 
       const res = await fetch(MONDAY_API, {
         method: "POST",
