@@ -793,6 +793,69 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_show_leads: {
+        Row: {
+          additional_email: string | null
+          contact_name: string | null
+          created_at: string
+          created_by: string | null
+          dealer: string | null
+          email: string | null
+          id: string
+          lead_date: string | null
+          monday_item_id: string | null
+          notes: string | null
+          order_amount: number | null
+          phone: string | null
+          product_interest: string | null
+          raw: Json | null
+          sales_rep: string | null
+          status: string | null
+          trade_show: string | null
+          updated_at: string
+        }
+        Insert: {
+          additional_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          dealer?: string | null
+          email?: string | null
+          id?: string
+          lead_date?: string | null
+          monday_item_id?: string | null
+          notes?: string | null
+          order_amount?: number | null
+          phone?: string | null
+          product_interest?: string | null
+          raw?: Json | null
+          sales_rep?: string | null
+          status?: string | null
+          trade_show?: string | null
+          updated_at?: string
+        }
+        Update: {
+          additional_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          dealer?: string | null
+          email?: string | null
+          id?: string
+          lead_date?: string | null
+          monday_item_id?: string | null
+          notes?: string | null
+          order_amount?: number | null
+          phone?: string | null
+          product_interest?: string | null
+          raw?: Json | null
+          sales_rep?: string | null
+          status?: string | null
+          trade_show?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       travel_log: {
         Row: {
           approval_status: string | null
