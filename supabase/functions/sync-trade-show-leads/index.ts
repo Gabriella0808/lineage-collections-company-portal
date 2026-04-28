@@ -15,7 +15,9 @@ function pickColVal(cols: any[], matchers: string[]): string {
   for (const c of cols) {
     const title = (c.column?.title || c.title || "").toLowerCase();
     if (lower.some((m) => title.includes(m))) {
-      return (c.text ?? "").toString();
+      // Prefer display_value (board_relation/mirror/dropdown), then text
+      const v = (c.display_value ?? c.text ?? "").toString();
+      if (v) return v;
     }
   }
   return "";
