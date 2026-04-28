@@ -72,10 +72,11 @@ export default function TradeShowLeadsPage() {
   const stats = useMemo(() => {
     const total = filtered.length;
     const orders = filtered.reduce((s, l) => s + (Number(l.order_amount) || 0), 0);
-    const dealers = new Set(filtered.map((l) => l.dealer).filter(Boolean)).size;
+    const ordersWithValue = filtered.filter((l) => (Number(l.order_amount) || 0) > 0).length;
+    const avgOrder = ordersWithValue ? orders / ordersWithValue : 0;
     const qualified = filtered.filter((l) => /qualified|passed|contacted/i.test(l.status || "")).length;
     const conv = total ? Math.round((qualified / total) * 100) : 0;
-    return { total, orders, dealers, conv };
+    return { total, orders, avgOrder, conv };
   }, [filtered]);
 
   const byMarket = useMemo(() => {
