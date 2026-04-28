@@ -193,7 +193,16 @@ export default function CheckInsPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [territoriesOnly, setTerritoriesOnly] = useState(false);
   const [teamFilter, setTeamFilter] = useState<TeamMemberId | "all">("all");
-  const [newDealer, setNewDealer] = useState({
+  const [newDealer, setNewDealer] = useState<{
+    name: string;
+    street_address: string;
+    city: string;
+    state: string;
+    phone: string;
+    email: string;
+    website: string;
+    rep_owner: TeamMemberId | "";
+  }>({
     name: "",
     street_address: "",
     city: "",
@@ -201,7 +210,26 @@ export default function CheckInsPage() {
     phone: "",
     email: "",
     website: "",
+    rep_owner: "",
   });
+
+  // Detect which teammate is logged in from their email so new dealers
+  // automatically belong to that person's accounts.
+  const detectedOwner: TeamMemberId | "" = useMemo(() => {
+    const email = (user?.email ?? "").toLowerCase();
+    if (email.startsWith("will@")) return "will";
+    if (email.startsWith("mateo@")) return "mateo";
+    if (email.startsWith("chris@")) return "chris";
+    return "";
+  }, [user?.email]);
+
+  // When the dialog opens (or the detected user changes) preselect the owner.
+  useEffect(() => {
+    if (addOpen && !newDealer.rep_owner && detectedOwner) {
+      setNewDealer((prev) => ({ ...prev, rep_owner: detectedOwner }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addOpen, detectedOwner]);
 
   // Last visit by dealer
   const lastVisitMap = useMemo(() => {
@@ -762,6 +790,15 @@ export default function CheckInsPage() {
       toast({ title: "State required", variant: "destructive" });
       return;
     }
+    const owner = newDealer.rep_owner || detectedOwner;
+    if (!owner) {
+      toast({
+        title: "Owner required",
+        description: "Pick which teammate this dealer belongs to (Will, Mateo, or Chris).",
+        variant: "destructive",
+      });
+      return;
+    }
     setAddSaving(true);
     const { data, error } = await supabase
       .from("dealers")
@@ -774,6 +811,7 @@ export default function CheckInsPage() {
         email: newDealer.email.trim() || null,
         website: newDealer.website.trim() || null,
         status: "active",
+        rep_owner: owner,
       })
       .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
       .single();
@@ -785,9 +823,10 @@ export default function CheckInsPage() {
     if (data) {
       setDealers((prev) => [...prev, data as Dealer]);
     }
-    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "" });
+    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "", rep_owner: "" });
     setAddOpen(false);
-    toast({ title: "Dealer added", description: `${name} created. Geocoding will run shortly.` });
+    const ownerName = TEAM_MEMBERS.find((t) => t.id === owner)?.name ?? owner;
+    toast({ title: "Dealer added", description: `${name} added to ${ownerName}'s accounts. Geocoding will run shortly.` });
   };
 
   const placedCount = dealersWithMeta.filter((d) => d.lat != null && d.lng != null).length;
@@ -899,6 +938,31 @@ export default function CheckInsPage() {
                     placeholder="https://"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-owner">Owner *</Label>
+                  <Select
+                    value={newDealer.rep_owner || ""}
+                    onValueChange={(v) =>
+                      setNewDealer({ ...newDealer, rep_owner: v as TeamMemberId })
+                    }
+                  >
+                    <SelectTrigger id="d-owner">
+                      <SelectValue placeholder="Select teammate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEAM_MEMBERS.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {detectedOwner
+                      ? `Auto-set to ${TEAM_MEMBERS.find((t) => t.id === detectedOwner)?.name} based on your login. Change if logging on someone else's behalf.`
+                      : "Pick which teammate this dealer belongs to."}
+                  </p>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setAddOpen(false)} disabled={addSaving}>
@@ -911,7 +975,8 @@ export default function CheckInsPage() {
                     !newDealer.name.trim() ||
                     !newDealer.street_address.trim() ||
                     !newDealer.city.trim() ||
-                    !newDealer.state.trim()
+                    !newDealer.state.trim() ||
+                    !(newDealer.rep_owner || detectedOwner)
                   }
                 >
                   {addSaving ? "Saving..." : "Add dealer"}
