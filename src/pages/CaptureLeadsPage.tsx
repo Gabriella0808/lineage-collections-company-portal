@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/accordion";
 import { Loader2, Plus, MapPin, Calendar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { CollectionsMultiSelect } from "@/components/CollectionsMultiSelect";
 
 type Market = {
   id: string;
