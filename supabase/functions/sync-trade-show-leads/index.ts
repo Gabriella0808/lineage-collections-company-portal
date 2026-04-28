@@ -96,7 +96,10 @@ Deno.serve(async (req: Request) => {
         const d = new Date(dateRaw);
         if (!isNaN(d.getTime())) lead_date = d.toISOString().slice(0, 10);
       }
-      const explicitSource = pickColVal(cols, ["lead source", "trade show", "event", "market"]);
+      const rawSource = pickColVal(cols, ["lead source", "trade show", "event", "market"]);
+      // Generic Lead Source status labels (e.g. "Trade Show – Event") are not market names — fall back to date inference.
+      const isSpecificMarket = rawSource && /high point|atlanta|las vegas|vegas market|spring|fall|summer|winter|autumn/i.test(rawSource);
+      const explicitSource = isSpecificMarket ? rawSource : "";
       const inferred = explicitSource || inferMarketFromDate(lead_date);
       return {
         monday_item_id: String(it.id),
