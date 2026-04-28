@@ -159,19 +159,6 @@ export default function TradeShowLeadsPage() {
           </Card>
 
           <Card className="p-5">
-            <h3 className="font-serif text-lg mb-4">Lead Status Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <RPieChart>
-                <Pie data={byStatus} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                  {byStatus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </RPieChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card className="p-5">
             <h3 className="font-serif text-lg mb-4">Leads by Sales Rep</h3>
             <ResponsiveContainer width="100%" height={Math.max(300, byRep.length * 24)}>
               <BarChart data={byRep} layout="vertical" margin={{ left: 20, right: 16 }}>
@@ -181,6 +168,19 @@ export default function TradeShowLeadsPage() {
                 <Tooltip />
                 <Bar dataKey="leads" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
+            </ResponsiveContainer>
+          </Card>
+
+          <Card className="p-5">
+            <h3 className="font-serif text-lg mb-4">Lead Status Distribution</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <RPieChart>
+                <Pie data={byStatus} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                  {byStatus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </RPieChart>
             </ResponsiveContainer>
           </Card>
 
