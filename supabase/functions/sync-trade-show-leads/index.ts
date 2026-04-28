@@ -100,7 +100,8 @@ Deno.serve(async (req: Request) => {
       // Generic Lead Source status labels (e.g. "Trade Show – Event") are not market names — fall back to date inference.
       const isSpecificMarket = rawSource && /high point|atlanta|las vegas|vegas market|spring|fall|summer|winter|autumn/i.test(rawSource);
       const explicitSource = isSpecificMarket ? rawSource : "";
-      const inferred = explicitSource || inferMarketFromDate(lead_date);
+      // Default any leads without a specific market or date to the current active market (High Point Spring 2026).
+      const inferred = explicitSource || inferMarketFromDate(lead_date) || "High Point Spring 2026";
       return {
         monday_item_id: String(it.id),
         contact_name: it.name || pickColVal(cols, ["contact", "name"]),
