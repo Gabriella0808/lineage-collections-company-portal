@@ -131,7 +131,7 @@ export default function TradeShowLeadsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard icon={Users} label="Total Leads" value={stats.total.toString()} />
-        <StatCard icon={Building2} label="Unique Dealers" value={stats.dealers.toString()} />
+        <StatCard icon={DollarSign} label="Avg Order Value" value={fmt(stats.avgOrder)} />
         <StatCard icon={DollarSign} label="Total Order Value" value={fmt(stats.orders)} />
         <StatCard icon={TrendingUp} label="Engaged %" value={`${stats.conv}%`} />
       </div>
