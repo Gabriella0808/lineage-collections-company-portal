@@ -35,6 +35,7 @@ type Lead = {
   contact_name: string | null;
   dealer: string | null;
   email: string | null;
+  rep_email: string | null;
   phone: string | null;
   trade_show: string | null;
   sales_rep: string | null;
