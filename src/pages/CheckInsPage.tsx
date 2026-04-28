@@ -790,6 +790,15 @@ export default function CheckInsPage() {
       toast({ title: "State required", variant: "destructive" });
       return;
     }
+    const owner = newDealer.rep_owner || detectedOwner;
+    if (!owner) {
+      toast({
+        title: "Owner required",
+        description: "Pick which teammate this dealer belongs to (Will, Mateo, or Chris).",
+        variant: "destructive",
+      });
+      return;
+    }
     setAddSaving(true);
     const { data, error } = await supabase
       .from("dealers")
@@ -802,6 +811,7 @@ export default function CheckInsPage() {
         email: newDealer.email.trim() || null,
         website: newDealer.website.trim() || null,
         status: "active",
+        rep_owner: owner,
       })
       .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
       .single();
@@ -813,9 +823,10 @@ export default function CheckInsPage() {
     if (data) {
       setDealers((prev) => [...prev, data as Dealer]);
     }
-    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "" });
+    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "", rep_owner: "" });
     setAddOpen(false);
-    toast({ title: "Dealer added", description: `${name} created. Geocoding will run shortly.` });
+    const ownerName = TEAM_MEMBERS.find((t) => t.id === owner)?.name ?? owner;
+    toast({ title: "Dealer added", description: `${name} added to ${ownerName}'s accounts. Geocoding will run shortly.` });
   };
 
   const placedCount = dealersWithMeta.filter((d) => d.lat != null && d.lng != null).length;
