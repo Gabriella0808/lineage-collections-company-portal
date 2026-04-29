@@ -170,6 +170,45 @@ export default function CaptureLeadsPage() {
     if (error) return toast.error(error.message);
     toast.success("Lead captured");
 
+    // Create follow-up task if requested
+    if (leadForm.followup_enabled && user?.id) {
+      const title = leadForm.followup_title.trim() || `Follow up: ${leadForm.contact_name.trim()}${leadForm.dealer.trim() ? ` (${leadForm.dealer.trim()})` : ""}`;
+      const descParts = [
+        leadForm.followup_description.trim(),
+        `— Lead from ${market?.name ?? "Trade Show"}`,
+        leadForm.dealer.trim() ? `Dealer: ${leadForm.dealer.trim()}` : "",
+        leadForm.email.trim() ? `Dealer Email: ${leadForm.email.trim()}` : "",
+        leadForm.product_interest.trim() ? `Collections: ${leadForm.product_interest.trim()}` : "",
+        Number(leadForm.order_amount) > 0 ? `Order Amount: ${fmt(Number(leadForm.order_amount))}` : "",
+      ].filter(Boolean);
+
+      // Look up rep's auth user_id (so it shows up in their portal's My Tasks)
+      let assignedUserId: string | null = null;
+      if (leadForm.sales_rep_id) {
+        const { data: ur } = await supabase
+          .from("user_reps")
+          .select("user_id")
+          .eq("rep_id", leadForm.sales_rep_id)
+          .maybeSingle();
+        assignedUserId = ur?.user_id ?? null;
+      }
+
+      const { error: taskErr } = await supabase.from("manager_tasks").insert({
+        user_id: user.id,
+        assigned_user_id: assignedUserId,
+        title,
+        description: descParts.join("\n"),
+        status: "todo",
+        due_date: leadForm.followup_due_date || null,
+      });
+      if (taskErr) toast.error(`Follow-up task: ${taskErr.message}`);
+      else if (!assignedUserId && leadForm.sales_rep_id) {
+        toast.success("Follow-up task added to My Tasks (rep has no portal account yet)");
+      } else {
+        toast.success("Follow-up task created");
+      }
+    }
+
     // Sync to Mailchimp ONLY if: (1) dealer email present and (2) market is a High Point market
     const dealerEmail = leadForm.email.trim();
     const isHighPoint = market?.name && /high point/i.test(market.name);
