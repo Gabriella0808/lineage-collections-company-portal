@@ -177,6 +177,7 @@ export default function SalesRepsPage() {
               <th className="text-left p-3 font-medium text-muted-foreground">Rep</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rep Code</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rep Email</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Manager</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Manager Email</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Region</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
