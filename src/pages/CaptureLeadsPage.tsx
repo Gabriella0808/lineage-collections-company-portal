@@ -419,6 +419,49 @@ export default function CaptureLeadsPage() {
                 </SelectContent>
               </Select>
             </Field>
+
+            {/* Follow-up task for the assigned rep */}
+            <div className="rounded-lg border border-dashed bg-muted/30 p-3 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={leadForm.followup_enabled}
+                  onChange={(e) => setLeadForm({ ...leadForm, followup_enabled: e.target.checked })}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <span className="text-sm font-medium">Create follow-up task{leadForm.sales_rep ? ` for ${leadForm.sales_rep}` : ""}</span>
+              </label>
+              {leadForm.followup_enabled && (
+                <div className="space-y-3 pl-6">
+                  <Field label="Task Title">
+                    <Input
+                      value={leadForm.followup_title}
+                      onChange={(e) => setLeadForm({ ...leadForm, followup_title: e.target.value })}
+                      placeholder={`Follow up: ${leadForm.contact_name || "contact"}${leadForm.dealer ? ` (${leadForm.dealer})` : ""}`}
+                    />
+                  </Field>
+                  <Field label="Due Date">
+                    <Input
+                      type="date"
+                      value={leadForm.followup_due_date}
+                      onChange={(e) => setLeadForm({ ...leadForm, followup_due_date: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Task Notes">
+                    <Textarea
+                      value={leadForm.followup_description}
+                      onChange={(e) => setLeadForm({ ...leadForm, followup_description: e.target.value })}
+                      rows={2}
+                      placeholder="Anything specific the rep should do…"
+                    />
+                  </Field>
+                  <p className="text-[11px] text-muted-foreground">
+                    Will appear in My Tasks for you and {leadForm.sales_rep || "the assigned rep"}. Lead details (dealer, email, collections, order amount) are appended automatically.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <Field label="Product of Interest">
               <CollectionsMultiSelect
                 value={leadForm.product_interest ? leadForm.product_interest.split(",").map((s) => s.trim()).filter(Boolean) : []}
