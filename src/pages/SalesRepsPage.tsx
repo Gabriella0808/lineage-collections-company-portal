@@ -1,43 +1,148 @@
 import { useState } from "react";
-import { Mail, Phone } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { FilterBar } from "@/components/FilterBar";
-import { StatusBadge } from "@/components/StatusBadge";
-import { KpiGauge } from "@/components/KpiGauge";
-import { useSalesReps, useTerritories, useDealers, useRepTerritories, formatCurrency, getInitials, getTerritoryName, getDealersByRep } from "@/hooks/usePortalData";
+import { useSalesReps, useTerritories, useManagers, useRepTerritories, getInitials } from "@/hooks/usePortalData";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NoteToTask } from "@/components/NoteToTask";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+
+interface RepEditState {
+  name: string;
+  acctivate_id: string;
+  email: string;
+  manager_id: string | null;
+  territory_id: string | null;
+  status: string;
+}
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "on-leave", label: "On Leave" },
+];
 
 export default function SalesRepsPage() {
+  const qc = useQueryClient();
   const { data: reps = [], isLoading: repsLoading } = useSalesReps();
   const { data: territories = [] } = useTerritories();
-  const { data: dealers = [] } = useDealers();
+  const { data: managers = [] } = useManagers();
   const { data: repTerritories = [] } = useRepTerritories();
 
   const [search, setSearch] = useState("");
-  const [territoryFilter, setTerritoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedRep, setSelectedRep] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<RepEditState | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newRep, setNewRep] = useState<RepEditState>({
+    name: "", acctivate_id: "", email: "", manager_id: null, territory_id: null, status: "active",
+  });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["sales_reps"] });
+    qc.invalidateQueries({ queryKey: ["rep_territories"] });
+    qc.invalidateQueries({ queryKey: ["territories"] });
+    qc.invalidateQueries({ queryKey: ["managers"] });
+  };
+
+  const repTerritoryId = (repId: string): string | null => {
+    return repTerritories.find(rt => rt.rep_id === repId)?.territory_id ?? null;
+  };
+
+  const startEdit = (repId: string) => {
+    const r = reps.find(x => x.id === repId);
+    if (!r) return;
+    setEditingId(repId);
+    setEditForm({
+      name: r.name,
+      acctivate_id: r.acctivate_id ?? "",
+      email: r.email ?? "",
+      manager_id: r.manager_id,
+      territory_id: repTerritoryId(repId),
+      status: r.status,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editForm) return;
+    if (!editForm.name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    const { error } = await supabase.from("sales_reps").update({
+      name: editForm.name.trim(),
+      acctivate_id: editForm.acctivate_id.trim() || null,
+      email: editForm.email.trim() || null,
+      manager_id: editForm.manager_id,
+      status: editForm.status,
+    }).eq("id", editingId);
+    if (error) { toast.error(error.message); return; }
+
+    // Sync rep_territories — replace existing link
+    const currentTerId = repTerritoryId(editingId);
+    if (currentTerId !== editForm.territory_id) {
+      await supabase.from("rep_territories").delete().eq("rep_id", editingId);
+      if (editForm.territory_id) {
+        await supabase.from("rep_territories").insert({ rep_id: editingId, territory_id: editForm.territory_id });
+      }
+    }
+    toast.success("Rep updated");
+    cancelEdit();
+    invalidate();
+  };
+
+  const deleteRep = async (repId: string, name: string) => {
+    if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+    await supabase.from("rep_territories").delete().eq("rep_id", repId);
+    const { error } = await supabase.from("sales_reps").delete().eq("id", repId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Rep removed");
+    invalidate();
+  };
+
+  const addRep = async () => {
+    if (!newRep.name.trim()) { toast.error("Name is required"); return; }
+    const { data, error } = await supabase.from("sales_reps").insert({
+      name: newRep.name.trim(),
+      acctivate_id: newRep.acctivate_id.trim() || null,
+      email: newRep.email.trim() || null,
+      manager_id: newRep.manager_id,
+      status: newRep.status,
+    }).select("id").single();
+    if (error || !data) { toast.error(error?.message ?? "Failed"); return; }
+    if (newRep.territory_id) {
+      await supabase.from("rep_territories").insert({ rep_id: data.id, territory_id: newRep.territory_id });
+    }
+    toast.success("Rep added");
+    setAddOpen(false);
+    setNewRep({ name: "", acctivate_id: "", email: "", manager_id: null, territory_id: null, status: "active" });
+    invalidate();
+  };
 
   const filtered = reps.filter(r => {
     if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (territoryFilter !== "all") {
-      const repTerIds = repTerritories.filter(rt => rt.rep_id === r.id).map(rt => rt.territory_id);
-      if (!repTerIds.includes(territoryFilter)) return false;
-    }
     if (statusFilter !== "all" && r.status !== statusFilter) return false;
     return true;
-  }).sort((a, b) => (b.kpi_score ?? 0) - (a.kpi_score ?? 0));
+  });
 
-  const rep = reps.find(r => r.id === selectedRep);
-  const repTerIds = rep ? repTerritories.filter(rt => rt.rep_id === rep.id).map(rt => rt.territory_id) : [];
-  const repDealers = rep ? getDealersByRep(dealers, rep.id) : [];
+  const managerEmail = (mid: string | null) => managers.find(m => m.id === mid)?.email ?? "—";
+  const territoryName = (tid: string | null) => territories.find(t => t.id === tid)?.name ?? "—";
 
   if (repsLoading) {
     return (
       <div className="animate-fade-in space-y-4">
-        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-10 w-64" />
         <Skeleton className="h-12 w-full" />
         {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
       </div>
@@ -46,9 +151,14 @@ export default function SalesRepsPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="page-header">
-        <h1 className="page-title">Sales Reps</h1>
-        <p className="page-subtitle">{reps.length} reps</p>
+      <div className="page-header flex items-center justify-between">
+        <div>
+          <h1 className="page-title">Sales Rep Database</h1>
+          <p className="page-subtitle">{reps.length} reps • inline edit any field</p>
+        </div>
+        <Button onClick={() => setAddOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" /> Add Rep
+        </Button>
       </div>
 
       <FilterBar
@@ -56,8 +166,7 @@ export default function SalesRepsPage() {
         searchValue={search}
         onSearchChange={setSearch}
         filters={[
-          { label: "Territory", value: territoryFilter, onChange: setTerritoryFilter, options: territories.map(t => ({ label: t.name, value: t.id })) },
-          { label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ label: 'Active', value: 'active' }, { label: 'On Leave', value: 'on-leave' }, { label: 'Inactive', value: 'inactive' }] },
+          { label: "Status", value: statusFilter, onChange: setStatusFilter, options: STATUS_OPTIONS.map(o => ({ label: o.label, value: o.value })) },
         ]}
       />
 
@@ -66,58 +175,111 @@ export default function SalesRepsPage() {
           <thead>
             <tr className="border-b bg-muted/30">
               <th className="text-left p-3 font-medium text-muted-foreground">Rep</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Territories</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Dealers</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Rep Code</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Rep Email</th>
+              <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Manager Email</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Region</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">KPI</th>
-              <th className="text-right p-3 font-medium text-muted-foreground hidden lg:table-cell">Revenue</th>
-              <th className="text-right p-3 font-medium text-muted-foreground hidden lg:table-cell">Quota %</th>
-              <th className="text-center p-3 font-medium text-muted-foreground">Actions</th>
+              <th className="text-right p-3 font-medium text-muted-foreground w-28">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map(r => {
-              const rTerIds = repTerritories.filter(rt => rt.rep_id === r.id).map(rt => rt.territory_id);
-              const dealerCount = dealers.filter(d => d.rep_id === r.id).length;
-              const quotaPct = (r.quota ?? 0) > 0 ? Math.round((r.revenue ?? 0) / (r.quota ?? 1) * 100) : 0;
+              const isEditing = editingId === r.id;
+              const tid = repTerritoryId(r.id);
               return (
-                <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelectedRep(r.id)}>
+                <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                  {/* Rep name */}
                   <td className="p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-[11px] font-semibold text-primary-foreground shrink-0">
-                        {getInitials(r.name)}
+                    {isEditing ? (
+                      <Input value={editForm!.name} onChange={e => setEditForm({ ...editForm!, name: e.target.value })} className="h-8" />
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-[11px] font-semibold text-primary-foreground shrink-0">
+                          {getInitials(r.name)}
+                        </div>
+                        <span className="font-medium">{r.name}</span>
                       </div>
-                      <div>
-                        <p className="font-medium">{r.name}</p>
-                        <p className="text-xs text-muted-foreground">{r.email || 'No email'}</p>
-                      </div>
-                    </div>
+                    )}
                   </td>
-                  <td className="p-3 hidden md:table-cell">
-                    <div className="flex flex-wrap gap-1">
-                      {rTerIds.length > 0 ? rTerIds.map(tId => (
-                        <span key={tId} className="text-[11px] bg-muted px-2 py-0.5 rounded-full">{getTerritoryName(territories, tId)}</span>
-                      )) : (
-                        <span className="text-[11px] text-muted-foreground">—</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3 text-center">{dealerCount}</td>
-                  <td className="p-3"><StatusBadge status={r.status} /></td>
-                  <td className="p-3"><KpiGauge score={r.kpi_score ?? 0} size="sm" /></td>
-                  <td className="p-3 text-right hidden lg:table-cell font-medium">{formatCurrency(r.revenue)}</td>
-                  <td className="p-3 text-right hidden lg:table-cell">{quotaPct > 0 ? `${quotaPct}%` : '—'}</td>
+
+                  {/* Rep code */}
                   <td className="p-3">
-                    <div className="flex items-center justify-center gap-1">
-                      {r.email && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); window.location.href = `mailto:${r.email}`; }}>
-                          <Mail className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                      {r.phone && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); window.location.href = `tel:${r.phone}`; }}>
-                          <Phone className="h-3.5 w-3.5" />
-                        </Button>
+                    {isEditing ? (
+                      <Input value={editForm!.acctivate_id} onChange={e => setEditForm({ ...editForm!, acctivate_id: e.target.value })} className="h-8 w-24" />
+                    ) : (
+                      <span className="text-muted-foreground">{r.acctivate_id || "—"}</span>
+                    )}
+                  </td>
+
+                  {/* Rep email */}
+                  <td className="p-3">
+                    {isEditing ? (
+                      <Input value={editForm!.email} onChange={e => setEditForm({ ...editForm!, email: e.target.value })} className="h-8" />
+                    ) : (
+                      <span className="text-primary">{r.email || "—"}</span>
+                    )}
+                  </td>
+
+                  {/* Manager email */}
+                  <td className="p-3 hidden lg:table-cell">
+                    {isEditing ? (
+                      <Select value={editForm!.manager_id ?? "none"} onValueChange={v => setEditForm({ ...editForm!, manager_id: v === "none" ? null : v })}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">— None —</SelectItem>
+                          {managers.map(m => <SelectItem key={m.id} value={m.id}>{m.email || m.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">{managerEmail(r.manager_id)}</span>
+                    )}
+                  </td>
+
+                  {/* Region */}
+                  <td className="p-3">
+                    {isEditing ? (
+                      <Select value={editForm!.territory_id ?? "none"} onValueChange={v => setEditForm({ ...editForm!, territory_id: v === "none" ? null : v })}>
+                        <SelectTrigger className="h-8 w-36"><SelectValue placeholder="Region" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">— None —</SelectItem>
+                          {territories.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="secondary" className="font-normal">{territoryName(tid)}</Badge>
+                    )}
+                  </td>
+
+                  {/* Status */}
+                  <td className="p-3">
+                    {isEditing ? (
+                      <Select value={editForm!.status} onValueChange={v => setEditForm({ ...editForm!, status: v })}>
+                        <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge className={r.status === "active" ? "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15" : r.status === "inactive" ? "bg-rose-500/15 text-rose-700 hover:bg-rose-500/15" : "bg-amber-500/15 text-amber-700 hover:bg-amber-500/15"}>
+                        {STATUS_OPTIONS.find(o => o.value === r.status)?.label ?? r.status}
+                      </Badge>
+                    )}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="p-3">
+                    <div className="flex items-center justify-end gap-1">
+                      {isEditing ? (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={saveEdit}><Check className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelEdit}><X className="h-4 w-4" /></Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(r.id)}><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRep(r.id, r.name)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </>
                       )}
                     </div>
                   </td>
@@ -129,67 +291,50 @@ export default function SalesRepsPage() {
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-12 text-sm">No reps match your filters.</p>}
       </div>
 
-      <Sheet open={!!selectedRep} onOpenChange={() => setSelectedRep(null)}>
-        <SheetContent className="sm:max-w-lg overflow-y-auto">
-          {rep && (
-            <>
-              <SheetHeader>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground">
-                    {getInitials(rep.name)}
-                  </div>
-                  <div>
-                    <SheetTitle>{rep.name}</SheetTitle>
-                    <p className="text-xs text-muted-foreground">{rep.email || 'No email'} {rep.phone ? `• ${rep.phone}` : ''}</p>
-                  </div>
-                </div>
-              </SheetHeader>
-
-              <div className="mt-6 space-y-6">
-                <div className="flex items-center gap-3">
-                  <StatusBadge status={rep.status} />
-                  <KpiGauge score={rep.kpi_score ?? 0} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Revenue</p><p className="text-lg font-semibold">{formatCurrency(rep.revenue)}</p></div>
-                  <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Quota</p><p className="text-lg font-semibold">{formatCurrency(rep.quota)}</p></div>
-                  <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Tasks Done</p><p className="text-lg font-semibold">{rep.tasks_completed ?? 0}</p></div>
-                  <div className="stat-card"><p className="text-[11px] text-muted-foreground uppercase">Overdue</p><p className="text-lg font-semibold text-destructive">{rep.tasks_overdue ?? 0}</p></div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Territories</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {repTerIds.length > 0 ? repTerIds.map(tId => <span key={tId} className="text-xs bg-muted px-3 py-1 rounded-full">{getTerritoryName(territories, tId)}</span>) : (
-                      <span className="text-xs text-muted-foreground">No territories assigned yet</span>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Assigned Dealers ({repDealers.length})</h4>
-                  <div className="space-y-2">
-                    {repDealers.length > 0 ? repDealers.map(d => (
-                      <div key={d.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/40 text-sm">
-                        <span>{d.name}</span>
-                        <StatusBadge status={d.engagement ?? 'medium'} />
-                      </div>
-                    )) : (
-                      <p className="text-sm text-muted-foreground">No dealers assigned yet</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Notes</h4>
-                  <NoteToTask refType="rep" refName={rep.name} refId={rep.id} />
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* Add Rep dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add Sales Rep</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Name</Label><Input value={newRep.name} onChange={e => setNewRep({ ...newRep, name: e.target.value })} /></div>
+            <div><Label>Rep Code</Label><Input value={newRep.acctivate_id} onChange={e => setNewRep({ ...newRep, acctivate_id: e.target.value })} /></div>
+            <div><Label>Rep Email</Label><Input type="email" value={newRep.email} onChange={e => setNewRep({ ...newRep, email: e.target.value })} /></div>
+            <div>
+              <Label>Manager Email</Label>
+              <Select value={newRep.manager_id ?? "none"} onValueChange={v => setNewRep({ ...newRep, manager_id: v === "none" ? null : v })}>
+                <SelectTrigger><SelectValue placeholder="Select manager" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {managers.map(m => <SelectItem key={m.id} value={m.id}>{m.email || m.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Region</Label>
+              <Select value={newRep.territory_id ?? "none"} onValueChange={v => setNewRep({ ...newRep, territory_id: v === "none" ? null : v })}>
+                <SelectTrigger><SelectValue placeholder="Select region" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {territories.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={newRep.status} onValueChange={v => setNewRep({ ...newRep, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button onClick={addRep}>Add Rep</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
