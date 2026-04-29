@@ -185,12 +185,12 @@ export default function CaptureLeadsPage() {
       // Look up rep's auth user_id (so it shows up in their portal's My Tasks)
       let assignedUserId: string | null = null;
       if (leadForm.sales_rep_id) {
-        const { data: ur } = await supabase
-          .from("user_reps")
-          .select("user_id")
-          .eq("rep_id", leadForm.sales_rep_id)
-          .maybeSingle();
-        assignedUserId = ur?.user_id ?? null;
+        const { data: uid, error: rpcErr } = await supabase.rpc(
+          "user_id_for_rep_with_email_fallback",
+          { _rep_id: leadForm.sales_rep_id }
+        );
+        if (rpcErr) console.error("rep user lookup failed", rpcErr);
+        assignedUserId = (uid as string | null) ?? null;
       }
 
       const { error: taskErr } = await supabase.from("manager_tasks").insert({
