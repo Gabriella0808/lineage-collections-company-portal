@@ -672,7 +672,8 @@ export default function TasksPage() {
                         return (
                           <li
                             key={t.id}
-                            className="grid grid-cols-[8px_minmax(0,1fr)] md:grid-cols-[8px_minmax(0,1fr)_180px_160px_120px_80px] items-center gap-0 hover:bg-muted/30 transition-colors"
+                            onClick={() => { setDetailTask(t); markRead(t.id); }}
+                            className="grid grid-cols-[8px_minmax(0,1fr)] md:grid-cols-[8px_minmax(0,1fr)_180px_160px_120px_80px] items-center gap-0 hover:bg-muted/30 transition-colors cursor-pointer"
                           >
                             {/* Colored left accent bar */}
                             <div className={`self-stretch ${col.accent}`} />
