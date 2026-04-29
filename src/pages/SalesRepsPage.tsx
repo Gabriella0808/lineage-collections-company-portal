@@ -138,6 +138,7 @@ export default function SalesRepsPage() {
 
   const managerEmail = (mid: string | null) => managers.find(m => m.id === mid)?.email ?? "—";
   const territoryName = (tid: string | null) => territories.find(t => t.id === tid)?.name ?? "—";
+  const territoryCode = (tid: string | null) => territories.find(t => t.id === tid)?.acctivate_id ?? "—";
 
   if (repsLoading) {
     return (
@@ -176,11 +177,11 @@ export default function SalesRepsPage() {
             <tr className="border-b bg-muted/30">
               <th className="text-left p-3 font-medium text-muted-foreground">Rep</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rep Code</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Territory Code</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rep Email</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Manager</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Manager Email</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Region</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
               <th className="text-right p-3 font-medium text-muted-foreground w-28">Actions</th>
             </tr>
           </thead>
