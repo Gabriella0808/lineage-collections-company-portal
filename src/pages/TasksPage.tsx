@@ -775,7 +775,7 @@ export default function TasksPage() {
                             </div>
 
                             {/* Status pill (md+) */}
-                            <div className="hidden md:flex items-center px-3 py-2">
+                            <div className="hidden md:flex items-center px-3 py-2" onClick={(e) => e.stopPropagation()}>
                               <Select
                                 value={t.status}
                                 onValueChange={(v: Status) => updateStatus(t.id, v)}
