@@ -138,6 +138,7 @@ export default function SalesRepsPage() {
 
   const managerEmail = (mid: string | null) => managers.find(m => m.id === mid)?.email ?? "—";
   const territoryName = (tid: string | null) => territories.find(t => t.id === tid)?.name ?? "—";
+  const territoryCode = (tid: string | null) => territories.find(t => t.id === tid)?.acctivate_id ?? "—";
 
   if (repsLoading) {
     return (
@@ -176,11 +177,11 @@ export default function SalesRepsPage() {
             <tr className="border-b bg-muted/30">
               <th className="text-left p-3 font-medium text-muted-foreground">Rep</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rep Code</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Territory Code</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Rep Email</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Manager</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Manager Email</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Region</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
               <th className="text-right p-3 font-medium text-muted-foreground w-28">Actions</th>
             </tr>
           </thead>
@@ -213,7 +214,11 @@ export default function SalesRepsPage() {
                     )}
                   </td>
 
-                  {/* Rep email */}
+                  {/* Territory code */}
+                  <td className="p-3">
+                    <span className="text-muted-foreground">{territoryCode(tid)}</span>
+                  </td>
+
                   <td className="p-3">
                     {isEditing ? (
                       <Input value={editForm!.email} onChange={e => setEditForm({ ...editForm!, email: e.target.value })} className="h-8" />
@@ -257,21 +262,7 @@ export default function SalesRepsPage() {
                     )}
                   </td>
 
-                  {/* Status */}
-                  <td className="p-3">
-                    {isEditing ? (
-                      <Select value={editForm!.status} onValueChange={v => setEditForm({ ...editForm!, status: v })}>
-                        <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge className={r.status === "active" ? "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15" : r.status === "inactive" ? "bg-rose-500/15 text-rose-700 hover:bg-rose-500/15" : "bg-amber-500/15 text-amber-700 hover:bg-amber-500/15"}>
-                        {STATUS_OPTIONS.find(o => o.value === r.status)?.label ?? r.status}
-                      </Badge>
-                    )}
-                  </td>
+
 
                   {/* Actions */}
                   <td className="p-3">
