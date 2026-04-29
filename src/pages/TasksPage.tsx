@@ -694,7 +694,7 @@ export default function TasksPage() {
                                 </p>
                               )}
                               {/* Mobile-only inline meta */}
-                              <div className="md:hidden mt-2 flex flex-wrap items-center gap-2">
+                              <div className="md:hidden mt-2 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                 {primary && (
                                   <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
