@@ -227,8 +227,14 @@ export default function TasksPage() {
     return hay.includes(q);
   };
 
+  const isTradeShowTask = (t: Task): boolean => {
+    const desc = t.description ?? "";
+    return /—\s*Lead from\b/i.test(desc) || /\bTrade Show\b/i.test(desc) || /\bTrade Show\b/i.test(t.title);
+  };
+
   const matchesAssigneeUser = (t: Task): boolean => {
     if (assigneeUserId === "any") return true;
+    if (assigneeUserId === "__trade_show__") return isTradeShowTask(t);
     return getAssigneeIds(t).includes(assigneeUserId);
   };
 
@@ -567,6 +573,7 @@ export default function TasksPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="any" className="text-xs">Anyone</SelectItem>
+                  <SelectItem value="__trade_show__" className="text-xs">Trade Show Leads</SelectItem>
                   {visibleAssignees
                     .slice()
                     .sort((a, b) =>
