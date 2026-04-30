@@ -540,8 +540,8 @@ export default function CaptureLeadsPage() {
             </Field>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLeadDialog(null)}>Cancel</Button>
-            <Button onClick={submitLead}>Create Lead</Button>
+            <Button variant="outline" onClick={() => { setLeadDialog(null); setEditingLeadId(null); setLeadForm(emptyLead); }}>Cancel</Button>
+            <Button onClick={submitLead}>{editingLeadId ? "Save Changes" : "Create Lead"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
