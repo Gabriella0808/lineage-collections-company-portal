@@ -229,7 +229,7 @@ export default function TasksPage() {
 
   const isTradeShowTask = (t: Task): boolean => {
     const desc = t.description ?? "";
-    return /—\s*Lead from\b/i.test(desc) || /\bTrade Show\b/i.test(desc) || /\bTrade Show\b/i.test(t.title);
+    return /lead from/i.test(desc) || /\bTrade Show\b/i.test(desc) || /\bTrade Show\b/i.test(t.title);
   };
 
   const matchesAssigneeUser = (t: Task): boolean => {
