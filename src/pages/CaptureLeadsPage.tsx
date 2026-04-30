@@ -403,9 +403,14 @@ export default function CaptureLeadsPage() {
                               <td className="px-3 py-2">{l.status ? <Badge variant="secondary">{l.status}</Badge> : "—"}</td>
                               <td className="px-3 py-2 text-right font-medium">{l.order_amount ? fmt(l.order_amount) : "—"}</td>
                               <td className="px-3 py-2">
-                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteLead(l.id)}>
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditLead(l)} aria-label="Edit lead">
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteLead(l.id)} aria-label="Delete lead">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           ))}
