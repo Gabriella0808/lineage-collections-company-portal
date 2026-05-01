@@ -57,16 +57,51 @@ export default function DealersPage() {
         ]}
       />
 
-      <div className="table-container">
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {filtered.slice(0, 100).map(d => (
+          <button
+            key={d.id}
+            onClick={() => setSelected(d.id)}
+            className="w-full text-left glass-card p-3 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <p className="font-medium text-sm leading-tight">{d.name}</p>
+              <StatusBadge status={d.status} />
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              {d.city || ''}{d.city && d.state ? ', ' : ''}{d.state || ''}
+              {!d.city && !d.state && '—'}
+            </p>
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="bg-muted px-2 py-0.5 rounded-full truncate">{getTerritoryName(territories, d.territory_id)}</span>
+                <span className="text-muted-foreground truncate">{getRepName(reps, d.rep_id)}</span>
+              </div>
+              <span className="font-medium tabular-nums shrink-0">{formatCurrency(d.revenue)}</span>
+            </div>
+            <div className="flex items-center gap-1 mt-2 pt-2 border-t" onClick={e => e.stopPropagation()}>
+              {d.email && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { window.location.href = `mailto:${d.email}`; }}><Mail className="h-3.5 w-3.5" /></Button>}
+              {d.phone && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { window.location.href = `tel:${d.phone}`; }}><Phone className="h-3.5 w-3.5" /></Button>}
+              <span className="ml-auto text-[11px] text-muted-foreground">Tap for details</span>
+            </div>
+          </button>
+        ))}
+        {filtered.length > 100 && <p className="text-center text-muted-foreground py-3 text-xs">Showing 100 of {filtered.length} dealers.</p>}
+        {filtered.length === 0 && <p className="text-center text-muted-foreground py-12 text-sm">No dealers match your filters.</p>}
+      </div>
+
+      {/* Desktop / tablet table */}
+      <div className="table-container hidden md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/30">
               <th className="text-left p-3 font-medium text-muted-foreground">Dealer</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Location</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Location</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Territory</th>
               <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Rep</th>
               <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Engagement</th>
+              <th className="text-left p-3 font-medium text-muted-foreground">Engagement</th>
               <th className="text-right p-3 font-medium text-muted-foreground hidden lg:table-cell">Revenue</th>
               <th className="text-center p-3 font-medium text-muted-foreground">Actions</th>
             </tr>
@@ -75,11 +110,11 @@ export default function DealersPage() {
             {filtered.slice(0, 100).map(d => (
               <tr key={d.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelected(d.id)}>
                 <td className="p-3 font-medium">{d.name}</td>
-                <td className="p-3 text-muted-foreground hidden md:table-cell">{d.city || ''}{d.city && d.state ? ', ' : ''}{d.state || ''}</td>
+                <td className="p-3 text-muted-foreground">{d.city || ''}{d.city && d.state ? ', ' : ''}{d.state || ''}</td>
                 <td className="p-3 hidden lg:table-cell"><span className="text-xs bg-muted px-2 py-0.5 rounded-full">{getTerritoryName(territories, d.territory_id)}</span></td>
                 <td className="p-3 hidden lg:table-cell text-muted-foreground">{getRepName(reps, d.rep_id)}</td>
                 <td className="p-3"><StatusBadge status={d.status} /></td>
-                <td className="p-3 hidden md:table-cell"><StatusBadge status={d.engagement ?? 'medium'} /></td>
+                <td className="p-3"><StatusBadge status={d.engagement ?? 'medium'} /></td>
                 <td className="p-3 text-right hidden lg:table-cell font-medium">{formatCurrency(d.revenue)}</td>
                 <td className="p-3">
                   <div className="flex items-center justify-center gap-1">

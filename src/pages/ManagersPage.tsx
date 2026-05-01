@@ -152,14 +152,32 @@ export default function ManagersPage() {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base">Sales Reps</CardTitle></CardHeader>
           <CardContent className="p-0">
-            <div className="table-container">
+            {/* Mobile list */}
+            <div className="sm:hidden divide-y">
+              {managerReps.map((rep) => (
+                <div key={rep.id} className="p-3 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{rep.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{rep.email || "—"}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-semibold tabular-nums">{formatCurrency(rep.revenue ?? 0)}</p>
+                    <Badge variant="secondary" className="capitalize text-[10px] mt-0.5">{rep.status}</Badge>
+                  </div>
+                </div>
+              ))}
+              {managerReps.length === 0 && <p className="p-8 text-center text-muted-foreground text-sm">No reps assigned.</p>}
+            </div>
+
+            {/* Tablet/desktop table */}
+            <div className="table-container hidden sm:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30">
                     <th className="text-left p-3 font-medium text-muted-foreground">Rep</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Email</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Email</th>
                     <th className="text-right p-3 font-medium text-muted-foreground">Revenue</th>
-                    <th className="text-right p-3 font-medium text-muted-foreground">Quota</th>
+                    <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Quota</th>
                     <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
                   </tr>
                 </thead>
@@ -167,9 +185,9 @@ export default function ManagersPage() {
                   {managerReps.map((rep) => (
                     <tr key={rep.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="p-3 font-medium">{rep.name}</td>
-                      <td className="p-3 text-muted-foreground text-xs">{rep.email || "—"}</td>
+                      <td className="p-3 text-muted-foreground text-xs hidden md:table-cell">{rep.email || "—"}</td>
                       <td className="p-3 text-right tabular-nums">{formatCurrency(rep.revenue ?? 0)}</td>
-                      <td className="p-3 text-right tabular-nums">{formatCurrency(rep.quota ?? 0)}</td>
+                      <td className="p-3 text-right tabular-nums hidden md:table-cell">{formatCurrency(rep.quota ?? 0)}</td>
                       <td className="p-3"><Badge variant="secondary" className="capitalize">{rep.status}</Badge></td>
                     </tr>
                   ))}

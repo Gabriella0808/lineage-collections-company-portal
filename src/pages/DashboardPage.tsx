@@ -164,7 +164,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         {role !== "rep" && (
           <StatCard title={role === "manager" ? "My Reps" : "Sales Reps"} value={reps.length} icon={Users} trend="neutral" subtitle="assigned" />
         )}
@@ -175,8 +175,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Sales Leaderboard — full width */}
-      <div className="glass-card p-6 mb-6">
-        <h3 className="text-base font-semibold mb-5 flex items-center gap-2">
+      <div className="glass-card p-4 sm:p-6 mb-6">
+        <h3 className="text-base font-semibold mb-4 sm:mb-5 flex items-center gap-2">
           <Trophy className="h-5 w-5 text-accent" /> Sales Leaderboard
         </h3>
         {leaderboard.length > 0 ? (
@@ -184,18 +184,18 @@ export default function DashboardPage() {
             {leaderboard.map((rep, idx) => {
               const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
               return (
-                <li key={rep.id} className="flex items-center gap-4 py-3 border-b border-border/40 last:border-0">
-                  <span className={`w-10 text-center shrink-0 ${idx <= 2 ? 'text-2xl' : 'text-sm font-semibold text-muted-foreground'}`}>{medal}</span>
-                  <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-primary">{getInitials(rep.name)}</span>
+                <li key={rep.id} className="flex items-center gap-2 sm:gap-4 py-2.5 sm:py-3 border-b border-border/40 last:border-0">
+                  <span className={`w-7 sm:w-10 text-center shrink-0 ${idx <= 2 ? 'text-xl sm:text-2xl' : 'text-xs sm:text-sm font-semibold text-muted-foreground'}`}>{medal}</span>
+                  <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <span className="text-xs sm:text-sm font-bold text-primary">{getInitials(rep.name)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-base font-bold truncate">{rep.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{rep.territory}</p>
+                    <p className="text-sm sm:text-base font-bold truncate">{rep.name}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{rep.territory}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-lg font-bold tabular-nums">{formatCurrency(rep.revenue)}</p>
-                    <p className="text-[11px] font-medium text-success flex items-center justify-end gap-0.5">
+                    <p className="text-sm sm:text-lg font-bold tabular-nums">{formatCurrency(rep.revenue)}</p>
+                    <p className="text-[10px] sm:text-[11px] font-medium text-success flex items-center justify-end gap-0.5">
                       <ArrowUp className="h-3 w-3" /> Tracking
                     </p>
                   </div>
@@ -209,18 +209,18 @@ export default function DashboardPage() {
       </div>
 
       {/* Row: Top Reps by Total Sales + Accounts by Sales Manager */}
-      <div className="grid lg:grid-cols-3 gap-5 mb-6">
-        <div className="glass-card p-5 lg:col-span-2">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-5 mb-6">
+        <div className="glass-card p-4 sm:p-5 lg:col-span-2">
           <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-accent" /> Top Reps by Total Sales
           </h3>
-          <div className="h-[280px]">
+          <div className="h-[240px] sm:h-[280px]">
             {topRepsBar.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topRepsBar} layout="vertical" barSize={18}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="name" type="category" width={70} tick={{ fontSize: 12 }} />
+                  <YAxis dataKey="name" type="category" width={60} tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   <Bar dataKey="revenue" fill="hsl(38 75% 50%)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="glass-card p-5 flex flex-col">
+        <div className="glass-card p-4 sm:p-5 flex flex-col">
           <h3 className="text-sm font-semibold mb-4">Accounts by Sales Manager</h3>
           <div className="flex-1 min-h-[240px]">
             {managerDonut.length > 0 ? (
@@ -243,8 +243,8 @@ export default function DashboardPage() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
+                    innerRadius={50}
+                    outerRadius={80}
                     paddingAngle={2}
                   >
                     {managerDonut.map((_, i) => (
@@ -268,15 +268,15 @@ export default function DashboardPage() {
 
       {/* Row: Top Dealers by Revenue */}
       <div className="mb-6">
-        <div className="glass-card p-5">
+        <div className="glass-card p-4 sm:p-5">
           <h3 className="text-sm font-semibold mb-4">Top Dealers by Revenue ($K) — {currentYear}</h3>
-          <div className="h-[280px]">
+          <div className="h-[260px] sm:h-[280px]">
             {topDealers.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topDealers} layout="vertical" barSize={16}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 90%)" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 10 }} />
+                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v: number) => `$${v}K`} />
                   <Bar dataKey="revenue" fill="hsl(152 60% 40%)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -290,7 +290,7 @@ export default function DashboardPage() {
 
       {/* Row: Monthly Rep Performance */}
       <div className="grid lg:grid-cols-1 gap-5">
-        <div className="glass-card p-5">
+        <div className="glass-card p-4 sm:p-5">
           <h3 className="text-sm font-semibold mb-1">Monthly Rep Performance ($K) — {currentYear}</h3>
           <p className="text-[11px] text-muted-foreground mb-3">Top 5 reps by sales per month</p>
           <div className="h-[240px]">

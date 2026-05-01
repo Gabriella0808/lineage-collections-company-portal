@@ -77,16 +77,16 @@
     @apply bg-card border border-border/60 shadow-sm rounded-xl;
   }
   .stat-card {
-    @apply glass-card p-5 transition-shadow hover:shadow-md;
+    @apply glass-card p-4 sm:p-5 transition-shadow hover:shadow-md;
   }
   .page-header {
-    @apply mb-6;
+    @apply mb-5 sm:mb-6;
   }
   .page-title {
-    @apply text-2xl font-semibold tracking-tight;
+    @apply text-xl sm:text-2xl font-semibold tracking-tight;
   }
   .page-subtitle {
-    @apply text-sm text-muted-foreground mt-1;
+    @apply text-xs sm:text-sm text-muted-foreground mt-1;
   }
   .table-container {
     @apply glass-card overflow-hidden;

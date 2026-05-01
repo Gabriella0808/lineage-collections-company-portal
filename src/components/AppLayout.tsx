@@ -173,15 +173,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <SidebarNav />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b px-4 bg-card shrink-0 gap-3">
-            <SidebarTrigger className="mr-1" />
+          <header className="h-14 flex items-center border-b px-3 sm:px-4 bg-card shrink-0 gap-2 sm:gap-3">
+            <SidebarTrigger className="mr-1 shrink-0" />
             <div className="flex-1" />
-            <span className="text-xs text-muted-foreground hidden sm:inline">
+            <span className="text-xs text-muted-foreground hidden lg:inline">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </span>
+            <span className="text-xs text-muted-foreground hidden sm:inline lg:hidden">
+              {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
             <SignOutButton />
           </header>
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="flex-1 p-4 sm:p-5 lg:p-6 overflow-auto">
             {children}
           </main>
         </div>
@@ -195,7 +198,7 @@ function SignOutButton() {
   const { data: roleInfo } = useUserRole();
   if (!user) return null;
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2 min-w-0">
       <div className="hidden md:flex flex-col items-end leading-tight">
         <span className="text-xs text-muted-foreground truncate max-w-[180px]">{user.email}</span>
         {roleInfo && (
@@ -205,8 +208,9 @@ function SignOutButton() {
         )}
       </div>
       <NotificationsBell />
-      <Button variant="ghost" size="sm" onClick={() => signOut()} className="h-8">
-        <LogOut className="h-3.5 w-3.5 mr-1" /> Sign out
+      <Button variant="ghost" size="sm" onClick={() => signOut()} className="h-8 px-2 sm:px-3">
+        <LogOut className="h-3.5 w-3.5 sm:mr-1" />
+        <span className="hidden sm:inline">Sign out</span>
       </Button>
     </div>
   );
