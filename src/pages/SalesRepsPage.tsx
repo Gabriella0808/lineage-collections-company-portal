@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FilterBar } from "@/components/FilterBar";
@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -27,6 +29,81 @@ const STATUS_OPTIONS = [
   { value: "inactive", label: "Inactive" },
   { value: "on-leave", label: "On Leave" },
 ];
+
+interface TerritoryOpt { id: string; name: string; acctivate_id: string | null; }
+
+function TerritoryMultiSelect({
+  options,
+  value,
+  onChange,
+  placeholder = "Select territories",
+  triggerClassName = "",
+}: {
+  options: TerritoryOpt[];
+  value: string[];
+  onChange: (next: string[]) => void;
+  placeholder?: string;
+  triggerClassName?: string;
+}) {
+  const toggle = (id: string) => {
+    onChange(value.includes(id) ? value.filter(x => x !== id) : [...value, id]);
+  };
+  const labelText =
+    value.length === 0
+      ? placeholder
+      : value.length <= 2
+        ? value
+            .map(id => options.find(o => o.id === id))
+            .filter(Boolean)
+            .map(o => o!.acctivate_id || o!.name)
+            .join(", ")
+        : `${value.length} selected`;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={`justify-between font-normal ${triggerClassName}`}
+        >
+          <span className={value.length === 0 ? "text-muted-foreground" : ""}>{labelText}</span>
+          <ChevronDown className="h-4 w-4 opacity-60 ml-2 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="start">
+        <div className="max-h-64 overflow-y-auto py-1">
+          {options.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">No territories available</div>
+          )}
+          {options.map(t => {
+            const selected = value.includes(t.id);
+            return (
+              <button
+                type="button"
+                key={t.id}
+                onClick={() => toggle(t.id)}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left text-sm hover:bg-muted transition-colors"
+              >
+                <Checkbox checked={selected} className="pointer-events-none" />
+                <span className="flex-1 truncate">
+                  {t.acctivate_id ? (
+                    <>
+                      <span className="font-medium">{t.acctivate_id}</span>
+                      <span className="text-muted-foreground"> · {t.name}</span>
+                    </>
+                  ) : (
+                    t.name
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function SalesRepsPage() {
   const qc = useQueryClient();
@@ -220,28 +297,13 @@ export default function SalesRepsPage() {
                   {/* Territory code(s) — editable multi-select */}
                   <td className="p-3">
                     {isEditing ? (
-                      <div className="flex flex-wrap gap-1 max-w-[260px]">
-                        {territories.map(t => {
-                          const selected = editForm!.territory_ids.includes(t.id);
-                          return (
-                            <button
-                              type="button"
-                              key={t.id}
-                              onClick={() => {
-                                const next = selected
-                                  ? editForm!.territory_ids.filter(x => x !== t.id)
-                                  : [...editForm!.territory_ids, t.id];
-                                setEditForm({ ...editForm!, territory_ids: next });
-                              }}
-                              className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-input hover:bg-muted"}`}
-                              title={t.name}
-                            >
-                              {t.acctivate_id || t.name}
-                              {selected && <X className="inline h-3 w-3 ml-1" />}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <TerritoryMultiSelect
+                        options={territories}
+                        value={editForm!.territory_ids}
+                        onChange={(next) => setEditForm({ ...editForm!, territory_ids: next })}
+                        placeholder="Select territories"
+                        triggerClassName="h-8 w-44 text-xs"
+                      />
                     ) : (
                       <div className="flex flex-wrap gap-1">
                         {tids.length === 0 ? (
@@ -354,26 +416,14 @@ export default function SalesRepsPage() {
             </div>
             <div>
               <Label>Territories / Regions</Label>
-              <div className="flex flex-wrap gap-1.5 mt-1.5 p-2 border rounded-md max-h-40 overflow-y-auto">
-                {territories.length === 0 && <span className="text-xs text-muted-foreground">No territories available</span>}
-                {territories.map(t => {
-                  const selected = newRep.territory_ids.includes(t.id);
-                  return (
-                    <button
-                      type="button"
-                      key={t.id}
-                      onClick={() => {
-                        const next = selected
-                          ? newRep.territory_ids.filter(x => x !== t.id)
-                          : [...newRep.territory_ids, t.id];
-                        setNewRep({ ...newRep, territory_ids: next });
-                      }}
-                      className={`text-xs px-2 py-1 rounded border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-input hover:bg-muted"}`}
-                    >
-                      {t.acctivate_id ? `${t.acctivate_id} · ${t.name}` : t.name}
-                    </button>
-                  );
-                })}
+              <div className="mt-1.5">
+                <TerritoryMultiSelect
+                  options={territories}
+                  value={newRep.territory_ids}
+                  onChange={(next) => setNewRep({ ...newRep, territory_ids: next })}
+                  placeholder="Select territories"
+                  triggerClassName="w-full"
+                />
               </div>
             </div>
             <div>
