@@ -64,7 +64,7 @@ export default function SalesRepsPage() {
       acctivate_id: r.acctivate_id ?? "",
       email: r.email ?? "",
       manager_id: r.manager_id,
-      territory_id: repTerritoryId(repId),
+      territory_ids: repTerritoryIds(repId),
       status: r.status,
     });
   };
