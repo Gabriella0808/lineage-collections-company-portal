@@ -80,7 +80,7 @@ function TerritoryMultiSelect({
           {filteredOptions.length === 0 && (
             <div className="px-3 py-2 text-xs text-muted-foreground">No territories available</div>
           )}
-          {options.map(t => {
+          {filteredOptions.map(t => {
             const selected = value.includes(t.id);
             return (
               <button
