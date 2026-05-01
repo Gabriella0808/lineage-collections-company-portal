@@ -297,28 +297,13 @@ export default function SalesRepsPage() {
                   {/* Territory code(s) — editable multi-select */}
                   <td className="p-3">
                     {isEditing ? (
-                      <div className="flex flex-wrap gap-1 max-w-[260px]">
-                        {territories.map(t => {
-                          const selected = editForm!.territory_ids.includes(t.id);
-                          return (
-                            <button
-                              type="button"
-                              key={t.id}
-                              onClick={() => {
-                                const next = selected
-                                  ? editForm!.territory_ids.filter(x => x !== t.id)
-                                  : [...editForm!.territory_ids, t.id];
-                                setEditForm({ ...editForm!, territory_ids: next });
-                              }}
-                              className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-input hover:bg-muted"}`}
-                              title={t.name}
-                            >
-                              {t.acctivate_id || t.name}
-                              {selected && <X className="inline h-3 w-3 ml-1" />}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <TerritoryMultiSelect
+                        options={territories}
+                        value={editForm!.territory_ids}
+                        onChange={(next) => setEditForm({ ...editForm!, territory_ids: next })}
+                        placeholder="Select territories"
+                        triggerClassName="h-8 w-44 text-xs"
+                      />
                     ) : (
                       <div className="flex flex-wrap gap-1">
                         {tids.length === 0 ? (
