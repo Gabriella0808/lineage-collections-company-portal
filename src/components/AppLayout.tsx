@@ -56,9 +56,13 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 function SidebarNav() {
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   // On mobile/tablet the sidebar is rendered as a Sheet — always show labels there.
   const collapsed = !isMobile && state === "collapsed";
+  // Close the mobile/tablet sidebar Sheet after navigating.
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   const { data: roleInfo } = useUserRole();
   const role = roleInfo?.role ?? "rep";
   const location = useLocation();
@@ -106,6 +110,7 @@ function SidebarNav() {
                         <NavLink
                           to={item.url}
                           end={item.url === "/"}
+                          onClick={closeOnMobile}
                           className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                           activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         >
@@ -135,6 +140,7 @@ function SidebarNav() {
                       <SidebarMenuButton key={child.url} asChild size="sm" className="ml-6 w-auto">
                         <NavLink
                           to={child.url}
+                          onClick={closeOnMobile}
                           className="text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors text-[13px]"
                           activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         >
