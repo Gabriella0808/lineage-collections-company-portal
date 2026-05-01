@@ -30,6 +30,81 @@ const STATUS_OPTIONS = [
   { value: "on-leave", label: "On Leave" },
 ];
 
+interface TerritoryOpt { id: string; name: string; acctivate_id: string | null; }
+
+function TerritoryMultiSelect({
+  options,
+  value,
+  onChange,
+  placeholder = "Select territories",
+  triggerClassName = "",
+}: {
+  options: TerritoryOpt[];
+  value: string[];
+  onChange: (next: string[]) => void;
+  placeholder?: string;
+  triggerClassName?: string;
+}) {
+  const toggle = (id: string) => {
+    onChange(value.includes(id) ? value.filter(x => x !== id) : [...value, id]);
+  };
+  const labelText =
+    value.length === 0
+      ? placeholder
+      : value.length <= 2
+        ? value
+            .map(id => options.find(o => o.id === id))
+            .filter(Boolean)
+            .map(o => o!.acctivate_id || o!.name)
+            .join(", ")
+        : `${value.length} selected`;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={`justify-between font-normal ${triggerClassName}`}
+        >
+          <span className={value.length === 0 ? "text-muted-foreground" : ""}>{labelText}</span>
+          <ChevronDown className="h-4 w-4 opacity-60 ml-2 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="start">
+        <div className="max-h-64 overflow-y-auto py-1">
+          {options.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">No territories available</div>
+          )}
+          {options.map(t => {
+            const selected = value.includes(t.id);
+            return (
+              <button
+                type="button"
+                key={t.id}
+                onClick={() => toggle(t.id)}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left text-sm hover:bg-muted transition-colors"
+              >
+                <Checkbox checked={selected} className="pointer-events-none" />
+                <span className="flex-1 truncate">
+                  {t.acctivate_id ? (
+                    <>
+                      <span className="font-medium">{t.acctivate_id}</span>
+                      <span className="text-muted-foreground"> · {t.name}</span>
+                    </>
+                  ) : (
+                    t.name
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function SalesRepsPage() {
   const qc = useQueryClient();
   const { data: reps = [], isLoading: repsLoading } = useSalesReps();
