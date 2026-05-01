@@ -122,14 +122,14 @@ export default function TradeShowLeadsPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="page-header flex flex-wrap items-end justify-between gap-4">
+      <div className="page-header flex flex-col sm:flex-row sm:flex-wrap sm:items-end sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="page-title">Trade Show Leads</h1>
           <p className="page-subtitle">Performance dashboard across every market</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Select value={marketFilter} onValueChange={setMarketFilter}>
-            <SelectTrigger className="w-[240px]"><SelectValue placeholder="All markets" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[240px]"><SelectValue placeholder="All markets" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All markets</SelectItem>
               {markets.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
@@ -138,7 +138,7 @@ export default function TradeShowLeadsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <StatCard icon={Users} label="Total Leads" value={stats.total.toString()} />
         <StatCard icon={DollarSign} label="Avg Order Value" value={fmt(stats.avgOrder)} />
         <StatCard icon={DollarSign} label="Total Order Value" value={fmt(stats.orders)} />
