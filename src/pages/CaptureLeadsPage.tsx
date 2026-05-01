@@ -176,6 +176,8 @@ export default function CaptureLeadsPage() {
       status: l.status ?? "New",
     });
     setEditingLeadId(l.id);
+    setEditingOriginalRepEmail((l.rep_email ?? "").trim().toLowerCase());
+    setEditRepCleared(false);
     setLeadDialog(l.market_id ?? markets.find((m) => m.name === l.trade_show)?.id ?? null);
   };
 
