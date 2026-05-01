@@ -255,7 +255,83 @@ export default function SalesRepsPage() {
         ]}
       />
 
-      <div className="table-container">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-2">
+        {filtered.map(r => {
+          const isEditing = editingId === r.id;
+          const tids = repTerritoryIds(r.id);
+          if (isEditing) {
+            return (
+              <div key={r.id} className="glass-card p-3 space-y-2">
+                <Input value={editForm!.name} onChange={e => setEditForm({ ...editForm!, name: e.target.value })} placeholder="Name" className="h-9" />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input value={editForm!.acctivate_id} onChange={e => setEditForm({ ...editForm!, acctivate_id: e.target.value })} placeholder="Rep code" className="h-9" />
+                  <TerritoryMultiSelect
+                    options={territories}
+                    value={editForm!.territory_ids}
+                    onChange={(next) => setEditForm({ ...editForm!, territory_ids: next })}
+                    placeholder="Territories"
+                    triggerClassName="h-9 w-full text-xs"
+                  />
+                </div>
+                <Input value={editForm!.email} onChange={e => setEditForm({ ...editForm!, email: e.target.value })} placeholder="Email" className="h-9" />
+                <Select value={editForm!.manager_id ?? "none"} onValueChange={v => setEditForm({ ...editForm!, manager_id: v === "none" ? null : v })}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Manager" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None —</SelectItem>
+                    {managers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" className="flex-1" onClick={saveEdit}><Check className="h-4 w-4 mr-1" /> Save</Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={cancelEdit}><X className="h-4 w-4 mr-1" /> Cancel</Button>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={r.id} className="glass-card p-3">
+              <div className="flex items-start gap-3 mb-2">
+                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-[11px] font-semibold text-primary-foreground shrink-0">
+                  {getInitials(r.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm leading-tight">{r.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{r.email || "—"}</p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(r.id)}><Pencil className="h-3.5 w-3.5" /></Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRep(r.id, r.name)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Code</p>
+                  <p>{r.acctivate_id || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Manager</p>
+                  <p className="truncate">{managers.find(m => m.id === r.manager_id)?.name ?? "—"}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-[10px] uppercase text-muted-foreground tracking-wide mb-1">Territories</p>
+                  <div className="flex flex-wrap gap-1">
+                    {tids.length === 0 ? <span className="text-muted-foreground">—</span> :
+                      tids.map(id => (
+                        <Badge key={id} variant="secondary" className="font-normal text-[10px]">
+                          {territories.find(t => t.id === id)?.acctivate_id ?? "—"} · {territories.find(t => t.id === id)?.name ?? ""}
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && <p className="text-center text-muted-foreground py-12 text-sm">No reps match your filters.</p>}
+      </div>
+
+      <div className="table-container hidden md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/30">
