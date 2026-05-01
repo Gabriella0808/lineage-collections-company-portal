@@ -140,6 +140,7 @@ function SidebarNav() {
                       <SidebarMenuButton key={child.url} asChild size="sm" className="ml-6 w-auto">
                         <NavLink
                           to={child.url}
+                          onClick={closeOnMobile}
                           className="text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors text-[13px]"
                           activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         >
