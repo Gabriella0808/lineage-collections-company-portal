@@ -290,7 +290,7 @@ export default function DashboardPage() {
 
       {/* Row: Monthly Rep Performance */}
       <div className="grid lg:grid-cols-1 gap-5">
-        <div className="glass-card p-5">
+        <div className="glass-card p-4 sm:p-5">
           <h3 className="text-sm font-semibold mb-1">Monthly Rep Performance ($K) — {currentYear}</h3>
           <p className="text-[11px] text-muted-foreground mb-3">Top 5 reps by sales per month</p>
           <div className="h-[240px]">
