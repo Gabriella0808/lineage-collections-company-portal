@@ -1165,8 +1165,8 @@ export default function CheckInsPage() {
                     : "No check-ins in the selected date range."}
                 </p>
               ) : (
-                <ul className="divide-y">
-                  {(hasRange ? filtered : filtered.slice(0, 8)).map((c) => {
+                <ul className="divide-y max-h-[420px] overflow-y-auto pr-1">
+                  {filtered.map((c) => {
                     const d = dealers.find((x) => x.id === c.dealer_id);
                     const canDelete = c.user_id === user?.id;
                     return (
