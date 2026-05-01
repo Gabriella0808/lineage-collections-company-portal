@@ -168,8 +168,17 @@ function SidebarNav() {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  // Default the sidebar collapsed on tablet sizes so content has breathing room.
+  // Below `lg` (1024px) we start collapsed; users can still expand via the trigger.
+  const [defaultOpen, setDefaultOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.innerWidth >= 1024;
+  });
+  // Re-evaluate on resize (only the *initial* default matters for SidebarProvider,
+  // but we keep this in case the provider remounts).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultOpen}>
       <div className="min-h-screen flex w-full">
         <SidebarNav />
         <div className="flex-1 flex flex-col min-w-0">
