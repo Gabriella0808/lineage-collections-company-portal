@@ -89,13 +89,16 @@ export default function SalesRepsPage() {
     }).eq("id", editingId);
     if (error) { toast.error(error.message); return; }
 
-    // Sync rep_territories — replace existing link
-    const currentTerId = repTerritoryId(editingId);
-    if (currentTerId !== editForm.territory_id) {
-      await supabase.from("rep_territories").delete().eq("rep_id", editingId);
-      if (editForm.territory_id) {
-        await supabase.from("rep_territories").insert({ rep_id: editingId, territory_id: editForm.territory_id });
-      }
+    // Sync rep_territories — replace with the selected set
+    const currentIds = repTerritoryIds(editingId);
+    const desiredIds = editForm.territory_ids;
+    const toRemove = currentIds.filter(id => !desiredIds.includes(id));
+    const toAdd = desiredIds.filter(id => !currentIds.includes(id));
+    if (toRemove.length > 0) {
+      await supabase.from("rep_territories").delete().eq("rep_id", editingId).in("territory_id", toRemove);
+    }
+    if (toAdd.length > 0) {
+      await supabase.from("rep_territories").insert(toAdd.map(tid => ({ rep_id: editingId, territory_id: tid })));
     }
     toast.success("Rep updated");
     cancelEdit();
