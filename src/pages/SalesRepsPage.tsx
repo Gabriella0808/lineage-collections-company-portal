@@ -18,7 +18,7 @@ interface RepEditState {
   acctivate_id: string;
   email: string;
   manager_id: string | null;
-  territory_id: string | null;
+  territory_ids: string[];
   status: string;
 }
 
