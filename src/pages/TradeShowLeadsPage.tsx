@@ -150,53 +150,53 @@ export default function TradeShowLeadsPage() {
           <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="p-5">
-            <h3 className="font-serif text-lg mb-4">Leads by Market</h3>
-            <ResponsiveContainer width="100%" height={300}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <Card className="p-4 sm:p-5">
+            <h3 className="font-serif text-base sm:text-lg mb-4">Leads by Market</h3>
+            <ResponsiveContainer width="100%" height={260}>
               <BarChart data={byMarket} margin={{ left: 0, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-25} textAnchor="end" height={70} />
-                <YAxis tick={{ fontSize: 11 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={70} />
+                <YAxis tick={{ fontSize: 10 }} width={32} />
                 <Tooltip />
                 <Bar dataKey="leads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card className="p-5">
-            <h3 className="font-serif text-lg mb-4">Leads by Sales Rep</h3>
-            <ResponsiveContainer width="100%" height={Math.max(300, byRep.length * 24)}>
-              <BarChart data={byRep} layout="vertical" margin={{ left: 20, right: 16 }}>
+          <Card className="p-4 sm:p-5">
+            <h3 className="font-serif text-base sm:text-lg mb-4">Leads by Sales Rep</h3>
+            <ResponsiveContainer width="100%" height={Math.max(260, byRep.length * 24)}>
+              <BarChart data={byRep} layout="vertical" margin={{ left: 0, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={120} />
+                <XAxis type="number" tick={{ fontSize: 10 }} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
                 <Tooltip />
                 <Bar dataKey="leads" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card className="p-5">
-            <h3 className="font-serif text-lg mb-4">Leads by Collection</h3>
-            <ResponsiveContainer width="100%" height={300}>
+          <Card className="p-4 sm:p-5">
+            <h3 className="font-serif text-base sm:text-lg mb-4">Leads by Collection</h3>
+            <ResponsiveContainer width="100%" height={260}>
               <BarChart data={byCollection} margin={{ left: 0, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-25} textAnchor="end" height={70} />
-                <YAxis tick={{ fontSize: 11 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={70} />
+                <YAxis tick={{ fontSize: 10 }} width={32} />
                 <Tooltip />
                 <Bar dataKey="value" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card className="p-5">
-            <h3 className="font-serif text-lg mb-4">Order Value by Market</h3>
-            <ResponsiveContainer width="100%" height={300}>
+          <Card className="p-4 sm:p-5">
+            <h3 className="font-serif text-base sm:text-lg mb-4">Order Value by Market</h3>
+            <ResponsiveContainer width="100%" height={260}>
               <BarChart data={byMarket} margin={{ left: 0, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-25} textAnchor="end" height={70} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={70} />
+                <YAxis tick={{ fontSize: 10 }} width={42} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
                 <Tooltip formatter={(v: number) => fmt(v)} />
                 <Bar dataKey="value" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
               </BarChart>
