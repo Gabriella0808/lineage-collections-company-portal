@@ -56,9 +56,13 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 function SidebarNav() {
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   // On mobile/tablet the sidebar is rendered as a Sheet — always show labels there.
   const collapsed = !isMobile && state === "collapsed";
+  // Close the mobile/tablet sidebar Sheet after navigating.
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   const { data: roleInfo } = useUserRole();
   const role = roleInfo?.role ?? "rep";
   const location = useLocation();
