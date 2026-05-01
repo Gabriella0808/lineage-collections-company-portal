@@ -41,7 +41,7 @@ export default function SalesRepsPage() {
   const [editForm, setEditForm] = useState<RepEditState | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newRep, setNewRep] = useState<RepEditState>({
-    name: "", acctivate_id: "", email: "", manager_id: null, territory_id: null, status: "active",
+    name: "", acctivate_id: "", email: "", manager_id: null, territory_ids: [], status: "active",
   });
 
   const invalidate = () => {
