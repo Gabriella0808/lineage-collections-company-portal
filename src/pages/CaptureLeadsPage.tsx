@@ -77,6 +77,8 @@ export default function CaptureLeadsPage() {
   const [leadDialog, setLeadDialog] = useState<string | null>(null); // market id (when creating)
   const [leadForm, setLeadForm] = useState(emptyLead);
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+  const [editingOriginalRepEmail, setEditingOriginalRepEmail] = useState<string>("");
+  const [editRepCleared, setEditRepCleared] = useState<boolean>(false);
 
   const load = async () => {
     setLoading(true);
