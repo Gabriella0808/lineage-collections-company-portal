@@ -164,7 +164,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         {role !== "rep" && (
           <StatCard title={role === "manager" ? "My Reps" : "Sales Reps"} value={reps.length} icon={Users} trend="neutral" subtitle="assigned" />
         )}
