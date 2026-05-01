@@ -18,7 +18,7 @@ interface RepEditState {
   acctivate_id: string;
   email: string;
   manager_id: string | null;
-  territory_id: string | null;
+  territory_ids: string[];
   status: string;
 }
 
@@ -41,7 +41,7 @@ export default function SalesRepsPage() {
   const [editForm, setEditForm] = useState<RepEditState | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newRep, setNewRep] = useState<RepEditState>({
-    name: "", acctivate_id: "", email: "", manager_id: null, territory_id: null, status: "active",
+    name: "", acctivate_id: "", email: "", manager_id: null, territory_ids: [], status: "active",
   });
 
   const invalidate = () => {
@@ -51,8 +51,8 @@ export default function SalesRepsPage() {
     qc.invalidateQueries({ queryKey: ["managers"] });
   };
 
-  const repTerritoryId = (repId: string): string | null => {
-    return repTerritories.find(rt => rt.rep_id === repId)?.territory_id ?? null;
+  const repTerritoryIds = (repId: string): string[] => {
+    return repTerritories.filter(rt => rt.rep_id === repId).map(rt => rt.territory_id);
   };
 
   const startEdit = (repId: string) => {
@@ -64,7 +64,7 @@ export default function SalesRepsPage() {
       acctivate_id: r.acctivate_id ?? "",
       email: r.email ?? "",
       manager_id: r.manager_id,
-      territory_id: repTerritoryId(repId),
+      territory_ids: repTerritoryIds(repId),
       status: r.status,
     });
   };
@@ -89,13 +89,16 @@ export default function SalesRepsPage() {
     }).eq("id", editingId);
     if (error) { toast.error(error.message); return; }
 
-    // Sync rep_territories — replace existing link
-    const currentTerId = repTerritoryId(editingId);
-    if (currentTerId !== editForm.territory_id) {
-      await supabase.from("rep_territories").delete().eq("rep_id", editingId);
-      if (editForm.territory_id) {
-        await supabase.from("rep_territories").insert({ rep_id: editingId, territory_id: editForm.territory_id });
-      }
+    // Sync rep_territories — replace with the selected set
+    const currentIds = repTerritoryIds(editingId);
+    const desiredIds = editForm.territory_ids;
+    const toRemove = currentIds.filter(id => !desiredIds.includes(id));
+    const toAdd = desiredIds.filter(id => !currentIds.includes(id));
+    if (toRemove.length > 0) {
+      await supabase.from("rep_territories").delete().eq("rep_id", editingId).in("territory_id", toRemove);
+    }
+    if (toAdd.length > 0) {
+      await supabase.from("rep_territories").insert(toAdd.map(tid => ({ rep_id: editingId, territory_id: tid })));
     }
     toast.success("Rep updated");
     cancelEdit();
@@ -121,12 +124,12 @@ export default function SalesRepsPage() {
       status: newRep.status,
     }).select("id").single();
     if (error || !data) { toast.error(error?.message ?? "Failed"); return; }
-    if (newRep.territory_id) {
-      await supabase.from("rep_territories").insert({ rep_id: data.id, territory_id: newRep.territory_id });
+    if (newRep.territory_ids.length > 0) {
+      await supabase.from("rep_territories").insert(newRep.territory_ids.map(tid => ({ rep_id: data.id, territory_id: tid })));
     }
     toast.success("Rep added");
     setAddOpen(false);
-    setNewRep({ name: "", acctivate_id: "", email: "", manager_id: null, territory_id: null, status: "active" });
+    setNewRep({ name: "", acctivate_id: "", email: "", manager_id: null, territory_ids: [], status: "active" });
     invalidate();
   };
 
@@ -188,7 +191,7 @@ export default function SalesRepsPage() {
           <tbody>
             {filtered.map(r => {
               const isEditing = editingId === r.id;
-              const tid = repTerritoryId(r.id);
+              const tids = repTerritoryIds(r.id);
               return (
                 <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                   {/* Rep name */}
@@ -214,9 +217,44 @@ export default function SalesRepsPage() {
                     )}
                   </td>
 
-                  {/* Territory code */}
+                  {/* Territory code(s) — editable multi-select */}
                   <td className="p-3">
-                    <span className="text-muted-foreground">{territoryCode(tid)}</span>
+                    {isEditing ? (
+                      <div className="flex flex-wrap gap-1 max-w-[260px]">
+                        {territories.map(t => {
+                          const selected = editForm!.territory_ids.includes(t.id);
+                          return (
+                            <button
+                              type="button"
+                              key={t.id}
+                              onClick={() => {
+                                const next = selected
+                                  ? editForm!.territory_ids.filter(x => x !== t.id)
+                                  : [...editForm!.territory_ids, t.id];
+                                setEditForm({ ...editForm!, territory_ids: next });
+                              }}
+                              className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-input hover:bg-muted"}`}
+                              title={t.name}
+                            >
+                              {t.acctivate_id || t.name}
+                              {selected && <X className="inline h-3 w-3 ml-1" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {tids.length === 0 ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          tids.map(id => (
+                            <Badge key={id} variant="outline" className="font-normal text-[11px]">
+                              {territories.find(t => t.id === id)?.acctivate_id ?? "—"}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </td>
 
                   <td className="p-3">
@@ -247,18 +285,26 @@ export default function SalesRepsPage() {
                     <span className="text-muted-foreground text-xs">{managerEmail(r.manager_id)}</span>
                   </td>
 
-                  {/* Region */}
+                  {/* Region(s) — derived from selected territories */}
                   <td className="p-3">
                     {isEditing ? (
-                      <Select value={editForm!.territory_id ?? "none"} onValueChange={v => setEditForm({ ...editForm!, territory_id: v === "none" ? null : v })}>
-                        <SelectTrigger className="h-8 w-36"><SelectValue placeholder="Region" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">— None —</SelectItem>
-                          {territories.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <span className="text-xs text-muted-foreground">
+                        {editForm!.territory_ids.length === 0
+                          ? "—"
+                          : editForm!.territory_ids.map(id => territories.find(t => t.id === id)?.name).filter(Boolean).join(", ")}
+                      </span>
                     ) : (
-                      <Badge variant="secondary" className="font-normal">{territoryName(tid)}</Badge>
+                      <div className="flex flex-wrap gap-1">
+                        {tids.length === 0 ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          tids.map(id => (
+                            <Badge key={id} variant="secondary" className="font-normal">
+                              {territories.find(t => t.id === id)?.name ?? "—"}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
                     )}
                   </td>
 
@@ -307,14 +353,28 @@ export default function SalesRepsPage() {
               </Select>
             </div>
             <div>
-              <Label>Region</Label>
-              <Select value={newRep.territory_id ?? "none"} onValueChange={v => setNewRep({ ...newRep, territory_id: v === "none" ? null : v })}>
-                <SelectTrigger><SelectValue placeholder="Select region" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— None —</SelectItem>
-                  {territories.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>Territories / Regions</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1.5 p-2 border rounded-md max-h-40 overflow-y-auto">
+                {territories.length === 0 && <span className="text-xs text-muted-foreground">No territories available</span>}
+                {territories.map(t => {
+                  const selected = newRep.territory_ids.includes(t.id);
+                  return (
+                    <button
+                      type="button"
+                      key={t.id}
+                      onClick={() => {
+                        const next = selected
+                          ? newRep.territory_ids.filter(x => x !== t.id)
+                          : [...newRep.territory_ids, t.id];
+                        setNewRep({ ...newRep, territory_ids: next });
+                      }}
+                      className={`text-xs px-2 py-1 rounded border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-input hover:bg-muted"}`}
+                    >
+                      {t.acctivate_id ? `${t.acctivate_id} · ${t.name}` : t.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div>
               <Label>Status</Label>
