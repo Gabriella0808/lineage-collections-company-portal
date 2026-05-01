@@ -16,8 +16,8 @@ interface FilterBarProps {
 
 export function FilterBar({ searchPlaceholder = "Search...", searchValue, onSearchChange, filters = [] }: FilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3 mb-5">
-      <div className="relative flex-1 min-w-[220px] max-w-sm">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-5">
+      <div className="relative w-full sm:flex-1 sm:min-w-[220px] sm:max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={searchPlaceholder}
@@ -28,7 +28,7 @@ export function FilterBar({ searchPlaceholder = "Search...", searchValue, onSear
       </div>
       {filters.map((f, i) => (
         <Select key={i} value={f.value} onValueChange={f.onChange}>
-          <SelectTrigger className="w-[180px] h-9 text-sm bg-card">
+          <SelectTrigger className="flex-1 min-w-[140px] sm:flex-none sm:w-[180px] h-9 text-sm bg-card">
             <SelectValue placeholder={f.label} />
           </SelectTrigger>
           <SelectContent>
