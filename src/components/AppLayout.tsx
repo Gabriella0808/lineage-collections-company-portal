@@ -110,6 +110,7 @@ function SidebarNav() {
                         <NavLink
                           to={item.url}
                           end={item.url === "/"}
+                          onClick={closeOnMobile}
                           className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                           activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         >
