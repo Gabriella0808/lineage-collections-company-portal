@@ -249,6 +249,37 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Per-recipient throttle: if we sent another email to this same
+      // recipient within the throttle window, defer this one. Skipping
+      // here lets the visibility timeout expire so the message is retried
+      // on a future cron cycle — naturally spacing out sends to the same
+      // mailbox so receiving servers don't treat them as a duplicate flood.
+      if (perRecipientThrottleSeconds > 0 && payload.to) {
+        const throttleSinceIso = new Date(
+          Date.now() - perRecipientThrottleSeconds * 1000
+        ).toISOString()
+        const { data: recentSend } = await supabase
+          .from('email_send_log')
+          .select('id, created_at')
+          .eq('recipient_email', payload.to)
+          .eq('status', 'sent')
+          .gte('created_at', throttleSinceIso)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (recentSend) {
+          console.log('Per-recipient throttle: deferring send', {
+            queue,
+            msg_id: msg.msg_id,
+            recipient: payload.to,
+            throttle_seconds: perRecipientThrottleSeconds,
+          })
+          // Don't delete — let VT expire so it's picked up again later.
+          continue
+        }
+      }
+
       try {
         await sendLovableEmail(
           {
