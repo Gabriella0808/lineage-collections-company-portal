@@ -539,7 +539,7 @@ export default function CaptureLeadsPage() {
         </Accordion>
       )}
 
-      <Dialog open={!!leadDialog} onOpenChange={(o) => { if (!o) { setLeadDialog(null); setEditingLeadId(null); setLeadForm(emptyLead); setEditingOriginalRepEmail(""); setEditRepCleared(false); } }}>
+      <Dialog open={!!leadDialog} onOpenChange={(o) => { if (!o) { setLeadDialog(null); setEditingLeadId(null); setLeadForm(emptyLead); setEditingOriginalRepEmail(""); setEditRepCleared(false); editRepClearedRef.current = false; } }}>
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -591,7 +591,10 @@ export default function CaptureLeadsPage() {
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      if (editingLeadId) setEditRepCleared(true);
+                      if (editingLeadId) {
+                        editRepClearedRef.current = true;
+                        setEditRepCleared(true);
+                      }
                       setLeadForm({
                         ...leadForm,
                         sales_rep_id: "",
