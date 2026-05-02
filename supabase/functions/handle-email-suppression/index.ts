@@ -124,6 +124,42 @@ Deno.serve(async (req) => {
     })
   }
 
+  // 3. Notify all admins in-app when a bounce or complaint occurs
+  //    (skip plain unsubscribes — those are intentional and not a delivery failure)
+  if (payload.reason === 'bounce' || payload.reason === 'complaint') {
+    try {
+      const { data: admins, error: adminsError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin')
+
+      if (adminsError) {
+        console.warn('Failed to load admins for bounce notification', { error: adminsError })
+      } else if (admins && admins.length > 0) {
+        const title = payload.reason === 'bounce'
+          ? 'Email bounced — not delivered'
+          : 'Email marked as spam'
+        const body = `${normalizedEmail} did not receive your email (${sendLogMessage}). They've been added to the suppression list.`
+
+        const rows = admins.map((a) => ({
+          user_id: a.user_id,
+          type: 'email_bounced',
+          title,
+          body,
+          link: '/email-monitoring',
+          related_id: null as string | null,
+        }))
+
+        const { error: notifyError } = await supabase.from('notifications').insert(rows)
+        if (notifyError) {
+          console.warn('Failed to insert bounce notifications', { error: notifyError })
+        }
+      }
+    } catch (e) {
+      console.warn('Bounce notification step threw', { error: String(e) })
+    }
+  }
+
   console.log('Suppression processed', {
     email_redacted: normalizedEmail[0] + '***@' + normalizedEmail.split('@')[1],
     reason: payload.reason,
