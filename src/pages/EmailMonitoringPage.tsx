@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,8 @@ function statusBadge(status: string) {
 }
 
 export default function EmailMonitoringPage() {
+  const { user } = useAuth();
+  const isGabriella = user?.email?.toLowerCase() === "gabriella@lineage-collections.com";
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
@@ -131,6 +134,8 @@ export default function EmailMonitoringPage() {
     () => filtered.filter((d) => ["bounced", "complained", "dlq", "failed"].includes(d.status)),
     [filtered],
   );
+
+  if (!isGabriella) return <Navigate to="/" replace />;
 
   return (
     <div className="space-y-6 p-4 md:p-6">
