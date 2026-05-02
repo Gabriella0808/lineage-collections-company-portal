@@ -214,9 +214,22 @@ export default function EmailMonitoringPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <CardTitle>Email log</CardTitle>
+            <div>
+              <CardTitle>Email log</CardTitle>
+              {search.trim() && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Stats and tables filtered by <span className="font-medium">"{search.trim()}"</span>
+                  <button
+                    onClick={() => setSearch("")}
+                    className="ml-2 underline hover:text-foreground"
+                  >
+                    clear
+                  </button>
+                </p>
+              )}
+            </div>
             <Input
-              placeholder="Search by email, template, or error…"
+              placeholder="Filter by email, template, or error…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-sm"
@@ -228,7 +241,7 @@ export default function EmailMonitoringPage() {
             <TabsList>
               <TabsTrigger value="all">All ({filtered.length})</TabsTrigger>
               <TabsTrigger value="failed">Not delivered ({failedOnly.length})</TabsTrigger>
-              <TabsTrigger value="suppressed">Suppression list ({suppressed.length})</TabsTrigger>
+              <TabsTrigger value="suppressed">Suppression list ({filteredSuppressed.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="mt-4">
@@ -238,7 +251,7 @@ export default function EmailMonitoringPage() {
               <DeliveryTable rows={failedOnly} loading={loading} showError />
             </TabsContent>
             <TabsContent value="suppressed" className="mt-4">
-              <SuppressedTable rows={suppressed} loading={loading} />
+              <SuppressedTable rows={filteredSuppressed} loading={loading} />
             </TabsContent>
           </Tabs>
         </CardContent>
