@@ -103,7 +103,8 @@ export default function CaptureLeadsPage() {
         }
         return year * 10 + seasonRank;
       };
-      const sorted = [...(m.data ?? [])].sort((a: any, b: any) => {
+      const sorted = [...((m.data ?? []) as Array<Market & { created_at?: string }>)]
+        .sort((a, b) => {
         const ca = a.created_at ? new Date(a.created_at).getTime() : 0;
         const cb = b.created_at ? new Date(b.created_at).getTime() : 0;
         if (cb !== ca) return cb - ca;
@@ -111,7 +112,7 @@ export default function CaptureLeadsPage() {
         const sb = b.start_date ? new Date(b.start_date).getTime() : 0;
         if (sb !== sa) return sb - sa;
         return inferRecency(b) - inferRecency(a) || a.name.localeCompare(b.name);
-      });
+        });
       setMarkets(sorted);
     }
     if (l.error) toast.error(l.error.message); else setLeads((l.data ?? []) as Lead[]);
