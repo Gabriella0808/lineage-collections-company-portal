@@ -135,6 +135,8 @@ export default function EmailMonitoringPage() {
     [filtered],
   );
 
+  if (!isGabriella) return <Navigate to="/" replace />;
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
