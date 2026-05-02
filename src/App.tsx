@@ -26,7 +26,6 @@ import TradeShowLeadsPage from "@/pages/TradeShowLeadsPage";
 import CaptureLeadsPage from "@/pages/CaptureLeadsPage";
 import AuthPage from "@/pages/AuthPage";
 import UnsubscribePage from "@/pages/UnsubscribePage";
-import EmailMonitoringPage from "@/pages/EmailMonitoringPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,7 +62,6 @@ const App = () => (
                       <Route path="/travel-log" element={<ProtectedRoute allow={["admin", "manager"]}><TravelLogPage /></ProtectedRoute>} />
                       <Route path="/trade-show-leads" element={<ProtectedRoute allow={["admin", "manager"]}><TradeShowLeadsPage /></ProtectedRoute>} />
                       <Route path="/trade-show-leads/capture" element={<ProtectedRoute allow={["admin", "manager"]}><CaptureLeadsPage /></ProtectedRoute>} />
-                      <Route path="/email-monitoring" element={<ProtectedRoute allow={["admin"]}><EmailMonitoringPage /></ProtectedRoute>} />
                       <Route path="/settings" element={<SettingsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

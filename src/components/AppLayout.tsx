@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings,
   UserCog, LogOut, LayoutGrid, CheckSquare, Package, MapPinned, Plane, PieChart,
-  ChevronDown, Sparkles, ClipboardList, Mail,
+  ChevronDown, Sparkles, ClipboardList,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,6 @@ const NAV_ITEMS: NavItem[] = [
   },
   { title: "Inventory",       url: "/inventory",     icon: Package,         roles: ["admin"] },
   { title: "My Tasks",        url: "/tasks",         icon: CheckSquare,     roles: ["admin", "manager", "rep"] },
-  { title: "Email Delivery",  url: "/email-monitoring", icon: Mail,         roles: ["admin"] },
   { title: "Settings",        url: "/settings",      icon: Settings,        roles: ["admin", "manager", "rep"] },
 ];
 
@@ -66,15 +65,10 @@ function SidebarNav() {
   };
   const { data: roleInfo } = useUserRole();
   const role = roleInfo?.role ?? "rep";
-  const { user } = useAuth();
   const location = useLocation();
 
-  const isGabriella = user?.email?.toLowerCase() === "gabriella@lineage-collections.com";
-
   // de-dupe by url+title in case two role-specific labels collide
-  const items = NAV_ITEMS
-    .filter((i) => i.roles.includes(role))
-    .filter((i) => i.url !== "/email-monitoring" || isGabriella);
+  const items = NAV_ITEMS.filter((i) => i.roles.includes(role));
 
   // Track open state of dropdown groups (default open if current route is inside)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
