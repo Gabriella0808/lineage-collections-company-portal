@@ -39,7 +39,7 @@ const RANGES = [
 function statusBadge(status: string) {
   switch (status) {
     case "sent":
-      return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Delivered</Badge>;
+      return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Sent</Badge>;
     case "bounced":
       return <Badge variant="destructive">Bounced</Badge>;
     case "complained":
@@ -108,13 +108,13 @@ export default function EmailMonitoringPage() {
 
   const stats = useMemo(() => {
     const total = filtered.length;
-    const delivered = filtered.filter((d) => d.status === "sent").length;
+    const sent = filtered.filter((d) => d.status === "sent").length;
     const failed = filtered.filter((d) =>
       ["bounced", "complained", "dlq", "failed"].includes(d.status),
     ).length;
     const pending = filtered.filter((d) => d.status === "pending").length;
-    const rate = total > 0 ? Math.round((delivered / total) * 100) : 0;
-    return { total, delivered, failed, pending, rate };
+    const rate = total > 0 ? Math.round((sent / total) * 100) : 0;
+    return { total, sent, failed, pending, rate };
   }, [filtered]);
 
   const failedOnly = useMemo(
@@ -133,7 +133,7 @@ export default function EmailMonitoringPage() {
             Email Delivery
           </h1>
           <p className="text-muted-foreground mt-1">
-            See which emails were delivered and which recipients didn't receive them.
+            See which emails were sent, failed, or suppressed. Sent means the email left the app, not that it landed in the inbox.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -167,19 +167,19 @@ export default function EmailMonitoringPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              Delivered
+              Sent
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-emerald-700">{stats.delivered}</div>
-            <div className="text-xs text-muted-foreground mt-1">{stats.rate}% delivery rate</div>
+            <div className="text-3xl font-bold text-emerald-700">{stats.sent}</div>
+            <div className="text-xs text-muted-foreground mt-1">{stats.rate}% send rate</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
               <AlertCircle className="h-4 w-4 text-destructive" />
-              Not delivered
+              Failed
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -234,7 +234,7 @@ export default function EmailMonitoringPage() {
           <Tabs defaultValue="all">
             <TabsList>
               <TabsTrigger value="all">All ({filtered.length})</TabsTrigger>
-              <TabsTrigger value="failed">Not delivered ({failedOnly.length})</TabsTrigger>
+              <TabsTrigger value="failed">Failed ({failedOnly.length})</TabsTrigger>
               <TabsTrigger value="suppressed">Suppression list ({filteredSuppressed.length})</TabsTrigger>
             </TabsList>
 
