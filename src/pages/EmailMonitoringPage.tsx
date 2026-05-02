@@ -60,7 +60,8 @@ export default function EmailMonitoringPage() {
   const [loading, setLoading] = useState(true);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [suppressed, setSuppressed] = useState<Suppressed[]>([]);
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("recipient") ?? "");
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
