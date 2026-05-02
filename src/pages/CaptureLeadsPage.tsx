@@ -281,6 +281,7 @@ export default function CaptureLeadsPage() {
             collections: leadForm.product_interest.trim() || undefined,
             orderAmount: orderNum > 0 ? fmt(orderNum) : undefined,
             market: market?.name || undefined,
+            leadRef: newLeadId.slice(0, 8).toUpperCase(),
           },
         },
       }).then(({ error: emailErr }) => {
