@@ -70,31 +70,18 @@ export default function EmailMonitoringPage() {
   const load = async () => {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.functions.invoke("admin-list-email-deliveries", {
-      body: {},
-      method: "GET" as never,
-      // pass `days` via URL by using fetch fallback below
-    });
-    // The SDK doesn't easily set query params for GET, so use direct fetch:
     try {
-      const session = (await supabase.auth.getSession()).data.session;
-      const url = `https://tsbrvpgzawbbmuloxlkz.supabase.co/functions/v1/admin-list-email-deliveries?days=${days}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+      const { data, error } = await supabase.functions.invoke("admin-list-email-deliveries", {
+        body: { days },
       });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || `HTTP ${res.status}`);
-      }
-      const json = await res.json();
-      setDeliveries(json.deliveries ?? []);
-      setSuppressed(json.suppressed ?? []);
+      if (error) throw error;
+      setDeliveries((data as any)?.deliveries ?? []);
+      setSuppressed((data as any)?.suppressed ?? []);
     } catch (e: any) {
       setError(e.message ?? "Failed to load");
     } finally {
       setLoading(false);
     }
-    void data; void error;
   };
 
   useEffect(() => {
