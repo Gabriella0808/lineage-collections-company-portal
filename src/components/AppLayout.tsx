@@ -52,6 +52,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   { title: "Inventory",       url: "/inventory",     icon: Package,         roles: ["admin"] },
   { title: "My Tasks",        url: "/tasks",         icon: CheckSquare,     roles: ["admin", "manager", "rep"] },
+  { title: "Email Delivery",  url: "/email-monitoring", icon: Mail,         roles: ["admin"] },
   { title: "Settings",        url: "/settings",      icon: Settings,        roles: ["admin", "manager", "rep"] },
 ];
 
