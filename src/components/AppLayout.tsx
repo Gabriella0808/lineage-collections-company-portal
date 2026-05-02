@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings,
   UserCog, LogOut, LayoutGrid, CheckSquare, Package, MapPinned, Plane, PieChart,
-  ChevronDown, Sparkles, ClipboardList,
+  ChevronDown, Sparkles, ClipboardList, Mail,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
