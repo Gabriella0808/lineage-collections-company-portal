@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
   // 1. Check rate-limit cooldown and read queue config
   const { data: state } = await supabase
     .from('email_send_state')
-    .select('retry_after_until, batch_size, send_delay_ms, auth_email_ttl_minutes, transactional_email_ttl_minutes')
+    .select('retry_after_until, batch_size, send_delay_ms, auth_email_ttl_minutes, transactional_email_ttl_minutes, per_recipient_throttle_seconds')
     .single()
 
   if (state?.retry_after_until && new Date(state.retry_after_until) > new Date()) {
@@ -128,6 +128,7 @@ Deno.serve(async (req) => {
 
   const batchSize = state?.batch_size ?? DEFAULT_BATCH_SIZE
   const sendDelayMs = state?.send_delay_ms ?? DEFAULT_SEND_DELAY_MS
+  const perRecipientThrottleSeconds = state?.per_recipient_throttle_seconds ?? 30
   const ttlMinutes: Record<string, number> = {
     auth_emails: state?.auth_email_ttl_minutes ?? DEFAULT_AUTH_TTL_MINUTES,
     transactional_emails: state?.transactional_email_ttl_minutes ?? DEFAULT_TRANSACTIONAL_TTL_MINUTES,
@@ -244,6 +245,37 @@ Deno.serve(async (req) => {
           if (dupDelError) {
             console.error('Failed to delete duplicate message from queue', { queue, msg_id: msg.msg_id, error: dupDelError })
           }
+          continue
+        }
+      }
+
+      // Per-recipient throttle: if we sent another email to this same
+      // recipient within the throttle window, defer this one. Skipping
+      // here lets the visibility timeout expire so the message is retried
+      // on a future cron cycle — naturally spacing out sends to the same
+      // mailbox so receiving servers don't treat them as a duplicate flood.
+      if (perRecipientThrottleSeconds > 0 && payload.to) {
+        const throttleSinceIso = new Date(
+          Date.now() - perRecipientThrottleSeconds * 1000
+        ).toISOString()
+        const { data: recentSend } = await supabase
+          .from('email_send_log')
+          .select('id, created_at')
+          .eq('recipient_email', payload.to)
+          .eq('status', 'sent')
+          .gte('created_at', throttleSinceIso)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (recentSend) {
+          console.log('Per-recipient throttle: deferring send', {
+            queue,
+            msg_id: msg.msg_id,
+            recipient: payload.to,
+            throttle_seconds: perRecipientThrottleSeconds,
+          })
+          // Don't delete — let VT expire so it's picked up again later.
           continue
         }
       }
