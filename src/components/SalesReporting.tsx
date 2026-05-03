@@ -282,6 +282,21 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
             <DateRangePicker label="Primary date range" value={primary} onChange={setPrimary} />
             <DateRangePicker label="Comparative date range" value={comparative} onChange={setComparative} />
 
+            {groupByOptions && groupByOptions.length > 1 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Group by</span>
+                <Select value={groupBy} onValueChange={(v: GroupBy) => setGroupBy(v)}>
+                  <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {groupByOptions.map((g) => (
+                      <SelectItem key={g} value={g}>
+                        {g === "dealer" ? "Dealer" : g === "rep" ? "Rep" : "Territory"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Metric</span>
               <Select value={metric} onValueChange={(v: Metric) => setMetric(v)}>
