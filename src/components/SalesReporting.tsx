@@ -15,7 +15,7 @@ import {
 
 type GroupBy = "dealer" | "rep" | "territory";
 type Metric = "bookings" | "invoices";
-type Display = "total" | "monthly" | "brand" | "category" | "collection" | "sku";
+type Display = "total" | "monthly";
 
 interface DateRange { from: Date; to: Date }
 
