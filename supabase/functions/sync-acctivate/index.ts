@@ -22,6 +22,11 @@ const PrunePayloadSchema = z.object({
   keep_acctivate_ids: z.array(z.string()).max(50000),
 });
 
+const LookupPayloadSchema = z.object({
+  action: z.literal("lookup"),
+  table: z.enum(["dealers", "products", "sales_reps", "managers", "territories"]),
+});
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -45,6 +50,32 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const supabase = createClient(supabaseUrl, supabaseKey);
     const results: Record<string, { synced: number; error?: string }> = {};
+
+    // Lookup mode: return {acctivate_id: id} map for the requested table
+    if (body.action === "lookup") {
+      const { table } = LookupPayloadSchema.parse(body);
+      const map: Record<string, string> = {};
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from(table)
+          .select("id, acctivate_id")
+          .not("acctivate_id", "is", null)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        for (const r of data as { id: string; acctivate_id: string | null }[]) {
+          if (r.acctivate_id) map[r.acctivate_id] = r.id;
+        }
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      return new Response(
+        JSON.stringify({ success: true, map, count: Object.keys(map).length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
 
     // Prune mode: delete rows whose acctivate_id is not in keep list
     if (body.action === "prune") {
