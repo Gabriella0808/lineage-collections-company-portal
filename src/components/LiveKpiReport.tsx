@@ -430,6 +430,28 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
               <option key={r.name} value={r.name}>{r.name}</option>
             ))}
           </select>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold ml-2">Territory</span>
+          <select
+            value={territoryFilter}
+            onChange={(e) => setTerritoryFilter(e.target.value)}
+            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[160px]"
+          >
+            <option value="all">All Territories</option>
+            {ALL_TERRITORIES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold ml-2">Brand</span>
+          <select
+            value={monthlyLineFilter}
+            onChange={(e) => setMonthlyLineFilter(e.target.value as LineFilter)}
+            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[160px]"
+          >
+            <option value="all">All Brands</option>
+            <option value="sw">Sea Winds</option>
+            <option value="fl">Finn & Louise</option>
+            <option value="lux">Lux Lighting</option>
+          </select>
           {!lockedRepName && allowedRepNames !== null && visibleReps.length === 0 && (
             <span className="text-xs text-muted-foreground">No reps mapped for this manager yet.</span>
           )}
