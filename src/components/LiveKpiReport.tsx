@@ -225,16 +225,28 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
   }, [managerName, lockedRepName]);
 
   const [territoryFilter, setTerritoryFilter] = useState<string>("all");
+  const { data: dbReps = [] } = useSalesReps();
+
+  // Merge REP_BOOK (which has the spreadsheet figures) with all reps from the DB,
+  // so the dropdown lists every rep even if they don't have KPI workbook data yet.
+  const allReps = useMemo(() => {
+    const byName = new Map<string, { name: string; book: number; pct: number }>();
+    for (const r of REP_BOOK) byName.set(r.name, r);
+    for (const r of dbReps) {
+      if (!byName.has(r.name)) byName.set(r.name, { name: r.name, book: 0, pct: 0 });
+    }
+    return Array.from(byName.values());
+  }, [dbReps]);
 
   const visibleReps = useMemo(() => {
     let reps = allowedRepNames === null
-      ? REP_BOOK
-      : REP_BOOK.filter((r) => allowedRepNames.includes(r.name));
+      ? allReps
+      : allReps.filter((r) => allowedRepNames.includes(r.name));
     if (territoryFilter !== "all") {
       reps = reps.filter((r) => (REP_TO_TERRITORIES[r.name] ?? []).includes(territoryFilter));
     }
     return reps;
-  }, [allowedRepNames, territoryFilter]);
+  }, [allReps, allowedRepNames, territoryFilter]);
 
   const [repFilter, setRepFilter] = useState<string>(lockedRepName ?? "all");
 
