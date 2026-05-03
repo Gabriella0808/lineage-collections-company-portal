@@ -271,6 +271,28 @@ export function useTravelLog() {
   });
 }
 
+export function useProducts() {
+  return useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("products").select("*").order("sku");
+      if (error) throw error;
+      return (data ?? []) as DbProduct[];
+    },
+  });
+}
+
+export function useDealerSalesLines() {
+  return useQuery({
+    queryKey: ["dealer_sales_lines"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("dealer_sales_lines").select("*");
+      if (error) throw error;
+      return (data ?? []) as DbDealerSalesLine[];
+    },
+  });
+}
+
 // ── Display helpers ───────────────────────────────────────────────
 
 export function getRepName(reps: DbSalesRep[], id: string | null): string {
