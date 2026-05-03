@@ -18,7 +18,7 @@ const BatchPayloadSchema = z.object({
 
 const PrunePayloadSchema = z.object({
   action: z.literal("prune"),
-  table: z.enum(["inventory"]),
+  table: z.enum(["inventory", "products", "dealer_sales_lines"]),
   keep_acctivate_ids: z.array(z.string()).max(50000),
 });
 
