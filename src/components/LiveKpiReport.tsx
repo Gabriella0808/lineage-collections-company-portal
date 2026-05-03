@@ -143,6 +143,28 @@ function sumRepMonthly(keys: string[]): RepMonthRow[] | null {
   });
 }
 
+// Maps REP_BOOK display names → list of territory names they cover.
+// Used by the Territory filter on the Live KPI report.
+const REP_TO_TERRITORIES: Record<string, string[]> = {
+  "Internet":         ["Internet"],
+  "Hospitality":      ["Hospitality"],
+  "House":            ["House"],
+  "Skip Camillo":     ["New England", "Skip Camillo"],
+  "Mike Durham":      ["North Florida"],
+  "Bruce Quillen":    ["Panhandle/GA/AL"],
+  "Jordan Shindell":  ["Mid Atlantic", "OH/WPA"],
+  "Stewart Hunt":     ["TX/OK"],
+  "Gary Fryer":       ["Arkansas"],
+  "TN/KY":            ["TN/KY"],
+  "Dave Ervin":       ["NC/SC"],
+  "Peter Avella":     ["NY/NJ"],
+  "Brad Robertson":   ["VA/WV"],
+  "WI/IL":            ["IL/WI"],
+};
+const ALL_TERRITORIES = Array.from(
+  new Set(Object.values(REP_TO_TERRITORIES).flat()),
+).sort();
+
 // Maps each manager (lowercased) to the REP_BOOK rep names they oversee.
 // Only includes reps that exist as tabs in the KPI workbook.
 const MANAGER_TO_REPS: Record<string, string[]> = {
@@ -202,12 +224,17 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
     return list ?? [];
   }, [managerName, lockedRepName]);
 
-  const visibleReps = useMemo(
-    () => allowedRepNames === null
+  const [territoryFilter, setTerritoryFilter] = useState<string>("all");
+
+  const visibleReps = useMemo(() => {
+    let reps = allowedRepNames === null
       ? REP_BOOK
-      : REP_BOOK.filter((r) => allowedRepNames.includes(r.name)),
-    [allowedRepNames],
-  );
+      : REP_BOOK.filter((r) => allowedRepNames.includes(r.name));
+    if (territoryFilter !== "all") {
+      reps = reps.filter((r) => (REP_TO_TERRITORIES[r.name] ?? []).includes(territoryFilter));
+    }
+    return reps;
+  }, [allowedRepNames, territoryFilter]);
 
   const [repFilter, setRepFilter] = useState<string>(lockedRepName ?? "all");
 
@@ -217,10 +244,10 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
       if (repFilter !== lockedRepName) setRepFilter(lockedRepName);
       return;
     }
-    if (allowedRepNames && repFilter !== "all" && !allowedRepNames.includes(repFilter)) {
+    if (repFilter !== "all" && !visibleReps.some((r) => r.name === repFilter)) {
       setRepFilter("all");
     }
-  }, [allowedRepNames, repFilter, lockedRepName]);
+  }, [visibleReps, repFilter, lockedRepName]);
 
   const [monthFilter, setMonthFilter] = useState<MonthFilter>("All");
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("both");
@@ -402,6 +429,28 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
             {[...visibleReps].sort((a, b) => a.name.localeCompare(b.name)).map((r) => (
               <option key={r.name} value={r.name}>{r.name}</option>
             ))}
+          </select>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold ml-2">Territory</span>
+          <select
+            value={territoryFilter}
+            onChange={(e) => setTerritoryFilter(e.target.value)}
+            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[160px]"
+          >
+            <option value="all">All Territories</option>
+            {ALL_TERRITORIES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold ml-2">Brand</span>
+          <select
+            value={monthlyLineFilter}
+            onChange={(e) => setMonthlyLineFilter(e.target.value as LineFilter)}
+            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[160px]"
+          >
+            <option value="all">All Brands</option>
+            <option value="sw">Sea Winds</option>
+            <option value="fl">Finn & Louise</option>
+            <option value="lux">Lux Lighting</option>
           </select>
           {!lockedRepName && allowedRepNames !== null && visibleReps.length === 0 && (
             <span className="text-xs text-muted-foreground">No reps mapped for this manager yet.</span>
