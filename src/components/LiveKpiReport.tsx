@@ -224,12 +224,17 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
     return list ?? [];
   }, [managerName, lockedRepName]);
 
-  const visibleReps = useMemo(
-    () => allowedRepNames === null
+  const [territoryFilter, setTerritoryFilter] = useState<string>("all");
+
+  const visibleReps = useMemo(() => {
+    let reps = allowedRepNames === null
       ? REP_BOOK
-      : REP_BOOK.filter((r) => allowedRepNames.includes(r.name)),
-    [allowedRepNames],
-  );
+      : REP_BOOK.filter((r) => allowedRepNames.includes(r.name));
+    if (territoryFilter !== "all") {
+      reps = reps.filter((r) => (REP_TO_TERRITORIES[r.name] ?? []).includes(territoryFilter));
+    }
+    return reps;
+  }, [allowedRepNames, territoryFilter]);
 
   const [repFilter, setRepFilter] = useState<string>(lockedRepName ?? "all");
 
@@ -239,10 +244,10 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
       if (repFilter !== lockedRepName) setRepFilter(lockedRepName);
       return;
     }
-    if (allowedRepNames && repFilter !== "all" && !allowedRepNames.includes(repFilter)) {
+    if (repFilter !== "all" && !visibleReps.some((r) => r.name === repFilter)) {
       setRepFilter("all");
     }
-  }, [allowedRepNames, repFilter, lockedRepName]);
+  }, [visibleReps, repFilter, lockedRepName]);
 
   const [monthFilter, setMonthFilter] = useState<MonthFilter>("All");
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("both");
