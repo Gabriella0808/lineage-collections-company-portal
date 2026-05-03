@@ -27,6 +27,17 @@ const LookupPayloadSchema = z.object({
   table: z.enum(["dealers", "products", "sales_reps", "managers", "territories"]),
 });
 
+const ListNamesPayloadSchema = z.object({
+  action: z.literal("list_names"),
+  table: z.enum(["dealers"]),
+});
+
+const BackfillPayloadSchema = z.object({
+  action: z.literal("backfill_acctivate_id"),
+  table: z.enum(["dealers"]),
+  updates: z.array(z.object({ id: z.string().uuid(), acctivate_id: z.string() })).min(1).max(5000),
+});
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
