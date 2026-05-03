@@ -295,12 +295,8 @@ export function SalesReporting({ groupBy, managerScopeRepIds }: Props) {
               <Select value={display} onValueChange={(v: Display) => setDisplay(v)}>
                 <SelectTrigger className="h-9 w-[160px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="total">Total only</SelectItem>
+                  <SelectItem value="total">Total</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="brand">By Brand</SelectItem>
-                  <SelectItem value="category">By Category</SelectItem>
-                  <SelectItem value="collection">By Collection</SelectItem>
-                  <SelectItem value="sku">By SKU</SelectItem>
                 </SelectContent>
               </Select>
             </div>
