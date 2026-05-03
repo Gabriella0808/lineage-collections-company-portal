@@ -3,6 +3,7 @@ import { formatCurrency } from "@/hooks/usePortalData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Pencil } from "lucide-react";
 import { REP_MONTHLY, type RepMonthRow } from "@/data/repMonthly";
+import { useDealerSalesAggregates } from "@/hooks/useDealerSalesAggregates";
 
 const PROJ_STORAGE_KEY = "kpi_projections_2026_v1";
 
