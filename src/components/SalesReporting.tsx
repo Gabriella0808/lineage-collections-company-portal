@@ -15,7 +15,7 @@ import {
 
 type GroupBy = "dealer" | "rep" | "territory";
 type Metric = "bookings" | "invoices";
-type Display = "total" | "monthly" | "brand" | "category" | "collection" | "sku";
+type Display = "total" | "monthly";
 
 interface DateRange { from: Date; to: Date }
 
@@ -129,12 +129,15 @@ function monthsInRange(range: DateRange): { year: number; monthIdx: number; key:
 interface Props {
   groupBy: GroupBy;
   managerScopeRepIds?: string[] | null; // null = all reps; array = limit to these
+  /** When provided, user can toggle the leftmost column among these. */
+  groupByOptions?: GroupBy[];
 }
 
-export function SalesReporting({ groupBy, managerScopeRepIds }: Props) {
+export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, groupByOptions }: Props) {
   const today = new Date();
   const yearStart = startOfYear(today);
 
+  const [groupBy, setGroupBy] = useState<GroupBy>(initialGroupBy);
   const [primary, setPrimary] = useState<DateRange>({ from: yearStart, to: endOfMonth(today) });
   const [comparative, setComparative] = useState<DateRange>({
     from: subYears(yearStart, 1),
@@ -279,6 +282,21 @@ export function SalesReporting({ groupBy, managerScopeRepIds }: Props) {
             <DateRangePicker label="Primary date range" value={primary} onChange={setPrimary} />
             <DateRangePicker label="Comparative date range" value={comparative} onChange={setComparative} />
 
+            {groupByOptions && groupByOptions.length > 1 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Group by</span>
+                <Select value={groupBy} onValueChange={(v: GroupBy) => setGroupBy(v)}>
+                  <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {groupByOptions.map((g) => (
+                      <SelectItem key={g} value={g}>
+                        {g === "dealer" ? "Dealer" : g === "rep" ? "Rep" : "Territory"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Metric</span>
               <Select value={metric} onValueChange={(v: Metric) => setMetric(v)}>
@@ -295,12 +313,8 @@ export function SalesReporting({ groupBy, managerScopeRepIds }: Props) {
               <Select value={display} onValueChange={(v: Display) => setDisplay(v)}>
                 <SelectTrigger className="h-9 w-[160px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="total">Total only</SelectItem>
+                  <SelectItem value="total">Total</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="brand">By Brand</SelectItem>
-                  <SelectItem value="category">By Category</SelectItem>
-                  <SelectItem value="collection">By Collection</SelectItem>
-                  <SelectItem value="sku">By SKU</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -376,7 +390,7 @@ export function SalesReporting({ groupBy, managerScopeRepIds }: Props) {
                 leftHeader={leftHeader}
               />
             ) : (
-              <TotalTable rows={aggregation.rows} leftHeader={leftHeader} display={display} />
+              <TotalTable rows={aggregation.rows} leftHeader={leftHeader} />
             )}
           </div>
         </CardContent>
@@ -386,11 +400,10 @@ export function SalesReporting({ groupBy, managerScopeRepIds }: Props) {
 }
 
 function TotalTable({
-  rows, leftHeader, display,
+  rows, leftHeader,
 }: {
   rows: { key: string; label: string; primary: number; comparative: number }[];
   leftHeader: string;
-  display: Exclude<Display, "monthly">;
 }) {
   const totalP = rows.reduce((s, r) => s + r.primary, 0);
   const totalC = rows.reduce((s, r) => s + r.comparative, 0);
