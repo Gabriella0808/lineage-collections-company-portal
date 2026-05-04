@@ -890,6 +890,28 @@ export default function CheckInsPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3 py-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="d-first-name">First name</Label>
+                    <Input
+                      id="d-first-name"
+                      value={newDealer.first_name}
+                      onChange={(e) => setNewDealer({ ...newDealer, first_name: e.target.value })}
+                      maxLength={100}
+                      placeholder="Jane"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="d-last-name">Last name</Label>
+                    <Input
+                      id="d-last-name"
+                      value={newDealer.last_name}
+                      onChange={(e) => setNewDealer({ ...newDealer, last_name: e.target.value })}
+                      maxLength={100}
+                      placeholder="Doe"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="d-name">Dealer name *</Label>
                   <Input
