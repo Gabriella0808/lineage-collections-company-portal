@@ -1437,11 +1437,6 @@ export default function CheckInsPage() {
                           if (!addr && selected.lat == null) {
                             return <span className="text-muted-foreground italic">—</span>;
                           }
-                          const dest =
-                            selected.lat != null && selected.lng != null
-                              ? `${selected.lat},${selected.lng}`
-                              : addr;
-                          const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
                           const fallbackMapsUrl =
                             selected.lat != null && selected.lng != null
                               ? `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=;%20${selected.lat}%2C${selected.lng}`
