@@ -200,8 +200,25 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
     from: subYears(yearStart, 1),
     to: subYears(endOfMonth(today), 1),
   });
+  type CompareMode = "prev-year" | "prev-period" | "custom" | "none";
+  const [compareMode, setCompareMode] = useState<CompareMode>("prev-year");
   const [metric, setMetric] = useState<Metric>("bookings");
   const [display, setDisplay] = useState<Display>("total");
+
+  // Apply a preset to primary range AND auto-sync comparative based on compareMode.
+  const applyPrimary = (from: Date, to: Date, mode: CompareMode = compareMode) => {
+    setPrimary({ from, to });
+    if (mode === "prev-year") {
+      setComparative({ from: subYears(from, 1), to: subYears(to, 1) });
+    } else if (mode === "prev-period") {
+      const days = differenceInCalendarDays(to, from) + 1;
+      const prevTo = subDays(from, 1);
+      const prevFrom = subDays(prevTo, days - 1);
+      setComparative({ from: prevFrom, to: prevTo });
+    }
+    // "custom" / "none": leave comparative alone
+  };
+
 
   const [territoryIds, setTerritoryIds] = useState<string[]>([]);
   const [repIds, setRepIds] = useState<string[]>([]);
