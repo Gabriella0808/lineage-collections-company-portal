@@ -193,6 +193,7 @@ export default function CheckInsPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [territoriesOnly, setTerritoriesOnly] = useState(false);
   const [teamFilter, setTeamFilter] = useState<TeamMemberId | "all">("all");
+  const [salesReps, setSalesReps] = useState<{ id: string; name: string }[]>([]);
   const [newDealer, setNewDealer] = useState<{
     name: string;
     street_address: string;
@@ -202,6 +203,7 @@ export default function CheckInsPage() {
     email: string;
     website: string;
     rep_owner: TeamMemberId | "";
+    rep_id: string;
     notes: string;
     buying_group: "none" | "fmg" | "furniture_first" | "";
   }>({
@@ -213,9 +215,22 @@ export default function CheckInsPage() {
     email: "",
     website: "",
     rep_owner: "",
+    rep_id: "",
     notes: "",
     buying_group: "",
   });
+
+  // Load sales reps for the Rep dropdown
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("sales_reps")
+        .select("id, name")
+        .eq("status", "active")
+        .order("name");
+      setSalesReps((data ?? []) as { id: string; name: string }[]);
+    })();
+  }, []);
 
   // Detect which teammate is logged in from their email so new dealers
   // automatically belong to that person's accounts.
@@ -818,6 +833,7 @@ export default function CheckInsPage() {
         buying_group: newDealer.buying_group || null,
         status: "active",
         rep_owner: owner,
+        rep_id: newDealer.rep_id || null,
       })
       .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
       .single();
@@ -829,7 +845,7 @@ export default function CheckInsPage() {
     if (data) {
       setDealers((prev) => [...prev, data as Dealer]);
     }
-    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "", rep_owner: "", notes: "", buying_group: "" });
+    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "", rep_owner: "", rep_id: "", notes: "", buying_group: "" });
     setAddOpen(false);
     const ownerName = TEAM_MEMBERS.find((t) => t.id === owner)?.name ?? owner;
     toast({ title: "Dealer added", description: `${name} added to ${ownerName}'s accounts. Geocoding will run shortly.` });
@@ -862,7 +878,7 @@ export default function CheckInsPage() {
                 <Plus className="h-4 w-4" /> Add dealer
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add a dealer account</DialogTitle>
                 <DialogDescription>
@@ -945,30 +961,45 @@ export default function CheckInsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="d-owner">Rep *</Label>
+                  <Label htmlFor="d-rep">Rep *</Label>
                   <Select
-                    value={newDealer.rep_owner || ""}
-                    onValueChange={(v) =>
-                      setNewDealer({ ...newDealer, rep_owner: v as TeamMemberId })
-                    }
+                    value={newDealer.rep_id || ""}
+                    onValueChange={(v) => setNewDealer({ ...newDealer, rep_id: v })}
                   >
-                    <SelectTrigger id="d-owner">
-                      <SelectValue placeholder="Select rep" />
+                    <SelectTrigger id="d-rep">
+                      <SelectValue placeholder="Select sales rep" />
                     </SelectTrigger>
                     <SelectContent>
-                      {TEAM_MEMBERS.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name}
+                      {salesReps.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {detectedOwner
-                      ? `Auto-set to ${TEAM_MEMBERS.find((t) => t.id === detectedOwner)?.name} based on your login. Change if logging on someone else's behalf.`
-                      : "Pick which rep this dealer belongs to."}
-                  </p>
                 </div>
+                {!detectedOwner && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="d-owner">Owner *</Label>
+                    <Select
+                      value={newDealer.rep_owner || ""}
+                      onValueChange={(v) =>
+                        setNewDealer({ ...newDealer, rep_owner: v as TeamMemberId })
+                      }
+                    >
+                      <SelectTrigger id="d-owner">
+                        <SelectValue placeholder="Select owner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TEAM_MEMBERS.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label htmlFor="d-buying-group">Buying group</Label>
                   <Select
@@ -981,7 +1012,7 @@ export default function CheckInsPage() {
                       <SelectValue placeholder="Select buying group" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No option</SelectItem>
+                      <SelectItem value="none">Nothing</SelectItem>
                       <SelectItem value="fmg">FMG</SelectItem>
                       <SelectItem value="furniture_first">Furniture First</SelectItem>
                     </SelectContent>
