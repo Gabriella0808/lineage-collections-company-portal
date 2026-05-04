@@ -193,6 +193,7 @@ export default function CheckInsPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [territoriesOnly, setTerritoriesOnly] = useState(false);
   const [teamFilter, setTeamFilter] = useState<TeamMemberId | "all">("all");
+  const [salesReps, setSalesReps] = useState<{ id: string; name: string }[]>([]);
   const [newDealer, setNewDealer] = useState<{
     name: string;
     street_address: string;
@@ -202,6 +203,7 @@ export default function CheckInsPage() {
     email: string;
     website: string;
     rep_owner: TeamMemberId | "";
+    rep_id: string;
     notes: string;
     buying_group: "none" | "fmg" | "furniture_first" | "";
   }>({
@@ -213,9 +215,22 @@ export default function CheckInsPage() {
     email: "",
     website: "",
     rep_owner: "",
+    rep_id: "",
     notes: "",
     buying_group: "",
   });
+
+  // Load sales reps for the Rep dropdown
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("sales_reps")
+        .select("id, name")
+        .eq("status", "active")
+        .order("name");
+      setSalesReps((data ?? []) as { id: string; name: string }[]);
+    })();
+  }, []);
 
   // Detect which teammate is logged in from their email so new dealers
   // automatically belong to that person's accounts.
