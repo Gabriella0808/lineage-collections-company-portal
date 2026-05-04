@@ -195,6 +195,8 @@ export default function CheckInsPage() {
   const [teamFilter, setTeamFilter] = useState<TeamMemberId | "all">("all");
   const [salesReps, setSalesReps] = useState<{ id: string; name: string }[]>([]);
   const [newDealer, setNewDealer] = useState<{
+    first_name: string;
+    last_name: string;
     name: string;
     street_address: string;
     city: string;
@@ -207,6 +209,8 @@ export default function CheckInsPage() {
     notes: string;
     buying_group: "none" | "fmg" | "furniture_first" | "";
   }>({
+    first_name: "",
+    last_name: "",
     name: "",
     street_address: "",
     city: "",
