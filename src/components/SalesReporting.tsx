@@ -10,7 +10,7 @@ import { CalendarIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useDealers, useSalesReps, useTerritories, useRepTerritories,
-  useProducts, useDealerSalesLines, formatCurrency,
+  useProducts, useDealerSalesLines, useDealerSales, formatCurrency,
 } from "@/hooks/usePortalData";
 
 type GroupBy = "dealer" | "rep" | "territory";
