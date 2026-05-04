@@ -202,6 +202,8 @@ export default function CheckInsPage() {
     email: string;
     website: string;
     rep_owner: TeamMemberId | "";
+    notes: string;
+    buying_group: "none" | "fmg" | "furniture_first" | "";
   }>({
     name: "",
     street_address: "",
@@ -211,6 +213,8 @@ export default function CheckInsPage() {
     email: "",
     website: "",
     rep_owner: "",
+    notes: "",
+    buying_group: "",
   });
 
   // Detect which teammate is logged in from their email so new dealers
@@ -810,6 +814,8 @@ export default function CheckInsPage() {
         phone: newDealer.phone.trim() || null,
         email: newDealer.email.trim() || null,
         website: newDealer.website.trim() || null,
+        notes: newDealer.notes.trim() || null,
+        buying_group: newDealer.buying_group || null,
         status: "active",
         rep_owner: owner,
       })
@@ -823,7 +829,7 @@ export default function CheckInsPage() {
     if (data) {
       setDealers((prev) => [...prev, data as Dealer]);
     }
-    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "", rep_owner: "" });
+    setNewDealer({ name: "", street_address: "", city: "", state: "", phone: "", email: "", website: "", rep_owner: "", notes: "", buying_group: "" });
     setAddOpen(false);
     const ownerName = TEAM_MEMBERS.find((t) => t.id === owner)?.name ?? owner;
     toast({ title: "Dealer added", description: `${name} added to ${ownerName}'s accounts. Geocoding will run shortly.` });
@@ -939,7 +945,7 @@ export default function CheckInsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="d-owner">Owner *</Label>
+                  <Label htmlFor="d-owner">Rep *</Label>
                   <Select
                     value={newDealer.rep_owner || ""}
                     onValueChange={(v) =>
@@ -947,7 +953,7 @@ export default function CheckInsPage() {
                     }
                   >
                     <SelectTrigger id="d-owner">
-                      <SelectValue placeholder="Select owner" />
+                      <SelectValue placeholder="Select rep" />
                     </SelectTrigger>
                     <SelectContent>
                       {TEAM_MEMBERS.map((t) => (
@@ -960,8 +966,37 @@ export default function CheckInsPage() {
                   <p className="text-xs text-muted-foreground">
                     {detectedOwner
                       ? `Auto-set to ${TEAM_MEMBERS.find((t) => t.id === detectedOwner)?.name} based on your login. Change if logging on someone else's behalf.`
-                      : "Pick which owner this dealer belongs to."}
+                      : "Pick which rep this dealer belongs to."}
                   </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-buying-group">Buying group</Label>
+                  <Select
+                    value={newDealer.buying_group || ""}
+                    onValueChange={(v) =>
+                      setNewDealer({ ...newDealer, buying_group: v as typeof newDealer.buying_group })
+                    }
+                  >
+                    <SelectTrigger id="d-buying-group">
+                      <SelectValue placeholder="Select buying group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No option</SelectItem>
+                      <SelectItem value="fmg">FMG</SelectItem>
+                      <SelectItem value="furniture_first">Furniture First</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-notes">Notes</Label>
+                  <Textarea
+                    id="d-notes"
+                    value={newDealer.notes}
+                    onChange={(e) => setNewDealer({ ...newDealer, notes: e.target.value })}
+                    maxLength={2000}
+                    rows={3}
+                    placeholder="Anything worth remembering about this dealer…"
+                  />
                 </div>
               </div>
               <DialogFooter>
