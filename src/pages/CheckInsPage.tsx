@@ -844,7 +844,7 @@ export default function CheckInsPage() {
         rep_owner: owner,
         rep_id: newDealer.rep_id || null,
       })
-      .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
+      .select("id, name, first_name, last_name, street_address, city, state, status, rep_id, rep_owner, phone, email, website, notes, buying_group, lat, lng")
       .single();
     setAddSaving(false);
     if (error) {
