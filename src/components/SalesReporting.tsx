@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
-import { format, startOfYear, endOfMonth, subYears, subMonths, startOfMonth, startOfDay } from "date-fns";
+import {
+  format, startOfYear, endOfMonth, subYears, subMonths, startOfMonth, startOfDay,
+  startOfQuarter, subDays, differenceInCalendarDays,
+} from "date-fns";
+import { RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -196,8 +200,25 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
     from: subYears(yearStart, 1),
     to: subYears(endOfMonth(today), 1),
   });
+  type CompareMode = "prev-year" | "prev-period" | "custom" | "none";
+  const [compareMode, setCompareMode] = useState<CompareMode>("prev-year");
   const [metric, setMetric] = useState<Metric>("bookings");
   const [display, setDisplay] = useState<Display>("total");
+
+  // Apply a preset to primary range AND auto-sync comparative based on compareMode.
+  const applyPrimary = (from: Date, to: Date, mode: CompareMode = compareMode) => {
+    setPrimary({ from, to });
+    if (mode === "prev-year") {
+      setComparative({ from: subYears(from, 1), to: subYears(to, 1) });
+    } else if (mode === "prev-period") {
+      const days = differenceInCalendarDays(to, from) + 1;
+      const prevTo = subDays(from, 1);
+      const prevFrom = subDays(prevTo, days - 1);
+      setComparative({ from: prevFrom, to: prevTo });
+    }
+    // "custom" / "none": leave comparative alone
+  };
+
 
   const [territoryIds, setTerritoryIds] = useState<string[]>([]);
   const [repIds, setRepIds] = useState<string[]>([]);
@@ -341,44 +362,101 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
       <Card>
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Quick range</span>
+              <Select
+                
+                onValueChange={(v) => {
+                  const todayEnd = startOfDay(today);
+                  const monthEnd = endOfMonth(today);
+                  let from: Date; let to: Date;
+                  switch (v) {
+                    case "mtd":     from = startOfMonth(today); to = todayEnd; break;
+                    case "qtd":     from = startOfQuarter(today); to = todayEnd; break;
+                    case "ytd":     from = startOfYear(today); to = todayEnd; break;
+                    case "last30":  from = subDays(todayEnd, 29); to = todayEnd; break;
+                    case "last90":  from = subDays(todayEnd, 89); to = todayEnd; break;
+                    case "3m":      from = startOfMonth(subMonths(monthEnd, 2)); to = monthEnd; break;
+                    case "6m":      from = startOfMonth(subMonths(monthEnd, 5)); to = monthEnd; break;
+                    case "12m":     from = startOfMonth(subMonths(monthEnd, 11)); to = monthEnd; break;
+                    case "lastYear": from = startOfYear(subYears(today, 1)); to = endOfMonth(subMonths(startOfYear(today), 1)); break;
+                    default: return;
+                  }
+                  applyPrimary(from, to);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder="Select preset…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mtd">Month to date</SelectItem>
+                  <SelectItem value="qtd">Quarter to date</SelectItem>
+                  <SelectItem value="ytd">Year to date</SelectItem>
+                  <SelectItem value="last30">Last 30 days</SelectItem>
+                  <SelectItem value="last90">Last 90 days</SelectItem>
+                  <SelectItem value="3m">Last 3 months</SelectItem>
+                  <SelectItem value="6m">Last 6 months</SelectItem>
+                  <SelectItem value="12m">Last 12 months</SelectItem>
+                  <SelectItem value="lastYear">Last year (full)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <DateRangePicker
               label="Primary date range"
               value={primary}
-              onChange={setPrimary}
-              onReset={() => setPrimary({ from: yearStart, to: endOfMonth(today) })}
+              onChange={(r) => applyPrimary(r.from, r.to)}
+              onReset={() => applyPrimary(yearStart, endOfMonth(today))}
             />
+
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Quick range</span>
-              <div className="flex gap-1">
-                {([
-                  { k: "3m", label: "3M", months: 3 },
-                  { k: "6m", label: "6M", months: 6 },
-                  { k: "1y", label: "1Y", months: 12 },
-                ] as const).map(({ k, label, months }) => (
-                  <Button
-                    key={k}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-3"
-                    onClick={() => {
-                      const to = endOfMonth(today);
-                      const from = startOfMonth(subMonths(to, months - 1));
-                      setPrimary({ from, to });
-                      setComparative({ from: subYears(from, 1), to: subYears(to, 1) });
-                    }}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Compare to</span>
+              <Select
+                value={compareMode}
+                onValueChange={(v: CompareMode) => {
+                  setCompareMode(v);
+                  if (v === "prev-year") {
+                    setComparative({ from: subYears(primary.from, 1), to: subYears(primary.to, 1) });
+                  } else if (v === "prev-period") {
+                    const days = differenceInCalendarDays(primary.to, primary.from) + 1;
+                    const prevTo = subDays(primary.from, 1);
+                    setComparative({ from: subDays(prevTo, days - 1), to: prevTo });
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9 w-[170px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="prev-year">Previous year</SelectItem>
+                  <SelectItem value="prev-period">Previous period</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                  <SelectItem value="none">No comparison</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <DateRangePicker
-              label="Comparative date range"
-              value={comparative}
-              onChange={setComparative}
-              onReset={() => setComparative({ from: subYears(yearStart, 1), to: subYears(endOfMonth(today), 1) })}
-            />
+
+            {compareMode !== "none" && (
+              <DateRangePicker
+                label="Comparative date range"
+                value={comparative}
+                onChange={(r) => { setCompareMode("custom"); setComparative(r); }}
+                onReset={() => {
+                  setCompareMode("prev-year");
+                  setComparative({ from: subYears(primary.from, 1), to: subYears(primary.to, 1) });
+                }}
+              />
+            )}
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 text-muted-foreground"
+              onClick={() => {
+                setCompareMode("prev-year");
+                setPrimary({ from: yearStart, to: endOfMonth(today) });
+                setComparative({ from: subYears(yearStart, 1), to: subYears(endOfMonth(today), 1) });
+              }}
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
+            </Button>
 
             {groupByOptions && groupByOptions.length > 1 && (
               <div className="flex flex-col gap-1">
