@@ -121,7 +121,7 @@ function DateRangePicker({ label, value, onChange, onReset }: { label: string; v
   return (
     <div className="flex flex-col gap-1">
       <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
-      <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setDraft(undefined); }}>
+      <Popover open={open} onOpenChange={(o) => { setOpen(o); setDraft(o ? { from: undefined, to: undefined } : undefined); }}>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="h-9 justify-start font-normal min-w-[230px]">
             <CalendarIcon className="mr-2 h-3.5 w-3.5" />
