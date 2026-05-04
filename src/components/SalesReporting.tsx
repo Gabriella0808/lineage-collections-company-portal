@@ -307,7 +307,7 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
   }, [lines, aggregates, useAggregates, dealers, reps, territories, dealerIdSet, filteredProductIds, primary, comparative, metric, groupBy]);
 
   const leftHeader = groupBy === "dealer" ? "Dealer" : groupBy === "rep" ? "Rep" : "Territory";
-  const noData = lines.length === 0;
+  const noData = useAggregates ? aggregates.length === 0 : lines.length === 0;
 
   return (
     <div className="space-y-4">
