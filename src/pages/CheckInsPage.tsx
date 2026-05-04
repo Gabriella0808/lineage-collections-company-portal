@@ -202,6 +202,8 @@ export default function CheckInsPage() {
     email: string;
     website: string;
     rep_owner: TeamMemberId | "";
+    notes: string;
+    buying_group: "none" | "fmg" | "furniture_first" | "";
   }>({
     name: "",
     street_address: "",
@@ -211,6 +213,8 @@ export default function CheckInsPage() {
     email: "",
     website: "",
     rep_owner: "",
+    notes: "",
+    buying_group: "",
   });
 
   // Detect which teammate is logged in from their email so new dealers
