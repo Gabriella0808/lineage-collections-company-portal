@@ -1440,8 +1440,8 @@ export default function CheckInsPage() {
                           const dest =
                             selected.lat != null && selected.lng != null
                               ? `${selected.lat},${selected.lng}`
-                              : encodeURIComponent(addr);
-                          const mapsUrl = `https://maps.google.com/?q=${dest}`;
+                              : addr;
+                          const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
                           return (
                             <div className="flex items-start justify-between gap-2">
                               <span className="flex-1">{addr || "—"}</span>
