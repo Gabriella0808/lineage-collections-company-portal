@@ -10,7 +10,7 @@ import { CalendarIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useDealers, useSalesReps, useTerritories, useRepTerritories,
-  useProducts, useDealerSalesLines, formatCurrency,
+  useProducts, useDealerSalesLines, useDealerSales, formatCurrency,
 } from "@/hooks/usePortalData";
 
 type GroupBy = "dealer" | "rep" | "territory";
@@ -190,6 +190,11 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
   const { data: repTerritories = [] } = useRepTerritories();
   const { data: products = [] } = useProducts();
   const { data: lines = [] } = useDealerSalesLines();
+  const { data: aggregates = [] } = useDealerSales();
+
+  // Use aggregate dealer_sales when no product-level filter is active.
+  // dealer_sales_lines is sparsely populated; aggregates have full totals.
+  const useAggregates = brands.length === 0 && categories.length === 0 && collections.length === 0 && skus.length === 0;
 
   // Hierarchical filter dependencies
   const visibleReps = useMemo(() => {
@@ -270,9 +275,10 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
 
     const rows = new Map<Key, { primary: number; comparative: number; byMonth: Map<string, number> }>();
 
-    for (const line of lines) {
+    const source = useAggregates ? aggregates : lines;
+    for (const line of source) {
       if (!dealerIdSet.has(line.dealer_id)) continue;
-      if (!filteredProductIds.has(line.product_id)) continue;
+      if (!useAggregates && !filteredProductIds.has((line as { product_id: string }).product_id)) continue;
       const monthKey = `${line.year}-${line.month}`;
       const inPrim = primKeys.has(monthKey);
       const inComp = compKeys.has(monthKey);
@@ -298,10 +304,10 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
       .sort((a, b) => b.primary - a.primary);
 
     return { rows: sorted, primMonths, compMonths };
-  }, [lines, dealers, reps, territories, dealerIdSet, filteredProductIds, primary, comparative, metric, groupBy]);
+  }, [lines, aggregates, useAggregates, dealers, reps, territories, dealerIdSet, filteredProductIds, primary, comparative, metric, groupBy]);
 
   const leftHeader = groupBy === "dealer" ? "Dealer" : groupBy === "rep" ? "Rep" : "Territory";
-  const noData = lines.length === 0;
+  const noData = useAggregates ? aggregates.length === 0 : lines.length === 0;
 
   return (
     <div className="space-y-4">
