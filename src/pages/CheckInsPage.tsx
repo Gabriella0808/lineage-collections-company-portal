@@ -1449,15 +1449,6 @@ export default function CheckInsPage() {
                                 href={mapsUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  const opened = window.open(mapsUrl, "_blank");
-                                  if (opened) {
-                                    opened.opener = null;
-                                    return;
-                                  }
-                                  window.location.assign(mapsUrl);
-                                }}
                                 className="shrink-0 inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
                               >
                                 <Navigation className="h-3 w-3" />
