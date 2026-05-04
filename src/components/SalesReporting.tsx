@@ -645,20 +645,23 @@ function TotalTable({
 }
 
 function MonthlyTable({
-  rows, primMonths, compMonths, leftHeader,
+  rows, primMonths, compMonths, leftHeader, showComparison,
 }: {
   rows: { key: string; label: string; primary: number; comparative: number; byMonth: Map<string, number> }[];
   primMonths: { key: string; label: string }[];
   compMonths: { key: string; label: string }[];
   leftHeader: string;
+  showComparison?: boolean;
 }) {
   // Interleave primary then comparative pairs by month index
   const interleaved: { key: string; label: string }[] = [];
-  const max = Math.max(primMonths.length, compMonths.length);
+  const max = Math.max(primMonths.length, showComparison ? compMonths.length : 0);
   for (let i = 0; i < max; i++) {
     if (primMonths[i]) interleaved.push(primMonths[i]);
-    if (compMonths[i]) interleaved.push(compMonths[i]);
+    if (showComparison && compMonths[i]) interleaved.push(compMonths[i]);
   }
+
+  const totalCols = interleaved.length + 2;
 
   return (
     <table className="w-full text-sm">
@@ -669,7 +672,7 @@ function MonthlyTable({
             <th key={m.key} className="text-right p-3 font-medium text-muted-foreground whitespace-nowrap">{m.label}</th>
           ))}
           <th className="text-right p-3 font-medium text-muted-foreground border-l">Primary Total</th>
-          <th className="text-right p-3 font-medium text-muted-foreground">Comparative Total</th>
+          {showComparison && <th className="text-right p-3 font-medium text-muted-foreground">Comparative Total</th>}
         </tr>
       </thead>
       <tbody>
@@ -682,11 +685,11 @@ function MonthlyTable({
               </td>
             ))}
             <td className="p-3 text-right tabular-nums border-l font-medium">{formatCurrency(r.primary)}</td>
-            <td className="p-3 text-right tabular-nums text-muted-foreground">{formatCurrency(r.comparative)}</td>
+            {showComparison && <td className="p-3 text-right tabular-nums text-muted-foreground">{formatCurrency(r.comparative)}</td>}
           </tr>
         ))}
         {rows.length === 0 && (
-          <tr><td colSpan={interleaved.length + 3} className="p-8 text-center text-muted-foreground text-sm">No data for the selected filters.</td></tr>
+          <tr><td colSpan={totalCols} className="p-8 text-center text-muted-foreground text-sm">No data for the selected filters.</td></tr>
         )}
       </tbody>
     </table>
