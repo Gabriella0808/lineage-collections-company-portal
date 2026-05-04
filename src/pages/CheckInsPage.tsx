@@ -79,6 +79,8 @@ const TEAM_MEMBERS: {
 interface Dealer {
   id: string;
   name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   street_address?: string | null;
   city: string | null;
   state: string | null;
@@ -89,6 +91,7 @@ interface Dealer {
   email?: string | null;
   website?: string | null;
   notes?: string | null;
+  buying_group?: string | null;
   lat: number | null;
   lng: number | null;
 }
@@ -329,7 +332,7 @@ export default function CheckInsPage() {
       while (true) {
         const { data, error } = await supabase
           .from("dealers")
-          .select("id, name, street_address, city, state, status, rep_id, rep_owner, phone, email, website, notes, lat, lng")
+          .select("id, name, first_name, last_name, street_address, city, state, status, rep_id, rep_owner, phone, email, website, notes, buying_group, lat, lng")
           .order("name")
           .range(from, from + PAGE - 1);
         if (error) return { data: null, error };
@@ -841,7 +844,7 @@ export default function CheckInsPage() {
         rep_owner: owner,
         rep_id: newDealer.rep_id || null,
       })
-      .select("id, name, street_address, city, state, status, rep_id, rep_owner, lat, lng")
+      .select("id, name, first_name, last_name, street_address, city, state, status, rep_id, rep_owner, phone, email, website, notes, buying_group, lat, lng")
       .single();
     setAddSaving(false);
     if (error) {
@@ -1336,6 +1339,14 @@ export default function CheckInsPage() {
                     </h3>
                   </div>
                   <dl className="divide-y text-sm">
+                    {(selected.first_name || selected.last_name) && (
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Contact</dt>
+                        <dd className="mt-0.5">
+                          {[selected.first_name, selected.last_name].filter(Boolean).join(" ")}
+                        </dd>
+                      </div>
+                    )}
                     <div className="px-3 py-2">
                       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Phone</dt>
                       <dd className="mt-0.5">
@@ -1394,6 +1405,29 @@ export default function CheckInsPage() {
                       </dd>
                     </div>
                     <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Rep</dt>
+                      <dd className="mt-0.5">
+                        {(() => {
+                          const rep = salesReps.find((r) => r.id === selected.rep_id);
+                          return rep ? rep.name : <span className="text-muted-foreground italic">—</span>;
+                        })()}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Buying Group</dt>
+                      <dd className="mt-0.5">
+                        {(() => {
+                          const bg = selected.buying_group;
+                          const map: Record<string, string> = {
+                            none: "Nothing",
+                            fmg: "FMG",
+                            furniture_first: "Furniture First",
+                          };
+                          return bg ? (map[bg] ?? bg) : <span className="text-muted-foreground italic">—</span>;
+                        })()}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
                       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Address</dt>
                       <dd className="mt-0.5">
                         {[selected.street_address, selected.city, selected.state]
@@ -1419,12 +1453,12 @@ export default function CheckInsPage() {
                         })()}
                       </dd>
                     </div>
-                    {selected.notes && (
-                      <div className="px-3 py-2">
-                        <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Notes</dt>
-                        <dd className="mt-0.5 whitespace-pre-wrap text-sm">{selected.notes}</dd>
-                      </div>
-                    )}
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Notes</dt>
+                      <dd className="mt-0.5 whitespace-pre-wrap text-sm">
+                        {selected.notes || <span className="text-muted-foreground italic">—</span>}
+                      </dd>
+                    </div>
                   </dl>
                 </div>
 
