@@ -1339,6 +1339,14 @@ export default function CheckInsPage() {
                     </h3>
                   </div>
                   <dl className="divide-y text-sm">
+                    {(selected.first_name || selected.last_name) && (
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Contact</dt>
+                        <dd className="mt-0.5">
+                          {[selected.first_name, selected.last_name].filter(Boolean).join(" ")}
+                        </dd>
+                      </div>
+                    )}
                     <div className="px-3 py-2">
                       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Phone</dt>
                       <dd className="mt-0.5">
@@ -1397,6 +1405,29 @@ export default function CheckInsPage() {
                       </dd>
                     </div>
                     <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Rep</dt>
+                      <dd className="mt-0.5">
+                        {(() => {
+                          const rep = salesReps.find((r) => r.id === selected.rep_id);
+                          return rep ? rep.name : <span className="text-muted-foreground italic">—</span>;
+                        })()}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Buying Group</dt>
+                      <dd className="mt-0.5">
+                        {(() => {
+                          const bg = selected.buying_group;
+                          const map: Record<string, string> = {
+                            none: "Nothing",
+                            fmg: "FMG",
+                            furniture_first: "Furniture First",
+                          };
+                          return bg ? (map[bg] ?? bg) : <span className="text-muted-foreground italic">—</span>;
+                        })()}
+                      </dd>
+                    </div>
+                    <div className="px-3 py-2">
                       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Address</dt>
                       <dd className="mt-0.5">
                         {[selected.street_address, selected.city, selected.state]
@@ -1422,12 +1453,12 @@ export default function CheckInsPage() {
                         })()}
                       </dd>
                     </div>
-                    {selected.notes && (
-                      <div className="px-3 py-2">
-                        <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Notes</dt>
-                        <dd className="mt-0.5 whitespace-pre-wrap text-sm">{selected.notes}</dd>
-                      </div>
-                    )}
+                    <div className="px-3 py-2">
+                      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Notes</dt>
+                      <dd className="mt-0.5 whitespace-pre-wrap text-sm">
+                        {selected.notes || <span className="text-muted-foreground italic">—</span>}
+                      </dd>
+                    </div>
                   </dl>
                 </div>
 
