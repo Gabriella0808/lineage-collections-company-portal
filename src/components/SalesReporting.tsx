@@ -365,7 +365,7 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Quick range</span>
               <Select
-                value=""
+                
                 onValueChange={(v) => {
                   const todayEnd = startOfDay(today);
                   const monthEnd = endOfMonth(today);
