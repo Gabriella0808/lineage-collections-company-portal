@@ -356,6 +356,19 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
   const leftHeader = groupBy === "dealer" ? "Dealer" : groupBy === "rep" ? "Rep" : "Territory";
   const noData = useAggregates ? aggregates.length === 0 : lines.length === 0;
 
+  // Warn when a product-level filter is active but dealer_sales_lines has no rows
+  // overlapping the primary date range — common right now since line sync is sparse.
+  const productFilterActive = !useAggregates;
+  const lineCoverageMissing = useMemo(() => {
+    if (!productFilterActive) return false;
+    const primKeys = new Set(monthsInRange(primary).map((m) => m.key));
+    return !lines.some((l) => {
+      const mNum = parseInt(String(l.month), 10);
+      const monthName = !isNaN(mNum) && mNum >= 1 && mNum <= 12 ? MONTH_NAMES[mNum - 1] : String(l.month);
+      return primKeys.has(`${l.year}-${monthName}`);
+    });
+  }, [productFilterActive, lines, primary]);
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -540,6 +553,20 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
               <p className="text-xs text-muted-foreground">
                 The SKU-level sync from Acctivate hasn't populated <span className="font-mono">products</span> or{" "}
                 <span className="font-mono">dealer_sales_lines</span> yet. Once the sync brings in dealer × SKU × month rows, this report will fill in automatically.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!noData && lineCoverageMissing && (
+        <Card className="border-dashed border-amber-500/40 bg-amber-500/5">
+          <CardContent className="p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">No SKU-level data in this date range</p>
+              <p className="text-xs text-muted-foreground">
+                You've filtered by brand, category, collection, or SKU — those filters use the per-SKU sales table, which doesn't have rows in the selected date range yet. Clear the product filters to see totals from the aggregate sales table, or pick a date range covered by the SKU-level sync.
               </p>
             </div>
           </CardContent>
