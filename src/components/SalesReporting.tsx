@@ -555,7 +555,9 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="secondary">{aggregation.rows.length} rows</Badge>
             <Badge variant="outline">{format(primary.from, "MMM d, yyyy")} – {format(primary.to, "MMM d, yyyy")}</Badge>
-            <Badge variant="outline">vs {format(comparative.from, "MMM d, yyyy")} – {format(comparative.to, "MMM d, yyyy")}</Badge>
+            {compareMode !== "none" && (
+              <Badge variant="outline">vs {format(comparative.from, "MMM d, yyyy")} – {format(comparative.to, "MMM d, yyyy")}</Badge>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -566,9 +568,10 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
                 primMonths={aggregation.primMonths}
                 compMonths={aggregation.compMonths}
                 leftHeader={leftHeader}
+                showComparison={compareMode !== "none"}
               />
             ) : (
-              <TotalTable rows={aggregation.rows} leftHeader={leftHeader} />
+              <TotalTable rows={aggregation.rows} leftHeader={leftHeader} showComparison={compareMode !== "none"} />
             )}
           </div>
         </CardContent>
@@ -578,10 +581,11 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
 }
 
 function TotalTable({
-  rows, leftHeader,
+  rows, leftHeader, showComparison,
 }: {
   rows: { key: string; label: string; primary: number; comparative: number }[];
   leftHeader: string;
+  showComparison?: boolean;
 }) {
   const totalP = rows.reduce((s, r) => s + r.primary, 0);
   const totalC = rows.reduce((s, r) => s + r.comparative, 0);
@@ -592,9 +596,9 @@ function TotalTable({
         <tr className="border-b bg-muted/30">
           <th className="text-left p-3 font-medium text-muted-foreground sticky left-0 bg-muted/30">{leftHeader}</th>
           <th className="text-right p-3 font-medium text-muted-foreground">Primary</th>
-          <th className="text-right p-3 font-medium text-muted-foreground">Comparative</th>
-          <th className="text-right p-3 font-medium text-muted-foreground">Δ</th>
-          <th className="text-right p-3 font-medium text-muted-foreground">% Δ</th>
+          {showComparison && <th className="text-right p-3 font-medium text-muted-foreground">Comparative</th>}
+          {showComparison && <th className="text-right p-3 font-medium text-muted-foreground">Δ</th>}
+          {showComparison && <th className="text-right p-3 font-medium text-muted-foreground">% Δ</th>}
         </tr>
       </thead>
       <tbody>
@@ -605,28 +609,34 @@ function TotalTable({
             <tr key={r.key} className="border-b last:border-0 hover:bg-muted/20">
               <td className="p-3 font-medium sticky left-0 bg-background">{r.label}</td>
               <td className="p-3 text-right tabular-nums">{formatCurrency(r.primary)}</td>
-              <td className="p-3 text-right tabular-nums text-muted-foreground">{formatCurrency(r.comparative)}</td>
-              <td className={cn("p-3 text-right tabular-nums", delta >= 0 ? "text-green-600" : "text-destructive")}>
-                {delta >= 0 ? "+" : ""}{formatCurrency(delta)}
-              </td>
-              <td className={cn("p-3 text-right tabular-nums", pct >= 0 ? "text-green-600" : "text-destructive")}>
-                {r.comparative === 0 ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}
-              </td>
+              {showComparison && <td className="p-3 text-right tabular-nums text-muted-foreground">{formatCurrency(r.comparative)}</td>}
+              {showComparison && (
+                <td className={cn("p-3 text-right tabular-nums", delta >= 0 ? "text-green-600" : "text-destructive")}>
+                  {delta >= 0 ? "+" : ""}{formatCurrency(delta)}
+                </td>
+              )}
+              {showComparison && (
+                <td className={cn("p-3 text-right tabular-nums", pct >= 0 ? "text-green-600" : "text-destructive")}>
+                  {r.comparative === 0 ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}
+                </td>
+              )}
             </tr>
           );
         })}
         {rows.length === 0 && (
-          <tr><td colSpan={5} className="p-8 text-center text-muted-foreground text-sm">No data for the selected filters.</td></tr>
+          <tr><td colSpan={showComparison ? 5 : 2} className="p-8 text-center text-muted-foreground text-sm">No data for the selected filters.</td></tr>
         )}
         {rows.length > 0 && (
           <tr className="border-t-2 font-semibold bg-muted/20">
             <td className="p-3 sticky left-0 bg-muted/20">Total</td>
             <td className="p-3 text-right tabular-nums">{formatCurrency(totalP)}</td>
-            <td className="p-3 text-right tabular-nums">{formatCurrency(totalC)}</td>
-            <td className="p-3 text-right tabular-nums">{formatCurrency(totalP - totalC)}</td>
-            <td className="p-3 text-right tabular-nums">
-              {totalC === 0 ? "—" : `${((totalP - totalC) / totalC * 100).toFixed(1)}%`}
-            </td>
+            {showComparison && <td className="p-3 text-right tabular-nums">{formatCurrency(totalC)}</td>}
+            {showComparison && <td className="p-3 text-right tabular-nums">{formatCurrency(totalP - totalC)}</td>}
+            {showComparison && (
+              <td className="p-3 text-right tabular-nums">
+                {totalC === 0 ? "—" : `${((totalP - totalC) / totalC * 100).toFixed(1)}%`}
+              </td>
+            )}
           </tr>
         )}
       </tbody>
@@ -635,20 +645,23 @@ function TotalTable({
 }
 
 function MonthlyTable({
-  rows, primMonths, compMonths, leftHeader,
+  rows, primMonths, compMonths, leftHeader, showComparison,
 }: {
   rows: { key: string; label: string; primary: number; comparative: number; byMonth: Map<string, number> }[];
   primMonths: { key: string; label: string }[];
   compMonths: { key: string; label: string }[];
   leftHeader: string;
+  showComparison?: boolean;
 }) {
   // Interleave primary then comparative pairs by month index
   const interleaved: { key: string; label: string }[] = [];
-  const max = Math.max(primMonths.length, compMonths.length);
+  const max = Math.max(primMonths.length, showComparison ? compMonths.length : 0);
   for (let i = 0; i < max; i++) {
     if (primMonths[i]) interleaved.push(primMonths[i]);
-    if (compMonths[i]) interleaved.push(compMonths[i]);
+    if (showComparison && compMonths[i]) interleaved.push(compMonths[i]);
   }
+
+  const totalCols = interleaved.length + 2;
 
   return (
     <table className="w-full text-sm">
@@ -659,7 +672,7 @@ function MonthlyTable({
             <th key={m.key} className="text-right p-3 font-medium text-muted-foreground whitespace-nowrap">{m.label}</th>
           ))}
           <th className="text-right p-3 font-medium text-muted-foreground border-l">Primary Total</th>
-          <th className="text-right p-3 font-medium text-muted-foreground">Comparative Total</th>
+          {showComparison && <th className="text-right p-3 font-medium text-muted-foreground">Comparative Total</th>}
         </tr>
       </thead>
       <tbody>
@@ -672,11 +685,11 @@ function MonthlyTable({
               </td>
             ))}
             <td className="p-3 text-right tabular-nums border-l font-medium">{formatCurrency(r.primary)}</td>
-            <td className="p-3 text-right tabular-nums text-muted-foreground">{formatCurrency(r.comparative)}</td>
+            {showComparison && <td className="p-3 text-right tabular-nums text-muted-foreground">{formatCurrency(r.comparative)}</td>}
           </tr>
         ))}
         {rows.length === 0 && (
-          <tr><td colSpan={interleaved.length + 3} className="p-8 text-center text-muted-foreground text-sm">No data for the selected filters.</td></tr>
+          <tr><td colSpan={totalCols} className="p-8 text-center text-muted-foreground text-sm">No data for the selected filters.</td></tr>
         )}
       </tbody>
     </table>
