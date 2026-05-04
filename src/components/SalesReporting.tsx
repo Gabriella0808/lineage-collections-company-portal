@@ -130,7 +130,7 @@ function DateRangePicker({ label, value, onChange }: { label: string; value: Dat
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="range"
-            selected={display}
+            selected={display.from ? { from: display.from, to: display.to } : undefined}
             onSelect={(r) => {
               if (r?.from && r?.to) {
                 onChange({ from: r.from, to: r.to });
