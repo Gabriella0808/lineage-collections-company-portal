@@ -581,10 +581,11 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
 }
 
 function TotalTable({
-  rows, leftHeader,
+  rows, leftHeader, showComparison,
 }: {
   rows: { key: string; label: string; primary: number; comparative: number }[];
   leftHeader: string;
+  showComparison?: boolean;
 }) {
   const totalP = rows.reduce((s, r) => s + r.primary, 0);
   const totalC = rows.reduce((s, r) => s + r.comparative, 0);
@@ -595,9 +596,9 @@ function TotalTable({
         <tr className="border-b bg-muted/30">
           <th className="text-left p-3 font-medium text-muted-foreground sticky left-0 bg-muted/30">{leftHeader}</th>
           <th className="text-right p-3 font-medium text-muted-foreground">Primary</th>
-          <th className="text-right p-3 font-medium text-muted-foreground">Comparative</th>
-          <th className="text-right p-3 font-medium text-muted-foreground">Δ</th>
-          <th className="text-right p-3 font-medium text-muted-foreground">% Δ</th>
+          {showComparison && <th className="text-right p-3 font-medium text-muted-foreground">Comparative</th>}
+          {showComparison && <th className="text-right p-3 font-medium text-muted-foreground">Δ</th>}
+          {showComparison && <th className="text-right p-3 font-medium text-muted-foreground">% Δ</th>}
         </tr>
       </thead>
       <tbody>
@@ -608,28 +609,34 @@ function TotalTable({
             <tr key={r.key} className="border-b last:border-0 hover:bg-muted/20">
               <td className="p-3 font-medium sticky left-0 bg-background">{r.label}</td>
               <td className="p-3 text-right tabular-nums">{formatCurrency(r.primary)}</td>
-              <td className="p-3 text-right tabular-nums text-muted-foreground">{formatCurrency(r.comparative)}</td>
-              <td className={cn("p-3 text-right tabular-nums", delta >= 0 ? "text-green-600" : "text-destructive")}>
-                {delta >= 0 ? "+" : ""}{formatCurrency(delta)}
-              </td>
-              <td className={cn("p-3 text-right tabular-nums", pct >= 0 ? "text-green-600" : "text-destructive")}>
-                {r.comparative === 0 ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}
-              </td>
+              {showComparison && <td className="p-3 text-right tabular-nums text-muted-foreground">{formatCurrency(r.comparative)}</td>}
+              {showComparison && (
+                <td className={cn("p-3 text-right tabular-nums", delta >= 0 ? "text-green-600" : "text-destructive")}>
+                  {delta >= 0 ? "+" : ""}{formatCurrency(delta)}
+                </td>
+              )}
+              {showComparison && (
+                <td className={cn("p-3 text-right tabular-nums", pct >= 0 ? "text-green-600" : "text-destructive")}>
+                  {r.comparative === 0 ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}
+                </td>
+              )}
             </tr>
           );
         })}
         {rows.length === 0 && (
-          <tr><td colSpan={5} className="p-8 text-center text-muted-foreground text-sm">No data for the selected filters.</td></tr>
+          <tr><td colSpan={showComparison ? 5 : 2} className="p-8 text-center text-muted-foreground text-sm">No data for the selected filters.</td></tr>
         )}
         {rows.length > 0 && (
           <tr className="border-t-2 font-semibold bg-muted/20">
             <td className="p-3 sticky left-0 bg-muted/20">Total</td>
             <td className="p-3 text-right tabular-nums">{formatCurrency(totalP)}</td>
-            <td className="p-3 text-right tabular-nums">{formatCurrency(totalC)}</td>
-            <td className="p-3 text-right tabular-nums">{formatCurrency(totalP - totalC)}</td>
-            <td className="p-3 text-right tabular-nums">
-              {totalC === 0 ? "—" : `${((totalP - totalC) / totalC * 100).toFixed(1)}%`}
-            </td>
+            {showComparison && <td className="p-3 text-right tabular-nums">{formatCurrency(totalC)}</td>}
+            {showComparison && <td className="p-3 text-right tabular-nums">{formatCurrency(totalP - totalC)}</td>}
+            {showComparison && (
+              <td className="p-3 text-right tabular-nums">
+                {totalC === 0 ? "—" : `${((totalP - totalC) / totalC * 100).toFixed(1)}%`}
+              </td>
+            )}
           </tr>
         )}
       </tbody>
