@@ -1447,7 +1447,17 @@ export default function CheckInsPage() {
                               <span className="flex-1">{addr || "—"}</span>
                               <a
                                 href={mapsUrl}
-                                target="_top"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  const opened = window.open("about:blank", "_blank", "noopener,noreferrer");
+                                  if (opened) {
+                                    opened.location.href = mapsUrl;
+                                    return;
+                                  }
+                                  window.location.href = mapsUrl;
+                                }}
                                 title="Open directions"
                                 className="shrink-0 inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
                               >
