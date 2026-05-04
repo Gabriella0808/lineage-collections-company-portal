@@ -1451,11 +1451,12 @@ export default function CheckInsPage() {
                                 rel="noopener noreferrer external"
                                 referrerPolicy="no-referrer"
                                 onClick={(event) => {
-                                  // Do NOT preventDefault — let the browser handle the
-                                  // target="_blank" navigation as a real user gesture so
-                                  // the new tab does not inherit the preview iframe's
-                                  // sandbox/CSP (which causes ERR_BLOCKED_BY_RESPONSE).
                                   event.stopPropagation();
+
+                                  if (window.self !== window.top) {
+                                    event.preventDefault();
+                                    window.top.location.href = mapsUrl;
+                                  }
                                 }}
                                 title="Open directions in Google Maps"
                                 className="shrink-0 inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
