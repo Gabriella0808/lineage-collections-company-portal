@@ -978,31 +978,28 @@ export default function CheckInsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="d-owner">Owner *</Label>
-                  <Select
-                    value={newDealer.rep_owner || ""}
-                    onValueChange={(v) =>
-                      setNewDealer({ ...newDealer, rep_owner: v as TeamMemberId })
-                    }
-                  >
-                    <SelectTrigger id="d-owner">
-                      <SelectValue placeholder="Select owner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TEAM_MEMBERS.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {detectedOwner
-                      ? `Auto-set to ${TEAM_MEMBERS.find((t) => t.id === detectedOwner)?.name} based on your login.`
-                      : "Pick which teammate owns this dealer."}
-                  </p>
-                </div>
+                {!detectedOwner && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="d-owner">Owner *</Label>
+                    <Select
+                      value={newDealer.rep_owner || ""}
+                      onValueChange={(v) =>
+                        setNewDealer({ ...newDealer, rep_owner: v as TeamMemberId })
+                      }
+                    >
+                      <SelectTrigger id="d-owner">
+                        <SelectValue placeholder="Select owner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TEAM_MEMBERS.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label htmlFor="d-buying-group">Buying group</Label>
                   <Select
