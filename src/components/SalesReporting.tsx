@@ -369,7 +369,9 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
             />
             <MultiSelect
               label="SKU" selected={skus} onChange={setSkus}
-              options={visibleSkus.map((p) => ({ value: p.id, label: p.sku }))}
+              options={visibleSkus.map((p) => ({ value: p.id, label: p.name ? `${p.sku} — ${p.name}` : p.sku }))}
+              searchable
+              searchPlaceholder="Search SKU or name..."
             />
           </div>
         </CardContent>
