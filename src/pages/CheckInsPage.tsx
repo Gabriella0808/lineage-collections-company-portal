@@ -1440,8 +1440,8 @@ export default function CheckInsPage() {
                           const dest =
                             selected.lat != null && selected.lng != null
                               ? `${selected.lat},${selected.lng}`
-                              : encodeURIComponent(addr);
-                          const mapsUrl = `https://maps.google.com/?q=${dest}`;
+                              : addr;
+                          const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
                           return (
                             <div className="flex items-start justify-between gap-2">
                               <span className="flex-1">{addr || "—"}</span>
@@ -1449,6 +1449,15 @@ export default function CheckInsPage() {
                                 href={mapsUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  const opened = window.open(mapsUrl, "_blank");
+                                  if (opened) {
+                                    opened.opener = null;
+                                    return;
+                                  }
+                                  window.location.assign(mapsUrl);
+                                }}
                                 className="shrink-0 inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
                               >
                                 <Navigation className="h-3 w-3" />
