@@ -878,7 +878,7 @@ export default function CheckInsPage() {
                 <Plus className="h-4 w-4" /> Add dealer
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add a dealer account</DialogTitle>
                 <DialogDescription>
