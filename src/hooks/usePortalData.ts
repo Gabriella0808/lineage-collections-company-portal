@@ -250,13 +250,7 @@ export function useContacts() {
 export function useDealerSales() {
   return useQuery({
     queryKey: ["dealer_sales"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("dealer_sales")
-        .select("*");
-      if (error) throw error;
-      return (data ?? []) as DbDealerSale[];
-    },
+    queryFn: async () => fetchAllRows<DbDealerSale>("dealer_sales"),
   });
 }
 
