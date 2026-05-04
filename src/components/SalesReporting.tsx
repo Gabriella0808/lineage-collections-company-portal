@@ -89,7 +89,7 @@ function MultiSelect({
                     isOn && "bg-primary/10 text-primary",
                   )}
                 >
-                  <span className={cn("w-3 h-3 rounded-sm border", isOn ? "bg-primary border-primary" : "border-muted-foreground/40")} />
+                  <span className={cn("w-3 h-3 shrink-0 rounded-sm border", isOn ? "bg-primary border-primary" : "border-muted-foreground/40")} />
                   <span className="truncate">{o.label}</span>
                 </button>
               );
