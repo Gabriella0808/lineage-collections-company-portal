@@ -1054,7 +1054,7 @@ export default function CheckInsPage() {
                     onChange={(e) => setNewDealer({ ...newDealer, notes: e.target.value })}
                     maxLength={2000}
                     rows={3}
-                    placeholder="Anything worth remembering about this dealer…"
+                    placeholder="Write notes about this dealer"
                   />
                 </div>
               </div>
