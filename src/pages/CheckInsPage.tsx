@@ -827,6 +827,8 @@ export default function CheckInsPage() {
       .from("dealers")
       .insert({
         name,
+        first_name: newDealer.first_name.trim() || null,
+        last_name: newDealer.last_name.trim() || null,
         street_address: street,
         city,
         state,
