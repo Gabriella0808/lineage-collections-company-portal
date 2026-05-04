@@ -568,9 +568,10 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
                 primMonths={aggregation.primMonths}
                 compMonths={aggregation.compMonths}
                 leftHeader={leftHeader}
+                showComparison={compareMode !== "none"}
               />
             ) : (
-              <TotalTable rows={aggregation.rows} leftHeader={leftHeader} />
+              <TotalTable rows={aggregation.rows} leftHeader={leftHeader} showComparison={compareMode !== "none"} />
             )}
           </div>
         </CardContent>
