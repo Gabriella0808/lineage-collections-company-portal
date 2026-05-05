@@ -441,6 +441,16 @@ export default function InventoryDashboards({ items }: Props) {
   // Analysis sub-tab
   const [analysisTab, setAnalysisTab] = useState<string>("sku");
 
+  const [skuSearch, setSkuSearch] = useState("");
+  const matchesSearch = useCallback((it: { sku: string; product: string; collection?: string; brand?: string }) => {
+    if (!skuSearch) return true;
+    const q = skuSearch.toLowerCase();
+    return it.sku.toLowerCase().includes(q)
+      || it.product.toLowerCase().includes(q)
+      || (it.collection ?? "").toLowerCase().includes(q)
+      || (it.brand ?? "").toLowerCase().includes(q);
+  }, [skuSearch]);
+
   return (
     <Tabs defaultValue="summary" className="w-full">
       <TabsList className="flex-wrap h-auto">
