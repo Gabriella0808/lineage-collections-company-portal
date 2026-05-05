@@ -22,6 +22,7 @@ export interface InventoryItem {
   status: InventoryStatus;
   link?: string;
   unitCost?: number;
+  onHandValue?: number;
   listPrice?: number;
   isCloseout?: boolean;
   isDiscontinued?: boolean;

@@ -85,7 +85,8 @@ export default function InventoryDashboards({ items }: Props) {
     let outOfStockValue = 0, closeoutValue = 0, annualUnits = 0;
     for (const it of items) {
       const cost = it.unitCost ?? 0;
-      value += cost * it.onHand;
+      const lineValue = it.onHandValue ?? cost * it.onHand;
+      value += lineValue;
       units += it.onHand;
       monthlySales += it.avgMonthlySales * (it.listPrice ?? cost);
       annualUnits += it.avgMonthlySales * 12;
@@ -93,7 +94,7 @@ export default function InventoryDashboards({ items }: Props) {
         lostSales += it.avgMonthlySales * (it.listPrice ?? cost);
         outOfStockValue += it.avgMonthlySales * (it.listPrice ?? cost);
       }
-      if (it.isCloseout || it.isClearance) closeoutValue += cost * it.onHand;
+      if (it.isCloseout || it.isClearance) closeoutValue += lineValue;
     }
     const backlogValue = hub.openOrders.reduce((s, o) => s + Number(o.extended_value ?? 0), 0);
     const backlogUnits = hub.openOrders.reduce((s, o) => s + Number(o.qty_open ?? 0), 0);
@@ -273,7 +274,7 @@ export default function InventoryDashboards({ items }: Props) {
       return { ...it, initial, sold, pctSold, burnDownMonths };
     }), [items]);
 
-  const closeoutTotal = closeoutRows.reduce((s, it) => s + (it.unitCost ?? 0) * it.onHand, 0);
+  const closeoutTotal = closeoutRows.reduce((s, it) => s + (it.onHandValue ?? (it.unitCost ?? 0) * it.onHand), 0);
 
   // ============ SECTION 3: REORDER ============
   // Per Justin: weekly unit-sales windows L12M / L6M / L3M / Override.
@@ -429,7 +430,7 @@ export default function InventoryDashboards({ items }: Props) {
     for (const it of items) {
       if (!(it.isCloseout || it.isClearance)) continue;
       const k = it.collection || "—";
-      m.set(k, (m.get(k) ?? 0) + (it.unitCost ?? 0) * it.onHand);
+      m.set(k, (m.get(k) ?? 0) + (it.onHandValue ?? (it.unitCost ?? 0) * it.onHand));
     }
     return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [items]);

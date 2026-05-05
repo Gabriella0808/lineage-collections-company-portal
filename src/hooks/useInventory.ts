@@ -17,6 +17,7 @@ interface DbInventoryRow {
   link: string | null;
   last_synced_at: string | null;
   unit_cost: number | null;
+  on_hand_value: number | null;
   list_price: number | null;
   is_closeout: boolean | null;
   is_discontinued: boolean | null;
@@ -74,7 +75,7 @@ export function useInventory() {
     const [{ data, error }, { data: prodRows }] = await Promise.all([
       supabase
         .from("inventory")
-        .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly, units_l12m, units_l6m, units_l3m, on_po, on_sales_order, in_transit, on_hand_nc, on_hand_vn, reorder_basis, reorder_override_per_week, lead_time_months, cubes, reorder_min, reorder_max, is_clearance")
+        .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, on_hand_value, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly, units_l12m, units_l6m, units_l3m, on_po, on_sales_order, in_transit, on_hand_nc, on_hand_vn, reorder_basis, reorder_override_per_week, lead_time_months, cubes, reorder_min, reorder_max, is_clearance")
         .order("status", { ascending: true })
         .limit(1000),
       supabase.from("products").select("sku, brand").limit(1000),
@@ -108,6 +109,7 @@ export function useInventory() {
           status: normalizeStatus(r.status, onHand, mos),
           link: r.link ?? undefined,
           unitCost: r.unit_cost == null ? undefined : Number(r.unit_cost),
+          onHandValue: r.on_hand_value == null ? undefined : Number(r.on_hand_value),
           listPrice: r.list_price == null ? undefined : Number(r.list_price),
           isCloseout: (r.is_closeout ?? false) || /^C/i.test(r.sku ?? ""),
           isDiscontinued: r.is_discontinued ?? false,
