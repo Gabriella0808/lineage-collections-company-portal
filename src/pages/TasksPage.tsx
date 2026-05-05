@@ -24,7 +24,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Calendar, User, Bell, Check, CheckCheck, Search, X, Users, Clock } from "lucide-react";
+import { Plus, Trash2, Pencil, Calendar, Bell, Check, CheckCheck, Search, X, Users, Clock, ListChecks, AlertTriangle, Timer, UserCheck, CircleSlash, CheckCircle2 } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { MetricCard } from "@/components/MetricCard";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -63,10 +65,8 @@ const COLUMNS: {
   key: Status;
   label: string;
   tone: string;
-  // Monday-style group accent (left bar + group header tint)
   accent: string;
   headerBg: string;
-  // Status pill colors
   pillBg: string;
   pillText: string;
 }[] = [
@@ -74,37 +74,37 @@ const COLUMNS: {
     key: "todo",
     label: "Not Started",
     tone: "border-muted-foreground/30",
-    accent: "bg-muted-foreground/60",
-    headerBg: "bg-muted/40",
-    pillBg: "bg-muted-foreground/80",
+    accent: "bg-muted-foreground/50",
+    headerBg: "bg-muted/30",
+    pillBg: "bg-foreground/85",
     pillText: "text-background",
   },
   {
     key: "in_progress",
-    label: "Working on it",
-    tone: "border-primary/40",
-    accent: "bg-[hsl(38_92%_50%)]",
-    headerBg: "bg-[hsl(38_92%_50%/0.08)]",
-    pillBg: "bg-[hsl(38_92%_50%)]",
-    pillText: "text-white",
+    label: "In Motion",
+    tone: "border-accent/40",
+    accent: "bg-accent",
+    headerBg: "bg-accent/[0.06]",
+    pillBg: "bg-accent",
+    pillText: "text-accent-foreground",
   },
   {
     key: "blocked",
     label: "Stuck",
     tone: "border-destructive/40",
     accent: "bg-destructive",
-    headerBg: "bg-destructive/10",
+    headerBg: "bg-destructive/[0.06]",
     pillBg: "bg-destructive",
     pillText: "text-destructive-foreground",
   },
   {
     key: "done",
-    label: "Done",
+    label: "Completed",
     tone: "border-success/40",
-    accent: "bg-[hsl(142_71%_45%)]",
-    headerBg: "bg-[hsl(142_71%_45%/0.08)]",
-    pillBg: "bg-[hsl(142_71%_45%)]",
-    pillText: "text-white",
+    accent: "bg-success",
+    headerBg: "bg-success/[0.06]",
+    pillBg: "bg-success",
+    pillText: "text-success-foreground",
   },
 ];
 
@@ -409,64 +409,94 @@ export default function TasksPage() {
       !(a.full_name ?? "").toLowerCase().includes("michigan (open)"),
   );
 
+  // ---- Header summary metrics ----
+  const today = new Date();
+  const totalTasks = tasks.length;
+  const overdueCount = tasks.filter(
+    (t) => t.due_date && t.status !== "done" && parseISO(t.due_date) < startOfDay(today),
+  ).length;
+  const dueSoonCount = tasks.filter(
+    (t) =>
+      t.due_date &&
+      t.status !== "done" &&
+      isWithinInterval(parseISO(t.due_date), { start: startOfDay(today), end: endOfDay(addDays(today, 7)) }),
+  ).length;
+  const assignedToMeCount = user
+    ? tasks.filter((t) => getAssigneeIds(t).includes(user.id) && t.status !== "done").length
+    : 0;
+  const stuckCount = tasks.filter((t) => t.status === "blocked").length;
+  const completedCount = tasks.filter((t) => t.status === "done").length;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-serif font-semibold">My Tasks</h1>
-          <p className="text-sm text-muted-foreground">Tasks you created or were assigned to you</p>
-        </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button onClick={openNew}>
-              <Plus className="h-4 w-4" /> New Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editing ? "Edit Task" : "New Task"}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <Input
-                placeholder="Title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                maxLength={200}
-              />
-              <Textarea
-                placeholder="Description (optional)"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                maxLength={2000}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <Select value={form.status} onValueChange={(v: Status) => setForm({ ...form, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {COLUMNS.map((c) => (
-                      <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      <PageHeader
+        eyebrow="Command Center"
+        title="Task Queue"
+        subtitle="Track internal follow-ups, ownership, and operational priorities across the Lineage team."
+        actions={
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Plus className="h-4 w-4" /> New Action Item
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="font-display text-xl">{editing ? "Edit Action Item" : "New Action Item"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
                 <Input
-                  type="date"
-                  value={form.due_date}
-                  onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                  placeholder="Title"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  maxLength={200}
+                />
+                <Textarea
+                  placeholder="Add context, links, or follow-up notes"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  maxLength={2000}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Select value={form.status} onValueChange={(v: Status) => setForm({ ...form, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {COLUMNS.map((c) => (
+                        <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="date"
+                    value={form.due_date}
+                    onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                  />
+                </div>
+                <AssigneeMultiPicker
+                  assignees={visibleAssignees}
+                  selectedIds={form.assigned_user_ids}
+                  onChange={(ids) => setForm({ ...form, assigned_user_ids: ids })}
                 />
               </div>
-              <AssigneeMultiPicker
-                assignees={visibleAssignees}
-                selectedIds={form.assigned_user_ids}
-                onChange={(ids) => setForm({ ...form, assigned_user_ids: ids })}
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={save}>{editing ? "Save" : "Create"}</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button onClick={save}>{editing ? "Save" : "Create"}</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        }
+      />
+
+      {!loading && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <MetricCard label="Total" value={totalTasks} icon={ListChecks} hint="all action items" />
+          <MetricCard label="Overdue" value={overdueCount} icon={AlertTriangle} tone="destructive" hint="past due, open" />
+          <MetricCard label="Due Soon" value={dueSoonCount} icon={Timer} tone="warning" hint="next 7 days" />
+          <MetricCard label="Assigned to Me" value={assignedToMeCount} icon={UserCheck} tone="accent" hint="open · my queue" />
+          <MetricCard label="Stuck" value={stuckCount} icon={CircleSlash} tone="destructive" hint="needs unblocking" />
+          <MetricCard label="Completed" value={completedCount} icon={CheckCircle2} tone="success" hint="closed" />
+        </div>
+      )}
 
       {!loading && user && (() => {
         const assignedToMe = tasks.filter(
@@ -642,19 +672,18 @@ export default function TasksPage() {
               const items = filteredTasks.filter((t) => t.status === col.key);
               return (
                 <div key={col.key} className="">
-                  {/* Group header */}
-                  <div
-                    className={`flex items-center gap-2 px-3 py-2 ${col.headerBg} border-b`}
-                  >
-                    <span className={`inline-block h-3 w-1 rounded-sm ${col.accent}`} />
-                    <h2 className="text-sm font-semibold">{col.label}</h2>
-                    <span className="text-xs text-muted-foreground">{items.length}</span>
+                  {/* Group header — editorial style */}
+                  <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/30 border-b border-border/70">
+                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${col.accent}`} />
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/80">{col.label}</h2>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">{items.length}</span>
+                    <span className="flex-1 h-px bg-border/60" />
                   </div>
 
                   {/* Group rows */}
                   {items.length === 0 ? (
-                    <div className="px-3 py-3 pl-6 text-xs italic text-muted-foreground">
-                      No tasks
+                    <div className="px-4 py-4 text-xs italic text-muted-foreground/70">
+                      No items in this lane.
                     </div>
                   ) : (
                     <ul className="divide-y">
@@ -680,10 +709,10 @@ export default function TasksPage() {
                           <li
                             key={t.id}
                             onClick={() => { setDetailTask(t); markRead(t.id); }}
-                            className="grid grid-cols-[8px_minmax(0,1fr)] md:grid-cols-[8px_minmax(0,1fr)_180px_160px_120px_80px] items-center gap-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                            className="group/row grid grid-cols-[4px_minmax(0,1fr)] md:grid-cols-[4px_minmax(0,1fr)_180px_160px_120px_80px] items-center gap-0 hover:bg-muted/40 transition-colors cursor-pointer"
                           >
-                            {/* Colored left accent bar */}
-                            <div className={`self-stretch ${col.accent}`} />
+                            {/* Subtle hover accent */}
+                            <div className={`self-stretch ${col.accent} opacity-0 group-hover/row:opacity-100 transition-opacity`} />
 
                             {/* Task title + description */}
                             <div className="px-3 py-2 min-w-0">
