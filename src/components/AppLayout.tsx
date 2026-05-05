@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import {
-  LayoutDashboard, Users, Map, Store, BookOpen, BarChart3, Settings,
-  UserCog, LogOut, LayoutGrid, CheckSquare, Package, MapPinned, Plane, PieChart,
-  ChevronDown, Sparkles, ClipboardList,
+  LayoutDashboard, Users, Store, BookOpen, BarChart3, Settings,
+  UserCog, LogOut, LayoutGrid, ListChecks, Boxes, MapPinned, Plane, PieChart,
+  ChevronDown, Megaphone, ClipboardList, Compass,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,75 +12,175 @@ import lineageLogo from "@/assets/lineage-logo-white.png";
 import { NavLink } from "@/components/NavLink";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter,
-  SidebarHeader, SidebarProvider, SidebarTrigger, useSidebar,
+  Sidebar, SidebarContent, SidebarFooter, SidebarHeader,
+  SidebarProvider, SidebarTrigger, useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 type NavItem = {
   title: string;
   url: string;
   icon: typeof LayoutDashboard;
-  roles: AppRole[]; // who can see this item
+  roles: AppRole[];
   children?: { title: string; url: string; icon: typeof LayoutDashboard; roles: AppRole[] }[];
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { title: "Overview",        url: "/",              icon: LayoutDashboard, roles: ["admin", "manager", "rep"] },
-  { title: "Sales Managers",  url: "/managers",      icon: UserCog,         roles: ["admin"] },
-  { title: "Sales Rep Database", url: "/reps",          icon: Users,           roles: ["admin", "manager"] },
-  { title: "My Dealers",      url: "/dealers",       icon: Store,           roles: ["rep"] },
-  { title: "Dealers",         url: "/dealers",       icon: Store,           roles: ["admin", "manager"] },
-  { title: "Directory",       url: "/directory",     icon: BookOpen,        roles: ["admin", "manager"] },
-  { title: "Company-wide",    url: "/company-wide",  icon: BarChart3,       roles: ["admin"] },
-  { title: "Team Performance",url: "/company-wide",  icon: BarChart3,       roles: ["manager"] },
-  { title: "My Performance",  url: "/company-wide",  icon: BarChart3,       roles: ["rep"] },
-  { title: "Monday Boards",   url: "/monday-boards", icon: LayoutGrid,      roles: ["admin", "manager"] },
+type NavSection = {
+  id: string;
+  label: string;
+  items: NavItem[];
+};
+
+/**
+ * Lineage Collections — internal operating system navigation.
+ * Items are grouped into operational sections so the shell reads
+ * like a purpose-built tool, not a generic admin template.
+ */
+const NAV_SECTIONS: NavSection[] = [
   {
-    title: "Check-Ins", url: "/check-ins", icon: MapPinned, roles: ["admin", "manager"],
-    children: [
-      { title: "Check-In Analytics", url: "/check-ins/analytics", icon: PieChart, roles: ["admin", "manager"] },
+    id: "command",
+    label: "Command Center",
+    items: [
+      { title: "Overview",  url: "/",      icon: Compass,     roles: ["admin", "manager", "rep"] },
+      { title: "Task Queue", url: "/tasks", icon: ListChecks, roles: ["admin", "manager", "rep"] },
     ],
   },
-  { title: "Travel Log",      url: "/travel-log",    icon: Plane,           roles: ["admin", "manager"] },
   {
-    title: "Trade Show Leads", url: "/trade-show-leads", icon: Sparkles, roles: ["admin", "manager"],
-    children: [
-      { title: "Capture Leads", url: "/trade-show-leads/capture", icon: ClipboardList, roles: ["admin", "manager"] },
+    id: "sales",
+    label: "Sales Operations",
+    items: [
+      { title: "Company-wide",     url: "/company-wide",  icon: BarChart3, roles: ["admin"] },
+      { title: "Team Performance", url: "/company-wide",  icon: BarChart3, roles: ["manager"] },
+      { title: "My Performance",   url: "/company-wide",  icon: BarChart3, roles: ["rep"] },
+      { title: "Account Boards",   url: "/monday-boards", icon: LayoutGrid, roles: ["admin", "manager"] },
+      {
+        title: "Field Check-Ins", url: "/check-ins", icon: MapPinned, roles: ["admin", "manager"],
+        children: [
+          { title: "Visit Analytics", url: "/check-ins/analytics", icon: PieChart, roles: ["admin", "manager"] },
+        ],
+      },
+      { title: "Travel Log", url: "/travel-log", icon: Plane, roles: ["admin", "manager"] },
+      {
+        title: "Trade Show Leads", url: "/trade-show-leads", icon: Megaphone, roles: ["admin", "manager"],
+        children: [
+          { title: "Capture Leads", url: "/trade-show-leads/capture", icon: ClipboardList, roles: ["admin", "manager"] },
+        ],
+      },
     ],
   },
-  { title: "Inventory",       url: "/inventory",     icon: Package,         roles: ["admin"] },
-  { title: "My Tasks",        url: "/tasks",         icon: CheckSquare,     roles: ["admin", "manager", "rep"] },
-  { title: "Settings",        url: "/settings",      icon: Settings,        roles: ["admin", "manager", "rep"] },
+  {
+    id: "network",
+    label: "Dealer Network",
+    items: [
+      { title: "My Dealers", url: "/dealers",   icon: Store,    roles: ["rep"] },
+      { title: "Dealers",    url: "/dealers",   icon: Store,    roles: ["admin", "manager"] },
+      { title: "Directory",  url: "/directory", icon: BookOpen, roles: ["admin", "manager"] },
+    ],
+  },
+  {
+    id: "ops",
+    label: "Inventory & Reporting",
+    items: [
+      { title: "Inventory", url: "/inventory", icon: Boxes, roles: ["admin"] },
+    ],
+  },
+  {
+    id: "admin",
+    label: "Administration",
+    items: [
+      { title: "Sales Managers", url: "/managers", icon: UserCog,  roles: ["admin"] },
+      { title: "Sales Reps",     url: "/reps",     icon: Users,    roles: ["admin", "manager"] },
+      { title: "Settings",       url: "/settings", icon: Settings, roles: ["admin", "manager", "rep"] },
+    ],
+  },
 ];
+
+function SidebarNavItemRow({
+  item, role, collapsed, isOpen, onToggleGroup, closeOnMobile,
+}: {
+  item: NavItem;
+  role: AppRole;
+  collapsed: boolean;
+  isOpen: boolean;
+  onToggleGroup: () => void;
+  closeOnMobile: () => void;
+}) {
+  const hasChildren = !!item.children?.length;
+  return (
+    <li>
+      <div className="group/item relative flex items-center">
+        <NavLink
+          to={item.url}
+          end={item.url === "/"}
+          onClick={closeOnMobile}
+          className={cn(
+            "flex-1 flex items-center gap-3 rounded-md px-2.5 py-2 text-[13.5px] text-sidebar-foreground/90",
+            "hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground transition-colors",
+          )}
+          activeClassName={cn(
+            "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+            "shadow-[inset_2px_0_0_0_hsl(var(--sidebar-primary))]",
+          )}
+        >
+          <item.icon className="h-[15px] w-[15px] shrink-0 text-sidebar-foreground/70 group-hover/item:text-sidebar-accent-foreground" />
+          {!collapsed && <span className="truncate">{item.title}</span>}
+        </NavLink>
+        {!collapsed && hasChildren && (
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleGroup(); }}
+            aria-label={`Toggle ${item.title}`}
+            aria-expanded={isOpen}
+            className="p-1 mr-1 rounded text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+          >
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
+          </button>
+        )}
+      </div>
+      {!collapsed && hasChildren && isOpen && (
+        <ul className="mt-0.5 ml-7 border-l border-sidebar-border/70 pl-3 space-y-0.5">
+          {item.children!.filter((c) => c.roles.includes(role)).map((child) => (
+            <li key={child.url}>
+              <NavLink
+                to={child.url}
+                onClick={closeOnMobile}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-[12.5px] text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors"
+                activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              >
+                <child.icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{child.title}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
 
 function SidebarNav() {
   const { state, isMobile, setOpenMobile } = useSidebar();
-  // On mobile/tablet the sidebar is rendered as a Sheet — always show labels there.
   const collapsed = !isMobile && state === "collapsed";
-  // Close the mobile/tablet sidebar Sheet after navigating.
-  const closeOnMobile = () => {
-    if (isMobile) setOpenMobile(false);
-  };
+  const closeOnMobile = () => { if (isMobile) setOpenMobile(false); };
   const { data: roleInfo } = useUserRole();
-  const role = roleInfo?.role ?? "rep";
+  const role: AppRole = roleInfo?.role ?? "rep";
   const location = useLocation();
 
-  // de-dupe by url+title in case two role-specific labels collide
-  const items = NAV_ITEMS.filter((i) => i.roles.includes(role));
+  const sections = NAV_SECTIONS
+    .map((s) => ({ ...s, items: s.items.filter((i) => i.roles.includes(role)) }))
+    .filter((s) => s.items.length > 0);
 
-  // Track open state of dropdown groups (default open if current route is inside)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
-    items.forEach((item) => {
+    sections.forEach((s) => s.items.forEach((item) => {
       if (item.children) {
-        const isInside =
+        const inside =
           location.pathname === item.url ||
           location.pathname.startsWith(item.url + "/") ||
           item.children.some((c) => location.pathname === c.url);
-        initial[item.title] = isInside;
+        initial[item.title] = inside;
       }
-    });
+    }));
     return initial;
   });
 
@@ -89,83 +188,61 @@ function SidebarNav() {
     setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }));
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0">
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+    <Sidebar collapsible="icon" className="border-r-0 bg-sidebar">
+      <SidebarHeader className="px-4 py-5 border-b border-sidebar-border/70">
         <div className="flex items-center gap-3">
-          <img src={lineageLogo} alt="Lineage Collections" className="h-8 w-auto" />
+          <img src={lineageLogo} alt="Lineage Collections" className="h-7 w-auto" />
+          {!collapsed && (
+            <div className="leading-tight">
+              <p className="font-display text-[15px] text-sidebar-accent-foreground">Lineage</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-sidebar-section">Internal Portal</p>
+            </div>
+          )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-3">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => {
-                const hasChildren = !!item.children?.length;
-                const isOpen = openGroups[item.title] ?? false;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <div className="flex items-center w-full">
-                      <SidebarMenuButton asChild size="default" className="flex-1">
-                        <NavLink
-                          to={item.url}
-                          end={item.url === "/"}
-                          onClick={closeOnMobile}
-                          className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                          activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        >
-                          <item.icon className="h-4 w-4 mr-3 shrink-0" />
-                          {!collapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                      {!collapsed && hasChildren && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleGroup(item.title);
-                          }}
-                          aria-label={`Toggle ${item.title}`}
-                          aria-expanded={isOpen}
-                          className="p-1 mr-1 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                        >
-                          <ChevronDown
-                            className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                      )}
-                    </div>
-                    {!collapsed && hasChildren && isOpen && item.children!.filter((c) => c.roles.includes(role)).map((child) => (
-                      <SidebarMenuButton key={child.url} asChild size="sm" className="ml-6 w-auto">
-                        <NavLink
-                          to={child.url}
-                          onClick={closeOnMobile}
-                          className="text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors text-[13px]"
-                          activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        >
-                          <child.icon className="h-3.5 w-3.5 mr-2 shrink-0" />
-                          <span>{child.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    ))}
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="py-4 px-2 overflow-y-auto">
+        <nav className="space-y-5">
+          {sections.map((section, idx) => (
+            <div key={section.id}>
+              {!collapsed && (
+                <div className="px-2.5 mb-1.5 flex items-center gap-2">
+                  <span className="text-[9.5px] font-semibold uppercase tracking-[0.22em] text-sidebar-section">
+                    {section.label}
+                  </span>
+                  <span className="flex-1 h-px bg-sidebar-border/60" />
+                </div>
+              )}
+              {collapsed && idx > 0 && (
+                <div className="mx-2 mb-2 h-px bg-sidebar-border/60" />
+              )}
+              <ul className="space-y-0.5">
+                {section.items.map((item) => (
+                  <SidebarNavItemRow
+                    key={`${section.id}-${item.title}`}
+                    item={item}
+                    role={role}
+                    collapsed={collapsed}
+                    isOpen={openGroups[item.title] ?? false}
+                    onToggleGroup={() => toggleGroup(item.title)}
+                    closeOnMobile={closeOnMobile}
+                  />
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-semibold text-sidebar-accent-foreground">
+      <SidebarFooter className="p-3 border-t border-sidebar-border/70">
+        <div className="flex items-center gap-3 px-1.5">
+          <div className="w-8 h-8 rounded-sm bg-gradient-bronze flex items-center justify-center text-[11px] font-semibold text-sidebar-primary-foreground shadow-soft">
             LC
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-sidebar-accent-foreground truncate">Lineage Collections</p>
-              <p className="text-[11px] text-sidebar-muted truncate capitalize">{role} portal</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-sidebar-section truncate">{role} workspace</p>
             </div>
           )}
         </div>
@@ -175,26 +252,28 @@ function SidebarNav() {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  // Default the sidebar collapsed below `lg` (1024px) so tablets get full content width.
-  const defaultOpen =
-    typeof window === "undefined" ? true : window.innerWidth >= 1024;
+  const defaultOpen = typeof window === "undefined" ? true : window.innerWidth >= 1024;
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-background">
         <SidebarNav />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b px-3 sm:px-4 bg-card shrink-0 gap-2 sm:gap-3">
+          <header className="h-14 flex items-center border-b border-border/70 px-3 sm:px-5 bg-card/80 backdrop-blur shrink-0 gap-2 sm:gap-3">
             <SidebarTrigger className="mr-1 shrink-0" />
+            <div className="hidden md:flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-success/80" />
+              Operations Live
+            </div>
             <div className="flex-1" />
-            <span className="text-xs text-muted-foreground hidden lg:inline">
+            <span className="text-xs text-muted-foreground hidden lg:inline tabular-nums">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
             </span>
-            <span className="text-xs text-muted-foreground hidden sm:inline lg:hidden">
+            <span className="text-xs text-muted-foreground hidden sm:inline lg:hidden tabular-nums">
               {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
             <SignOutButton />
           </header>
-          <main className="flex-1 p-4 sm:p-5 lg:p-6 overflow-auto">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
             {children}
           </main>
         </div>
@@ -210,9 +289,9 @@ function SignOutButton() {
   return (
     <div className="flex items-center gap-1 sm:gap-2 min-w-0">
       <div className="hidden md:flex flex-col items-end leading-tight">
-        <span className="text-xs text-muted-foreground truncate max-w-[180px]">{user.email}</span>
+        <span className="text-xs text-foreground truncate max-w-[180px]">{user.email}</span>
         {roleInfo && (
-          <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">
+          <span className="text-[9.5px] uppercase tracking-[0.2em] text-accent font-semibold">
             {roleInfo.role}
           </span>
         )}
