@@ -476,17 +476,17 @@ export default function SalesRepsPage() {
 
 
                   {/* Actions */}
-                  <td className="p-3 pr-4 sticky right-0 bg-background shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.1)] w-28">
-                    <div className="flex items-center justify-end gap-1">
+                  <td className="p-2 sticky right-0 bg-background shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.1)] w-20">
+                    <div className="flex items-center justify-end gap-0.5">
                       {isEditing ? (
                         <>
-                          <Button size="icon" className="h-7 w-7" onClick={saveEdit} aria-label="Save"><Check className="h-3.5 w-3.5" /></Button>
-                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={cancelEdit} aria-label="Cancel"><X className="h-3.5 w-3.5" /></Button>
+                          <Button size="icon" className="h-6 w-6" onClick={saveEdit} aria-label="Save"><Check className="h-3 w-3" /></Button>
+                          <Button variant="outline" size="icon" className="h-6 w-6" onClick={cancelEdit} aria-label="Cancel"><X className="h-3 w-3" /></Button>
                         </>
                       ) : (
                         <>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(r.id)}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRep(r.id, r.name)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(r.id)}><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteRep(r.id, r.name)}><Trash2 className="h-3 w-3" /></Button>
                         </>
                       )}
                     </div>
