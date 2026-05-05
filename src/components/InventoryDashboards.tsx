@@ -1,17 +1,20 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DollarSign, PackageOpen, TrendingUp, TrendingDown, Tag, Activity,
   Truck, Factory, AlertCircle, ShoppingCart, CalendarClock, Layers,
+  Heart, Trophy, Ban, Target, Users, Search,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
-  LineChart, Line, Legend,
+  LineChart, Line, Legend, PieChart, Pie, Cell,
 } from "recharts";
 import type { InventoryItem } from "@/data/inventoryMock";
 import { useInventoryHub, type PurchaseOrder } from "@/hooks/useInventoryHub";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 const fmtMoney = (n: number) =>
@@ -79,16 +82,18 @@ export default function InventoryDashboards({ items }: Props) {
   // ============ SECTION 1: HIGH LEVEL SUMMARY ============
   const summary = useMemo(() => {
     let value = 0, units = 0, monthlySales = 0, lostSales = 0;
-    let outOfStockValue = 0;
+    let outOfStockValue = 0, closeoutValue = 0, annualUnits = 0;
     for (const it of items) {
       const cost = it.unitCost ?? 0;
       value += cost * it.onHand;
       units += it.onHand;
       monthlySales += it.avgMonthlySales * (it.listPrice ?? cost);
+      annualUnits += it.avgMonthlySales * 12;
       if (it.status === "out-of-stock") {
         lostSales += it.avgMonthlySales * (it.listPrice ?? cost);
         outOfStockValue += it.avgMonthlySales * (it.listPrice ?? cost);
       }
+      if (it.isCloseout || it.isClearance) closeoutValue += cost * it.onHand;
     }
     const backlogValue = hub.openOrders.reduce((s, o) => s + Number(o.extended_value ?? 0), 0);
     const backlogUnits = hub.openOrders.reduce((s, o) => s + Number(o.qty_open ?? 0), 0);
@@ -99,8 +104,38 @@ export default function InventoryDashboards({ items }: Props) {
       .filter((p) => p.is_prepaid)
       .reduce((s, p) => s + Number(p.prepaid_amount ?? 0), 0);
     const salesToInv = value > 0 ? monthlySales / value : 0;
-    return { value, units, monthlySales, backlogValue, backlogUnits, openPoValue, prepaidValue, salesToInv, lostSales, outOfStockValue };
+    // Annual turnover ≈ annual COGS / avg inventory value (proxy: annual units * cost / value)
+    const turnover = value > 0 ? (monthlySales * 12) / value : 0;
+    return { value, units, monthlySales, backlogValue, backlogUnits, openPoValue, prepaidValue, salesToInv, lostSales, outOfStockValue, closeoutValue, turnover };
   }, [items, hub.openOrders, hub.purchaseOrders]);
+
+  // Value by collection / brand for drilldown
+  const valueByCollection = useMemo(() => {
+    const m = new Map<string, { value: number; skus: number; units: number }>();
+    for (const it of items) {
+      const k = it.collection || "—";
+      const e = m.get(k) ?? { value: 0, skus: 0, units: 0 };
+      e.value += (it.unitCost ?? 0) * it.onHand;
+      e.skus += 1;
+      e.units += it.onHand;
+      m.set(k, e);
+    }
+    return Array.from(m, ([name, v]) => ({ name, ...v })).sort((a, b) => b.value - a.value);
+  }, [items]);
+
+  const valueByBrand = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const it of items) {
+      const k = it.brand || "—";
+      m.set(k, (m.get(k) ?? 0) + (it.unitCost ?? 0) * it.onHand);
+    }
+    return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [items]);
+
+  const newProducts = useMemo(
+    () => items.filter((it) => it.avgMonthlySales === 0 && (it.unitsL12m ?? 0) === 0).slice(0, 50),
+    [items],
+  );
 
   // PO arrival buckets (next 30/60/90, late)
   const poBuckets = useMemo(() => {
@@ -327,6 +362,95 @@ export default function InventoryDashboards({ items }: Props) {
     return { onPoUnits, onPoValue, inTransitUnits, inTransitValue, onHandNc, onHandVn, onHandValue };
   }, [items]);
 
+  // Health snapshot
+  const healthSnapshot = useMemo(() => {
+    const buckets = { healthy: 0, low: 0, overstock: 0, risk: 0, outOfStock: 0, discontinued: 0, slow: 0 };
+    for (const it of items) {
+      if (it.isDiscontinued) buckets.discontinued++;
+      if (it.status === "out-of-stock") buckets.outOfStock++;
+      else if (it.status === "critical" || it.status === "stockout-risk") buckets.risk++;
+      else if (it.status === "reorder-soon") buckets.low++;
+      else if (it.status === "overstock") buckets.overstock++;
+      else if (it.status === "healthy" || it.status === "fast-moving") buckets.healthy++;
+      if ((it.monthsSupply ?? 0) >= 6 && it.onHand > 0) buckets.slow++;
+    }
+    return buckets;
+  }, [items]);
+
+  // Product ranking by sales velocity
+  const ranking = useMemo(
+    () => [...items]
+      .map((it) => ({ ...it, salesValue: it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0) }))
+      .sort((a, b) => b.salesValue - a.salesValue)
+      .slice(0, 25),
+    [items],
+  );
+
+  // Discontinued
+  const discontinuedRows = useMemo(() => items.filter((it) => it.isDiscontinued), [items]);
+
+  // Forecast vs Reality
+  const forecastRows = useMemo(
+    () => items
+      .filter((it) => it.forecastMonthly != null && it.forecastMonthly > 0)
+      .map((it) => {
+        const fc = it.forecastMonthly ?? 0;
+        const variance = it.avgMonthlySales - fc;
+        const pct = fc > 0 ? (variance / fc) * 100 : 0;
+        return { ...it, fc, variance, pct };
+      })
+      .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
+      .slice(0, 30),
+    [items],
+  );
+
+  // Performance by Collection
+  const collectionPerf = useMemo(() => {
+    const m = new Map<string, { sales: number; value: number; skus: number }>();
+    for (const it of items) {
+      const k = it.collection || "—";
+      const e = m.get(k) ?? { sales: 0, value: 0, skus: 0 };
+      e.sales += it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0);
+      e.value += (it.unitCost ?? 0) * it.onHand;
+      e.skus += 1;
+      m.set(k, e);
+    }
+    const total = Array.from(m.values()).reduce((s, e) => s + e.sales, 0) || 1;
+    return Array.from(m, ([name, v]) => ({
+      name, ...v,
+      pctSales: (v.sales / total) * 100,
+      turnover: v.value > 0 ? (v.sales * 12) / v.value : 0,
+    })).sort((a, b) => b.sales - a.sales);
+  }, [items]);
+
+  // Closeout by collection
+  const closeoutByCollection = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const it of items) {
+      if (!(it.isCloseout || it.isClearance)) continue;
+      const k = it.collection || "—";
+      m.set(k, (m.get(k) ?? 0) + (it.unitCost ?? 0) * it.onHand);
+    }
+    return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [items]);
+
+  // SKU detail drawer
+  const [drawerSku, setDrawerSku] = useState<string | null>(null);
+  const drawerItem = useMemo(() => items.find((it) => it.sku === drawerSku) ?? null, [items, drawerSku]);
+
+  // Analysis sub-tab
+  const [analysisTab, setAnalysisTab] = useState<string>("sku");
+
+  const [skuSearch, setSkuSearch] = useState("");
+  const matchesSearch = useCallback((it: { sku: string; product: string; collection?: string; brand?: string }) => {
+    if (!skuSearch) return true;
+    const q = skuSearch.toLowerCase();
+    return it.sku.toLowerCase().includes(q)
+      || it.product.toLowerCase().includes(q)
+      || (it.collection ?? "").toLowerCase().includes(q)
+      || (it.brand ?? "").toLowerCase().includes(q);
+  }, [skuSearch]);
+
   return (
     <Tabs defaultValue="summary" className="w-full">
       <TabsList className="flex-wrap h-auto">
@@ -338,15 +462,92 @@ export default function InventoryDashboards({ items }: Props) {
 
       {/* ============ SECTION 1: SUMMARY ============ */}
       <TabsContent value="summary" className="space-y-6 mt-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
           <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} />
           <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} />
           <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} />
           <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} />
+          <KPI label="Closeout Inventory" value={fmtMoney(summary.closeoutValue)} hint="clearance + closeout" icon={Tag} />
           <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} />
+          <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} />
           <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" />
           <KPI label="Late POs" value={poBuckets.late.length} hint={fmtMoney(poBuckets.late.reduce((s, p) => s + Number(p.total_value), 0))} icon={AlertCircle} accent={poBuckets.late.length > 0 ? "text-destructive" : undefined} />
           <KPI label="Arriving ≤30 days" value={poBuckets.d30.length} hint={fmtMoney(poBuckets.d30.reduce((s, p) => s + Number(p.total_value), 0))} icon={CalendarClock} />
+        </div>
+
+        {/* Health snapshot strip */}
+        <Card className="p-5">
+          <h3 className="text-base font-semibold mb-3">Health Snapshot</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
+            {[
+              { label: "Healthy", val: healthSnapshot.healthy, tone: "text-success" },
+              { label: "Low Stock", val: healthSnapshot.low, tone: "text-warning-foreground" },
+              { label: "Risk", val: healthSnapshot.risk, tone: "text-destructive" },
+              { label: "Out of Stock", val: healthSnapshot.outOfStock, tone: "text-destructive" },
+              { label: "Overstock", val: healthSnapshot.overstock, tone: "text-accent-foreground" },
+              { label: "Slow Movers", val: healthSnapshot.slow, tone: "text-warning-foreground" },
+              { label: "Discontinued", val: healthSnapshot.discontinued, tone: "text-muted-foreground" },
+            ].map((b) => (
+              <div key={b.label} className="rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">{b.label}</div>
+                <div className={cn("text-2xl font-semibold mt-1 tabular-nums", b.tone)}>{b.val}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Inventory value drilldown by collection / brand */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="p-5">
+            <h3 className="text-base font-semibold mb-3">Inventory Value by Collection</h3>
+            <div className="overflow-y-auto max-h-72">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+                  <tr>
+                    <th className="text-left px-3 py-2">Collection</th>
+                    <th className="text-right px-3 py-2">SKUs</th>
+                    <th className="text-right px-3 py-2">Units</th>
+                    <th className="text-right px-3 py-2">Value</th>
+                    <th className="text-right px-3 py-2">% of Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {valueByCollection.map((c) => (
+                    <tr key={c.name} className="border-t border-border">
+                      <td className="px-3 py-2">{c.name}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{c.skus}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtNum(c.units)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(c.value)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{((c.value / (summary.value || 1)) * 100).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <Card className="p-5">
+            <h3 className="text-base font-semibold mb-3">Inventory Value by Brand</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={valueByBrand} layout="vertical" margin={{ left: 4, right: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {newProducts.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-border">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">New Products (no sales history yet)</div>
+                <div className="text-2xl font-semibold tabular-nums">{newProducts.length}</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                  {newProducts.slice(0, 6).map((it) => it.sku).join(", ")}{newProducts.length > 6 ? "…" : ""}
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
 
         {/* PO stage status board */}
@@ -452,161 +653,434 @@ export default function InventoryDashboards({ items }: Props) {
       </TabsContent>
 
       {/* ============ SECTION 2: ANALYSIS ============ */}
-      <TabsContent value="analysis" className="space-y-6 mt-4">
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Layers className="h-4 w-4 text-primary" />
-            <h3 className="text-base font-semibold">SKU Analysis</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="text-left px-3 py-2">SKU</th>
-                  <th className="text-left px-3 py-2">Product</th>
-                  <th className="text-right px-3 py-2">On Hand</th>
-                  <th className="text-right px-3 py-2">Value</th>
-                  <th className="text-right px-3 py-2">% Total Inv</th>
-                  <th className="text-right px-3 py-2">% Total Sales</th>
-                  <th className="text-right px-3 py-2">Velocity / mo</th>
-                  <th className="text-right px-3 py-2">Trend</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analysisRows.slice(0, 30).map((it) => {
-                  const fc = it.forecastMonthly ?? 0;
-                  const trend = fc > 0 ? (it.avgMonthlySales - fc) / fc : null;
-                  return (
-                    <tr key={it.sku} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{it.sku}</td>
-                      <td className="px-3 py-2">{it.product}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(it.value)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalInv.toFixed(1)}%</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalSales.toFixed(1)}%</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
-                      <td className={cn("px-3 py-2 text-right tabular-nums", trend == null ? "text-muted-foreground" : trend > 0 ? "text-success" : trend < 0 ? "text-destructive" : "")}>
-                        {trend == null ? "—" : `${trend > 0 ? "▲ +" : trend < 0 ? "▼ " : ""}${(trend * 100).toFixed(0)}%`}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+      <TabsContent value="analysis" className="space-y-4 mt-4">
+        <Tabs value={analysisTab} onValueChange={setAnalysisTab}>
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="sku">SKU Table</TabsTrigger>
+            <TabsTrigger value="compare">Compare Periods</TabsTrigger>
+            <TabsTrigger value="vendor">By Vendor</TabsTrigger>
+            <TabsTrigger value="collection">By Collection</TabsTrigger>
+            <TabsTrigger value="slow">Slow Movers</TabsTrigger>
+            <TabsTrigger value="aging">Aging</TabsTrigger>
+            <TabsTrigger value="health">Health</TabsTrigger>
+            <TabsTrigger value="ranking">Ranking</TabsTrigger>
+            <TabsTrigger value="discontinued">Discontinued</TabsTrigger>
+            <TabsTrigger value="forecast">Forecast vs Reality</TabsTrigger>
+            <TabsTrigger value="demand">Dealer Demand</TabsTrigger>
+          </TabsList>
 
-        {/* Comparative sales by SKU */}
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-            <h3 className="text-base font-semibold">Comparative Sales — Pick 2 Periods</h3>
-            <div className="flex gap-2">
-              <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodA} onChange={(e) => setPeriodA(e.target.value)}>
-                <option value="">Period A</option>
-                {periods.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodB} onChange={(e) => setPeriodB(e.target.value)}>
-                <option value="">Period B</option>
-                {periods.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-          </div>
-          {compareRows.length === 0 ? <EmptyState message={periods.length === 0 ? "No sales history synced yet." : "Pick two periods to compare."} /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+          <TabsContent value="sku" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <h3 className="text-base font-semibold">SKU Analysis</h3>
+                </div>
+                <div className="relative w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input value={skuSearch} onChange={(e) => setSkuSearch(e.target.value)} placeholder="Search SKU, product, brand…" className="pl-8 h-9 text-sm" />
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+                    <tr>
+                      <th className="text-left px-3 py-2">SKU</th>
+                      <th className="text-left px-3 py-2">Product</th>
+                      <th className="text-left px-3 py-2">Collection</th>
+                      <th className="text-left px-3 py-2">Brand</th>
+                      <th className="text-left px-3 py-2">Vendor</th>
+                      <th className="text-right px-3 py-2">On Hand</th>
+                      <th className="text-right px-3 py-2">Value</th>
+                      <th className="text-right px-3 py-2">% Inv</th>
+                      <th className="text-right px-3 py-2">% Sales</th>
+                      <th className="text-right px-3 py-2">Vel/mo</th>
+                      <th className="text-right px-3 py-2">Inv/Sales</th>
+                      <th className="text-right px-3 py-2">Turn</th>
+                      <th className="text-right px-3 py-2">Trend</th>
+                      <th className="text-center px-3 py-2">Clr</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analysisRows.filter(matchesSearch).slice(0, 100).map((it) => {
+                      const fc = it.forecastMonthly ?? 0;
+                      const trend = fc > 0 ? (it.avgMonthlySales - fc) / fc : null;
+                      const invToSales = it.avgMonthlySales > 0 ? it.onHand / it.avgMonthlySales : null;
+                      const turn = it.value > 0 ? (it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0) * 12) / it.value : 0;
+                      return (
+                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                          <td className="px-3 py-2 font-mono">{it.sku}</td>
+                          <td className="px-3 py-2 max-w-[220px] truncate" title={it.product}>{it.product}</td>
+                          <td className="px-3 py-2">{it.collection}</td>
+                          <td className="px-3 py-2">{it.brand ?? "—"}</td>
+                          <td className="px-3 py-2 max-w-[140px] truncate">{it.supplier}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(it.value)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalInv.toFixed(1)}%</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalSales.toFixed(1)}%</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{invToSales == null ? "—" : invToSales.toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{turn.toFixed(1)}×</td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums", trend == null ? "text-muted-foreground" : trend > 0 ? "text-success" : trend < 0 ? "text-destructive" : "")}>
+                            {trend == null ? "—" : `${trend > 0 ? "▲ +" : trend < 0 ? "▼ " : ""}${(trend * 100).toFixed(0)}%`}
+                          </td>
+                          <td className="px-3 py-2 text-center">{it.isClearance ? <Badge variant="secondary" className="text-[10px]">Yes</Badge> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="compare" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <h3 className="text-base font-semibold">Comparative Sales — Pick 2 Periods</h3>
+                <div className="flex gap-2">
+                  <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodA} onChange={(e) => setPeriodA(e.target.value)}>
+                    <option value="">Period A</option>
+                    {periods.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodB} onChange={(e) => setPeriodB(e.target.value)}>
+                    <option value="">Period B</option>
+                    {periods.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+              {compareRows.length === 0 ? <EmptyState message={periods.length === 0 ? "No sales history synced yet." : "Pick two periods to compare."} /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-right px-3 py-2">{periodA}</th>
+                        <th className="text-right px-3 py-2">{periodB}</th>
+                        <th className="text-right px-3 py-2">Δ</th>
+                        <th className="text-right px-3 py-2">% change</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {compareRows.map((r) => (
+                        <tr key={r.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(r.sku)}>
+                          <td className="px-3 py-2 font-mono">{r.sku}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.periodA}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.periodB}</td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", r.diff > 0 ? "text-success" : r.diff < 0 ? "text-destructive" : "")}>{r.diff > 0 ? "+" : ""}{r.diff}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.pct == null ? "—" : `${r.pct > 0 ? "+" : ""}${r.pct.toFixed(0)}%`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="vendor" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <h3 className="text-base font-semibold">Performance by Vendor / Factory</h3>
+              </div>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={vendorPerf} layout="vertical" margin={{ left: 4, right: 12 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis type="category" dataKey="vendor" width={140} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                    <Bar dataKey="sales" fill="hsl(var(--primary))" name="Monthly Sales" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <table className="w-full text-sm mt-4">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="text-left px-3 py-2">SKU</th>
-                    <th className="text-right px-3 py-2">{periodA}</th>
-                    <th className="text-right px-3 py-2">{periodB}</th>
-                    <th className="text-right px-3 py-2">Δ</th>
-                    <th className="text-right px-3 py-2">% change</th>
+                    <th className="text-left px-3 py-2">Vendor</th>
+                    <th className="text-right px-3 py-2">Monthly Sales</th>
+                    <th className="text-right px-3 py-2">% of Total</th>
+                    <th className="text-right px-3 py-2">Inv Value</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {compareRows.map((r) => (
-                    <tr key={r.sku} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{r.sku}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.periodA}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.periodB}</td>
-                      <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", r.diff > 0 ? "text-success" : r.diff < 0 ? "text-destructive" : "")}>{r.diff > 0 ? "+" : ""}{r.diff}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.pct == null ? "—" : `${r.pct > 0 ? "+" : ""}${r.pct.toFixed(0)}%`}</td>
+                  {vendorPerf.slice(0, 20).map((v) => (
+                    <tr key={v.vendor} className="border-t border-border">
+                      <td className="px-3 py-2">{v.vendor}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(v.sales)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{v.pctSales.toFixed(1)}%</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(v.value)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-        </Card>
+            </Card>
+          </TabsContent>
 
-        {/* Performance by vendor */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <h3 className="text-base font-semibold">Performance by Vendor</h3>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={vendorPerf} layout="vertical" margin={{ left: 4, right: 12 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis type="category" dataKey="vendor" width={140} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="sales" fill="hsl(var(--primary))" name="Monthly Sales" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Slow movers */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingDown className="h-4 w-4 text-warning-foreground" />
-            <h3 className="text-base font-semibold">Slow Movers (≥6 months supply)</h3>
-          </div>
-          {slowMovers.length === 0 ? <EmptyState message="No slow movers." /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="text-left px-3 py-2">SKU</th>
-                    <th className="text-left px-3 py-2">Product</th>
-                    <th className="text-right px-3 py-2">On Hand</th>
-                    <th className="text-right px-3 py-2">Mo. Supply</th>
-                    <th className="text-right px-3 py-2">Tied-up Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {slowMovers.map((it) => (
-                    <tr key={it.sku} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{it.sku}</td>
-                      <td className="px-3 py-2">{it.product}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{(it.monthsSupply ?? 0).toFixed(1)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
+          <TabsContent value="collection" className="mt-4">
+            <Card className="p-5">
+              <h3 className="text-base font-semibold mb-3">Performance by Collection</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="text-left px-3 py-2">Collection</th>
+                      <th className="text-right px-3 py-2">SKUs</th>
+                      <th className="text-right px-3 py-2">Monthly Sales</th>
+                      <th className="text-right px-3 py-2">% of Sales</th>
+                      <th className="text-right px-3 py-2">Inv Value</th>
+                      <th className="text-right px-3 py-2">Turnover</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+                  </thead>
+                  <tbody>
+                    {collectionPerf.map((c) => (
+                      <tr key={c.name} className="border-t border-border">
+                        <td className="px-3 py-2">{c.name}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{c.skus}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(c.sales)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{c.pctSales.toFixed(1)}%</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(c.value)}</td>
+                        <td className={cn("px-3 py-2 text-right tabular-nums", c.turnover < 1 ? "text-warning-foreground" : c.turnover > 4 ? "text-success" : "")}>{c.turnover.toFixed(1)}×</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
 
-        {/* Aging */}
-        <Card className="p-5">
-          <h3 className="text-base font-semibold mb-3">Inventory Aging</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={aging}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="value" fill="hsl(var(--accent))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+          <TabsContent value="slow" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingDown className="h-4 w-4 text-warning-foreground" />
+                <h3 className="text-base font-semibold">Slow Movers (≥6 months supply)</h3>
+              </div>
+              {slowMovers.length === 0 ? <EmptyState message="No slow movers." /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-left px-3 py-2">Product</th>
+                        <th className="text-left px-3 py-2">Collection</th>
+                        <th className="text-right px-3 py-2">On Hand</th>
+                        <th className="text-right px-3 py-2">Mo. Supply</th>
+                        <th className="text-right px-3 py-2">Tied-up Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {slowMovers.map((it) => (
+                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                          <td className="px-3 py-2 font-mono">{it.sku}</td>
+                          <td className="px-3 py-2">{it.product}</td>
+                          <td className="px-3 py-2">{it.collection}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold">{(it.monthsSupply ?? 0).toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="aging" className="mt-4">
+            <Card className="p-5">
+              <h3 className="text-base font-semibold mb-3">Inventory Aging</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={aging}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                    <Bar dataKey="value" fill="hsl(var(--accent))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="health" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="h-4 w-4 text-success" />
+                <h3 className="text-base font-semibold">Inventory Health</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
+                {[
+                  { label: "Healthy", val: healthSnapshot.healthy, tone: "text-success" },
+                  { label: "Low Stock", val: healthSnapshot.low, tone: "text-warning-foreground" },
+                  { label: "Risk", val: healthSnapshot.risk, tone: "text-destructive" },
+                  { label: "Out of Stock", val: healthSnapshot.outOfStock, tone: "text-destructive" },
+                  { label: "Overstock", val: healthSnapshot.overstock, tone: "text-accent-foreground" },
+                  { label: "Slow Movers", val: healthSnapshot.slow, tone: "text-warning-foreground" },
+                  { label: "Discontinued", val: healthSnapshot.discontinued, tone: "text-muted-foreground" },
+                ].map((b) => (
+                  <div key={b.label} className="rounded-lg border border-border p-4">
+                    <div className="text-xs text-muted-foreground">{b.label}</div>
+                    <div className={cn("text-3xl font-semibold mt-2 tabular-nums", b.tone)}>{b.val}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="ranking" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="h-4 w-4 text-accent-foreground" />
+                <h3 className="text-base font-semibold">Top SKUs by Sales Velocity</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="text-left px-3 py-2">#</th>
+                      <th className="text-left px-3 py-2">SKU</th>
+                      <th className="text-left px-3 py-2">Product</th>
+                      <th className="text-left px-3 py-2">Collection</th>
+                      <th className="text-right px-3 py-2">Vel/mo</th>
+                      <th className="text-right px-3 py-2">Monthly $</th>
+                      <th className="text-right px-3 py-2">On Hand</th>
+                      <th className="text-center px-3 py-2">Buy Now?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranking.map((it, i) => (
+                      <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                        <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                        <td className="px-3 py-2 font-mono">{it.sku}</td>
+                        <td className="px-3 py-2 max-w-[200px] truncate" title={it.product}>{it.product}</td>
+                        <td className="px-3 py-2">{it.collection}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(it.salesValue)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                        <td className="px-3 py-2 text-center">
+                          {(it.monthsSupply ?? 99) < 2 ? <Badge className="text-[10px]">Buy</Badge> : <span className="text-muted-foreground text-xs">—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="discontinued" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Ban className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-base font-semibold">Discontinued Inventory</h3>
+              </div>
+              {discontinuedRows.length === 0 ? <EmptyState message="No discontinued items flagged." /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-left px-3 py-2">Product</th>
+                        <th className="text-left px-3 py-2">Collection</th>
+                        <th className="text-right px-3 py-2">On Hand</th>
+                        <th className="text-right px-3 py-2">Mo. Supply</th>
+                        <th className="text-right px-3 py-2">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {discontinuedRows.map((it) => (
+                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                          <td className="px-3 py-2 font-mono">{it.sku}</td>
+                          <td className="px-3 py-2">{it.product}</td>
+                          <td className="px-3 py-2">{it.collection}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.monthsSupply == null ? "—" : it.monthsSupply.toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="forecast" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-4 w-4 text-primary" />
+                <h3 className="text-base font-semibold">Forecast vs Reality</h3>
+              </div>
+              {forecastRows.length === 0 ? <EmptyState message="No forecast data yet." /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-left px-3 py-2">Product</th>
+                        <th className="text-right px-3 py-2">Forecast/mo</th>
+                        <th className="text-right px-3 py-2">Actual/mo</th>
+                        <th className="text-right px-3 py-2">Variance</th>
+                        <th className="text-right px-3 py-2">% Diff</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {forecastRows.map((it) => (
+                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                          <td className="px-3 py-2 font-mono">{it.sku}</td>
+                          <td className="px-3 py-2 max-w-[220px] truncate">{it.product}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.fc.toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", it.variance > 0 ? "text-success" : it.variance < 0 ? "text-destructive" : "")}>{it.variance > 0 ? "+" : ""}{it.variance.toFixed(1)}</td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums", it.pct > 0 ? "text-success" : it.pct < 0 ? "text-destructive" : "")}>{it.pct > 0 ? "+" : ""}{it.pct.toFixed(0)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="demand" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="h-4 w-4 text-primary" />
+                <h3 className="text-base font-semibold">Dealer Demand Signals</h3>
+              </div>
+              {hub.demandSignals.length === 0 ? <EmptyState message="No dealer demand signals captured yet." /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">Date</th>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-left px-3 py-2">Dealer</th>
+                        <th className="text-left px-3 py-2">Signal</th>
+                        <th className="text-right px-3 py-2">Strength</th>
+                        <th className="text-left px-3 py-2">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hub.demandSignals.slice(0, 50).map((s) => (
+                        <tr key={s.id} className="border-t border-border">
+                          <td className="px-3 py-2">{s.signal_date}</td>
+                          <td className="px-3 py-2 font-mono">{s.sku}</td>
+                          <td className="px-3 py-2">{s.dealer_name ?? "—"}</td>
+                          <td className="px-3 py-2"><Badge variant="secondary" className="text-[10px]">{s.signal_type}</Badge></td>
+                          <td className="px-3 py-2 text-right tabular-nums">{Number(s.signal_strength).toFixed(1)}</td>
+                          <td className="px-3 py-2 max-w-[260px] truncate" title={s.notes ?? ""}>{s.notes ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+        </Tabs>
       </TabsContent>
 
       {/* ============ SECTION 3: REORDER ============ */}
@@ -695,7 +1169,10 @@ export default function InventoryDashboards({ items }: Props) {
                   <tr>
                     <th className="text-left px-2 py-2">SKU</th>
                     <th className="text-left px-2 py-2">Item</th>
-                    <th className="text-right px-2 py-2">On Hand</th>
+                    <th className="text-left px-2 py-2">Brand</th>
+                    <th className="text-center px-2 py-2">Clr</th>
+                    <th className="text-right px-2 py-2">NC</th>
+                    <th className="text-right px-2 py-2">VN</th>
                     <th className="text-right px-2 py-2">On PO</th>
                     <th className="text-right px-2 py-2">In Transit</th>
                     <th className="text-right px-2 py-2">L12M /wk</th>
@@ -705,6 +1182,7 @@ export default function InventoryDashboards({ items }: Props) {
                     <th className="text-right px-2 py-2">Override /wk</th>
                     <th className="text-right px-2 py-2">Lead (mo)</th>
                     <th className="text-right px-2 py-2">Sales/Wk</th>
+                    <th className="text-right px-2 py-2">Mo Equiv</th>
                     <th className="text-right px-2 py-2">New Min</th>
                     <th className="text-right px-2 py-2">Net Avail</th>
                     <th className="text-right px-2 py-2">Over/Under</th>
@@ -715,10 +1193,13 @@ export default function InventoryDashboards({ items }: Props) {
                 </thead>
                 <tbody>
                   {reorderRows.slice(0, 60).map((it) => (
-                    <tr key={it.sku} className="border-t border-border">
-                      <td className="px-2 py-1.5 font-mono">{it.sku}</td>
-                      <td className="px-2 py-1.5 max-w-[220px] truncate" title={it.product}>{it.product}</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums">{it.onHand}</td>
+                    <tr key={it.sku} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-2 py-1.5 font-mono cursor-pointer" onClick={() => setDrawerSku(it.sku)}>{it.sku}</td>
+                      <td className="px-2 py-1.5 max-w-[200px] truncate" title={it.product}>{it.product}</td>
+                      <td className="px-2 py-1.5 text-xs text-muted-foreground">{it.brand ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-center">{it.isClearance ? <Badge variant="secondary" className="text-[10px]">Yes</Badge> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.onHandNc ?? 0}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.onHandVn ?? 0}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{it.onPo}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{it.inTransit}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{it.wkL12.toFixed(1)}</td>
@@ -759,6 +1240,7 @@ export default function InventoryDashboards({ items }: Props) {
                         />
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums font-semibold">{it.salesPerWeek.toFixed(1)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{(it.salesPerWeek * 4.35).toFixed(1)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{Math.round(it.newMin)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{it.netAvail}</td>
                       <td className={cn("px-2 py-1.5 text-right tabular-nums font-semibold", it.overUnder < 0 ? "text-destructive" : "text-success")}>
@@ -823,6 +1305,22 @@ export default function InventoryDashboards({ items }: Props) {
             icon={TrendingDown}
           />
         </div>
+        {closeoutByCollection.length > 0 && (
+          <Card className="p-5">
+            <h3 className="text-base font-semibold mb-3">Closeout Value by Collection</h3>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={closeoutByCollection} layout="vertical" margin={{ left: 4, right: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Bar dataKey="value" fill="hsl(var(--accent))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        )}
         <Card className="p-5">
           <h3 className="text-base font-semibold mb-3">Closeout Inventory</h3>
           {closeoutRows.length === 0 ? <EmptyState message="No closeout SKUs flagged. Set is_closeout = true on inventory rows." /> : (
@@ -832,21 +1330,25 @@ export default function InventoryDashboards({ items }: Props) {
                   <tr>
                     <th className="text-left px-3 py-2">SKU</th>
                     <th className="text-left px-3 py-2">Product</th>
-                    <th className="text-right px-3 py-2">Units Remaining</th>
+                    <th className="text-left px-3 py-2">Collection</th>
+                    <th className="text-right px-3 py-2">Units</th>
                     <th className="text-right px-3 py-2">% Sold</th>
                     <th className="text-right px-3 py-2">Burn-Down (mo)</th>
                     <th className="text-right px-3 py-2">Value</th>
+                    <th className="text-center px-3 py-2">Clr</th>
                   </tr>
                 </thead>
                 <tbody>
                   {closeoutRows.map((it) => (
-                    <tr key={it.sku} className="border-t border-border">
+                    <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
                       <td className="px-3 py-2 font-mono">{it.sku}</td>
                       <td className="px-3 py-2">{it.product}</td>
+                      <td className="px-3 py-2">{it.collection}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{it.pctSold == null ? "—" : `${it.pctSold.toFixed(0)}%`}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{it.burnDownMonths == null ? "—" : it.burnDownMonths.toFixed(1)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
+                      <td className="px-3 py-2 text-center">{it.isClearance ? <Badge variant="secondary" className="text-[10px]">Yes</Badge> : <span className="text-muted-foreground text-xs">—</span>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -855,6 +1357,51 @@ export default function InventoryDashboards({ items }: Props) {
           )}
         </Card>
       </TabsContent>
+
+      {/* SKU detail drawer */}
+      <Sheet open={drawerSku !== null} onOpenChange={(o) => !o && setDrawerSku(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          {drawerItem && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="font-mono">{drawerItem.sku}</SheetTitle>
+                <SheetDescription>{drawerItem.product}</SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-4 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><div className="text-xs text-muted-foreground">Collection</div><div>{drawerItem.collection}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Brand</div><div>{drawerItem.brand ?? "—"}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Vendor / Factory</div><div>{drawerItem.factory ?? drawerItem.supplier}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Status</div><div>{drawerItem.status}</div></div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-lg border border-border p-3"><div className="text-xs text-muted-foreground">On Hand</div><div className="text-lg font-semibold tabular-nums">{drawerItem.onHand}</div><div className="text-[10px] text-muted-foreground">NC {drawerItem.onHandNc ?? 0} · VN {drawerItem.onHandVn ?? 0}</div></div>
+                  <div className="rounded-lg border border-border p-3"><div className="text-xs text-muted-foreground">On PO</div><div className="text-lg font-semibold tabular-nums">{drawerItem.onPo ?? 0}</div></div>
+                  <div className="rounded-lg border border-border p-3"><div className="text-xs text-muted-foreground">In Transit</div><div className="text-lg font-semibold tabular-nums">{drawerItem.inTransit ?? 0}</div></div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><div className="text-xs text-muted-foreground">L12M /wk</div><div className="tabular-nums">{drawerItem.unitsL12m != null ? (drawerItem.unitsL12m / 52).toFixed(1) : "—"}</div></div>
+                  <div><div className="text-xs text-muted-foreground">L6M /wk</div><div className="tabular-nums">{drawerItem.unitsL6m != null ? (drawerItem.unitsL6m / 26).toFixed(1) : "—"}</div></div>
+                  <div><div className="text-xs text-muted-foreground">L3M /wk</div><div className="tabular-nums">{drawerItem.unitsL3m != null ? (drawerItem.unitsL3m / 13).toFixed(1) : "—"}</div></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><div className="text-xs text-muted-foreground">Active basis</div><div>{drawerItem.reorderBasis ?? "L12M"}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Override /wk</div><div className="tabular-nums">{drawerItem.reorderOverridePerWeek ?? "—"}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Lead time (mo)</div><div className="tabular-nums">{drawerItem.leadTimeMonths ?? 4.5}</div></div>
+                  <div><div className="text-xs text-muted-foreground">MOQ</div><div className="tabular-nums">{drawerItem.moq ?? "—"}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Months supply</div><div className="tabular-nums">{drawerItem.monthsSupply == null ? "—" : drawerItem.monthsSupply.toFixed(1)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Forecast/mo</div><div className="tabular-nums">{drawerItem.forecastMonthly ?? "—"}</div></div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {drawerItem.isClearance && <Badge variant="secondary">Clearance</Badge>}
+                  {drawerItem.isCloseout && <Badge variant="secondary">Closeout</Badge>}
+                  {drawerItem.isDiscontinued && <Badge variant="secondary">Discontinued</Badge>}
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </Tabs>
   );
 }

@@ -12,7 +12,9 @@ export interface InventoryItem {
   sku: string;
   product: string;
   collection: string;
+  brand?: string;
   supplier: string;
+  notes?: string;
   onHand: number;
   available: number;
   avgMonthlySales: number;

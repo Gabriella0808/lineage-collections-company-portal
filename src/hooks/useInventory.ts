@@ -71,11 +71,19 @@ export function useInventory() {
   const load = useCallback(async (mode: "initial" | "refresh") => {
     if (mode === "refresh") setRefreshing(true);
 
-    const { data, error } = await supabase
-      .from("inventory")
-      .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly, units_l12m, units_l6m, units_l3m, on_po, on_sales_order, in_transit, on_hand_nc, on_hand_vn, reorder_basis, reorder_override_per_week, lead_time_months, cubes, reorder_min, reorder_max, is_clearance")
-      .order("status", { ascending: true })
-      .limit(1000);
+    const [{ data, error }, { data: prodRows }] = await Promise.all([
+      supabase
+        .from("inventory")
+        .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly, units_l12m, units_l6m, units_l3m, on_po, on_sales_order, in_transit, on_hand_nc, on_hand_vn, reorder_basis, reorder_override_per_week, lead_time_months, cubes, reorder_min, reorder_max, is_clearance")
+        .order("status", { ascending: true })
+        .limit(1000),
+      supabase.from("products").select("sku, brand").limit(1000),
+    ]);
+
+    const brandBySku = new Map<string, string>();
+    for (const p of prodRows ?? []) {
+      if (p.sku && p.brand) brandBySku.set(p.sku, p.brand);
+    }
 
     if (error || !data || data.length === 0) {
       setItems(mockInventory);
@@ -91,6 +99,7 @@ export function useInventory() {
           sku: r.sku,
           product: r.product,
           collection: r.collection ?? "Uncategorized",
+          brand: brandBySku.get(r.sku),
           supplier: r.supplier ?? "—",
           onHand,
           available,
