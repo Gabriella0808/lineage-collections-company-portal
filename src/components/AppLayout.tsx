@@ -49,9 +49,6 @@ const NAV_SECTIONS: NavSection[] = [
     id: "sales",
     label: "Sales Operations",
     items: [
-      { title: "Company-wide",     url: "/company-wide",  icon: BarChart3, roles: ["admin"] },
-      { title: "Team Performance", url: "/company-wide",  icon: BarChart3, roles: ["manager"] },
-      { title: "My Performance",   url: "/company-wide",  icon: BarChart3, roles: ["rep"] },
       { title: "Account Boards",   url: "/monday-boards", icon: LayoutGrid, roles: ["admin", "manager"] },
       {
         title: "Field Check-Ins", url: "/check-ins", icon: MapPinned, roles: ["admin", "manager"],
