@@ -75,7 +75,7 @@ const COLUMNS: {
     label: "Not Started",
     tone: "border-muted-foreground/30",
     accent: "bg-muted-foreground/50",
-    headerBg: "bg-muted/30",
+    headerBg: "bg-muted/70",
     pillBg: "bg-foreground/85",
     pillText: "text-background",
   },
