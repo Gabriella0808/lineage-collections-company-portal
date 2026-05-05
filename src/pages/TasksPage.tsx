@@ -65,10 +65,8 @@ const COLUMNS: {
   key: Status;
   label: string;
   tone: string;
-  // Monday-style group accent (left bar + group header tint)
   accent: string;
   headerBg: string;
-  // Status pill colors
   pillBg: string;
   pillText: string;
 }[] = [
@@ -76,37 +74,37 @@ const COLUMNS: {
     key: "todo",
     label: "Not Started",
     tone: "border-muted-foreground/30",
-    accent: "bg-muted-foreground/60",
-    headerBg: "bg-muted/40",
-    pillBg: "bg-muted-foreground/80",
+    accent: "bg-muted-foreground/50",
+    headerBg: "bg-muted/30",
+    pillBg: "bg-foreground/85",
     pillText: "text-background",
   },
   {
     key: "in_progress",
-    label: "Working on it",
-    tone: "border-primary/40",
-    accent: "bg-[hsl(38_92%_50%)]",
-    headerBg: "bg-[hsl(38_92%_50%/0.08)]",
-    pillBg: "bg-[hsl(38_92%_50%)]",
-    pillText: "text-white",
+    label: "In Motion",
+    tone: "border-accent/40",
+    accent: "bg-accent",
+    headerBg: "bg-accent/[0.06]",
+    pillBg: "bg-accent",
+    pillText: "text-accent-foreground",
   },
   {
     key: "blocked",
     label: "Stuck",
     tone: "border-destructive/40",
     accent: "bg-destructive",
-    headerBg: "bg-destructive/10",
+    headerBg: "bg-destructive/[0.06]",
     pillBg: "bg-destructive",
     pillText: "text-destructive-foreground",
   },
   {
     key: "done",
-    label: "Done",
+    label: "Completed",
     tone: "border-success/40",
-    accent: "bg-[hsl(142_71%_45%)]",
-    headerBg: "bg-[hsl(142_71%_45%/0.08)]",
-    pillBg: "bg-[hsl(142_71%_45%)]",
-    pillText: "text-white",
+    accent: "bg-success",
+    headerBg: "bg-success/[0.06]",
+    pillBg: "bg-success",
+    pillText: "text-success-foreground",
   },
 ];
 
