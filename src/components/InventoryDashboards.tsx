@@ -390,6 +390,127 @@ export default function InventoryDashboards({ items }: Props) {
   // Discontinued
   const discontinuedRows = useMemo(() => items.filter((it) => it.isDiscontinued), [items]);
 
+  // ============ BUY NOW (Command Center action list) ============
+  // Uses the same weekly-sales / lead-time logic as Reorder, plus a projected stockout date
+  // and an Order Decision verdict.
+  const buyNowRows = useMemo(() => {
+    const today = Date.now();
+    // Map of next ETA per SKU from PO lines
+    const nextEtaBySku = new Map<string, string>();
+    for (const l of hub.poLines) {
+      if (!l.eta) continue;
+      const cur = nextEtaBySku.get(l.sku);
+      if (!cur || l.eta < cur) nextEtaBySku.set(l.sku, l.eta);
+    }
+
+    return reorderRows.map((it) => {
+      const dailySales = it.salesPerWeek / 7;
+      const netAvail = it.netAvail;
+      const daysOfSupply = dailySales > 0 ? netAvail / dailySales : null;
+      const stockoutDate =
+        dailySales > 0 && netAvail > 0
+          ? new Date(today + (netAvail / dailySales) * 86400000)
+          : null;
+      const leadDays = (it.leadMonths ?? 4.5) * 30;
+      const nextEta = nextEtaBySku.get(it.sku) ?? null;
+      const daysUntilEta = nextEta
+        ? Math.floor((new Date(nextEta).getTime() - today) / 86400000)
+        : null;
+      const coveredByPo =
+        it.onPo > 0 && stockoutDate && daysUntilEta != null && daysUntilEta < (daysOfSupply ?? 0);
+
+      let decision:
+        | "Order Now"
+        | "Watch"
+        | "Covered by PO"
+        | "Discontinue Candidate"
+        | "Liquidate"
+        | "Do Not Order";
+      if (it.isDiscontinued) decision = "Liquidate";
+      else if (it.isCloseout || it.isClearance) decision = "Do Not Order";
+      else if ((it.monthsSupply ?? 0) >= 12 && it.salesPerWeek < 0.25)
+        decision = "Discontinue Candidate";
+      else if (coveredByPo) decision = "Covered by PO";
+      else if (it.suggestedOrder > 0 && (daysOfSupply ?? Infinity) < leadDays)
+        decision = "Order Now";
+      else if (it.suggestedOrder > 0) decision = "Watch";
+      else decision = "Do Not Order";
+
+      return {
+        ...it,
+        dailySales,
+        daysOfSupply,
+        stockoutDate,
+        leadDays,
+        nextEta,
+        daysUntilEta,
+        decision,
+      };
+    });
+  }, [reorderRows, hub.poLines]);
+
+  const [buyNowFilter, setBuyNowFilter] = useState<"action" | "all">("action");
+  const buyNowFiltered = useMemo(() => {
+    const sorted = [...buyNowRows].sort((a, b) => {
+      const order = { "Order Now": 0, Watch: 1, "Covered by PO": 2, "Liquidate": 3, "Discontinue Candidate": 4, "Do Not Order": 5 } as const;
+      return order[a.decision] - order[b.decision];
+    });
+    if (buyNowFilter === "action")
+      return sorted.filter((r) => r.decision === "Order Now" || r.decision === "Watch");
+    return sorted;
+  }, [buyNowRows, buyNowFilter]);
+
+  const buyNowKpis = useMemo(() => {
+    const orderNow = buyNowRows.filter((r) => r.decision === "Order Now");
+    const watch = buyNowRows.filter((r) => r.decision === "Watch");
+    const covered = buyNowRows.filter((r) => r.decision === "Covered by PO");
+    const orderNowValue = orderNow.reduce((s, r) => s + r.suggestedOrder * (r.unitCost ?? 0), 0);
+    return { orderNow: orderNow.length, watch: watch.length, covered: covered.length, orderNowValue };
+  }, [buyNowRows]);
+
+  // ============ STOCKOUTS / LOST SALES ============
+  const stockoutRows = useMemo(() => {
+    return items
+      .filter((it) => it.onHand <= 0 || it.status === "out-of-stock")
+      .map((it) => {
+        const dailySales = (it.avgMonthlySales || 0) / 30;
+        const monthlyLost = it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0);
+        let priority: "Critical" | "High" | "Medium" | "Low";
+        if (it.avgMonthlySales >= 4 && (it.onPo ?? 0) === 0) priority = "Critical";
+        else if (it.avgMonthlySales >= 4) priority = "High";
+        else if (it.avgMonthlySales >= 1) priority = "Medium";
+        else priority = "Low";
+        return { ...it, dailySales, monthlyLost, priority };
+      })
+      .sort((a, b) => b.monthlyLost - a.monthlyLost);
+  }, [items]);
+
+  const stockoutKpis = useMemo(() => {
+    const oosCount = stockoutRows.length;
+    const monthlyLost = stockoutRows.reduce((s, r) => s + r.monthlyLost, 0);
+    const backorderUnits = hub.openOrders.reduce((s, o) => s + Number(o.qty_open ?? 0), 0);
+    const backorderValue = hub.openOrders.reduce((s, o) => s + Number(o.extended_value ?? 0), 0);
+    return { oosCount, monthlyLost, backorderUnits, backorderValue };
+  }, [stockoutRows, hub.openOrders]);
+
+  // ============ INCOMING / PO COVERAGE ============
+  const poLineCoverage = useMemo(() => {
+    const itemBySku = new Map(items.map((it) => [it.sku, it]));
+    return hub.poLines
+      .map((l) => {
+        const it = itemBySku.get(l.sku);
+        const remaining = Math.max(0, Number(l.qty_ordered ?? 0) - Number(l.qty_received ?? 0));
+        const projectedAvail = (it?.onHand ?? 0) + remaining + (it?.inTransit ?? 0);
+        const monthlySales = it?.avgMonthlySales ?? 0;
+        const monthsAfter = monthlySales > 0 ? projectedAvail / monthlySales : null;
+        const stillNeed =
+          monthlySales > 0 && monthsAfter != null && monthsAfter < (it?.leadTimeMonths ?? 4.5);
+        return { ...l, item: it, remaining, projectedAvail, monthlySales, monthsAfter, stillNeed };
+      })
+      .filter((r) => r.remaining > 0)
+      .sort((a, b) => (a.eta ?? "9999").localeCompare(b.eta ?? "9999"));
+  }, [hub.poLines, items]);
+
   // Forecast vs Reality
   const forecastRows = useMemo(
     () => items
