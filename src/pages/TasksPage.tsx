@@ -93,7 +93,7 @@ const COLUMNS: {
     label: "Stuck",
     tone: "border-destructive/40",
     accent: "bg-destructive",
-    headerBg: "bg-destructive/[0.06]",
+    headerBg: "bg-destructive/15",
     pillBg: "bg-destructive",
     pillText: "text-destructive-foreground",
   },
