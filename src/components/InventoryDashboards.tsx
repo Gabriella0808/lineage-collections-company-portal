@@ -240,7 +240,7 @@ export default function InventoryDashboards({ items }: Props) {
 
   const closeoutTotal = closeoutRows.reduce((s, it) => s + (it.unitCost ?? 0) * it.onHand, 0);
 
-  // ============ SECTION 3: REORDER (Justin's InvCut model) ============
+  // ============ SECTION 3: REORDER ============
   // Sales/Week = LTM/52 ; New Min = Sales/Week*4.5*4.5 ; Net Avail = OnHand+OnPO
   // Over/Under = Net Avail - New Min ; Weeks = (NetAvail+Order)/SalesPerWeek
   // Total Cubes = Order * Cubes
@@ -562,7 +562,6 @@ export default function InventoryDashboards({ items }: Props) {
           <div className="flex items-center gap-2 mb-3">
             <Factory className="h-4 w-4 text-primary" />
             <h3 className="text-base font-semibold">Reorder by Factory — Suggested vs MOQ</h3>
-            <Badge variant="secondary" className="ml-auto">Justin's InvCut model</Badge>
           </div>
           {reorderByFactory.length === 0 ? <EmptyState message="Nothing to reorder right now." /> : (
             <div className="overflow-x-auto mb-4">
