@@ -798,7 +798,7 @@ export default function InventoryDashboards({ items }: Props) {
 
         {/* Health snapshot strip */}
         <Card className="p-5">
-          <h3 className="text-base font-semibold mb-3">Health Snapshot</h3>
+          <h3 className="text-base font-semibold mb-3">Snapshot</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
             {[
               { label: "Healthy", val: healthSnapshot.healthy, tone: "text-success" },
@@ -983,7 +983,7 @@ export default function InventoryDashboards({ items }: Props) {
             <TabsTrigger value="collection">By Collection</TabsTrigger>
             <TabsTrigger value="slow">Slow Movers</TabsTrigger>
             <TabsTrigger value="aging">Aging</TabsTrigger>
-            <TabsTrigger value="health">Health</TabsTrigger>
+            <TabsTrigger value="health">Inventory</TabsTrigger>
             <TabsTrigger value="ranking">Ranking</TabsTrigger>
             <TabsTrigger value="discontinued">Discontinued</TabsTrigger>
             <TabsTrigger value="forecast">Forecast vs Reality</TabsTrigger>
@@ -1229,7 +1229,7 @@ export default function InventoryDashboards({ items }: Props) {
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Heart className="h-4 w-4 text-success" />
-                <h3 className="text-base font-semibold">Inventory Health</h3>
+                <h3 className="text-base font-semibold">Inventory</h3>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
                 {[
