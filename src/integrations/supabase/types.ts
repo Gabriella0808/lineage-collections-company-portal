@@ -156,6 +156,42 @@ export type Database = {
           },
         ]
       }
+      dealer_demand_signals: {
+        Row: {
+          created_at: string
+          dealer_id: string | null
+          dealer_name: string | null
+          id: string
+          notes: string | null
+          signal_date: string
+          signal_strength: number
+          signal_type: string
+          sku: string
+        }
+        Insert: {
+          created_at?: string
+          dealer_id?: string | null
+          dealer_name?: string | null
+          id?: string
+          notes?: string | null
+          signal_date?: string
+          signal_strength?: number
+          signal_type: string
+          sku: string
+        }
+        Update: {
+          created_at?: string
+          dealer_id?: string | null
+          dealer_name?: string | null
+          id?: string
+          notes?: string | null
+          signal_date?: string
+          signal_strength?: number
+          signal_type?: string
+          sku?: string
+        }
+        Relationships: []
+      }
       dealer_sales: {
         Row: {
           booking_count: number | null
@@ -447,15 +483,23 @@ export type Database = {
           avg_monthly_sales: number | null
           collection: string | null
           created_at: string
+          factory: string | null
+          forecast_monthly: number | null
           id: string
+          is_closeout: boolean
+          is_discontinued: boolean
           last_synced_at: string | null
+          lead_time_days: number | null
           link: string | null
+          list_price: number | null
           months_supply: number | null
+          moq: number | null
           on_hand: number | null
           product: string
           sku: string
           status: string | null
           supplier: string | null
+          unit_cost: number | null
           updated_at: string
         }
         Insert: {
@@ -464,15 +508,23 @@ export type Database = {
           avg_monthly_sales?: number | null
           collection?: string | null
           created_at?: string
+          factory?: string | null
+          forecast_monthly?: number | null
           id?: string
+          is_closeout?: boolean
+          is_discontinued?: boolean
           last_synced_at?: string | null
+          lead_time_days?: number | null
           link?: string | null
+          list_price?: number | null
           months_supply?: number | null
+          moq?: number | null
           on_hand?: number | null
           product: string
           sku: string
           status?: string | null
           supplier?: string | null
+          unit_cost?: number | null
           updated_at?: string
         }
         Update: {
@@ -481,15 +533,23 @@ export type Database = {
           avg_monthly_sales?: number | null
           collection?: string | null
           created_at?: string
+          factory?: string | null
+          forecast_monthly?: number | null
           id?: string
+          is_closeout?: boolean
+          is_discontinued?: boolean
           last_synced_at?: string | null
+          lead_time_days?: number | null
           link?: string | null
+          list_price?: number | null
           months_supply?: number | null
+          moq?: number | null
           on_hand?: number | null
           product?: string
           sku?: string
           status?: string | null
           supplier?: string | null
+          unit_cost?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -543,6 +603,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lost_sales_events: {
+        Row: {
+          created_at: string
+          dealer_name: string | null
+          estimated_value: number
+          event_date: string
+          id: string
+          qty_requested: number
+          reason: string | null
+          sku: string
+        }
+        Insert: {
+          created_at?: string
+          dealer_name?: string | null
+          estimated_value?: number
+          event_date: string
+          id?: string
+          qty_requested?: number
+          reason?: string | null
+          sku: string
+        }
+        Update: {
+          created_at?: string
+          dealer_name?: string | null
+          estimated_value?: number
+          event_date?: string
+          id?: string
+          qty_requested?: number
+          reason?: string | null
+          sku?: string
+        }
+        Relationships: []
       }
       manager_task_assignees: {
         Row: {
@@ -708,6 +801,57 @@ export type Database = {
         }
         Relationships: []
       }
+      open_sales_orders: {
+        Row: {
+          acctivate_id: string | null
+          created_at: string
+          dealer_id: string | null
+          dealer_name: string | null
+          extended_value: number
+          id: string
+          last_synced_at: string | null
+          order_date: string | null
+          order_number: string | null
+          promised_date: string | null
+          qty_open: number
+          sku: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          acctivate_id?: string | null
+          created_at?: string
+          dealer_id?: string | null
+          dealer_name?: string | null
+          extended_value?: number
+          id?: string
+          last_synced_at?: string | null
+          order_date?: string | null
+          order_number?: string | null
+          promised_date?: string | null
+          qty_open?: number
+          sku: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          acctivate_id?: string | null
+          created_at?: string
+          dealer_id?: string | null
+          dealer_name?: string | null
+          extended_value?: number
+          id?: string
+          last_synced_at?: string | null
+          order_date?: string | null
+          order_number?: string | null
+          promised_date?: string | null
+          qty_open?: number
+          sku?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_collections: {
         Row: {
           created_at: string
@@ -786,6 +930,89 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      purchase_order_lines: {
+        Row: {
+          created_at: string
+          eta: string | null
+          id: string
+          po_id: string | null
+          qty_ordered: number
+          qty_received: number
+          sku: string
+          unit_cost: number
+        }
+        Insert: {
+          created_at?: string
+          eta?: string | null
+          id?: string
+          po_id?: string | null
+          qty_ordered?: number
+          qty_received?: number
+          sku: string
+          unit_cost?: number
+        }
+        Update: {
+          created_at?: string
+          eta?: string | null
+          id?: string
+          po_id?: string | null
+          qty_ordered?: number
+          qty_received?: number
+          sku?: string
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_lines_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          acctivate_id: string | null
+          created_at: string
+          eta: string | null
+          factory: string | null
+          id: string
+          last_synced_at: string | null
+          order_date: string | null
+          po_number: string | null
+          status: string | null
+          total_value: number
+          updated_at: string
+        }
+        Insert: {
+          acctivate_id?: string | null
+          created_at?: string
+          eta?: string | null
+          factory?: string | null
+          id?: string
+          last_synced_at?: string | null
+          order_date?: string | null
+          po_number?: string | null
+          status?: string | null
+          total_value?: number
+          updated_at?: string
+        }
+        Update: {
+          acctivate_id?: string | null
+          created_at?: string
+          eta?: string | null
+          factory?: string | null
+          id?: string
+          last_synced_at?: string | null
+          order_date?: string | null
+          po_number?: string | null
+          status?: string | null
+          total_value?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -902,6 +1129,39 @@ export type Database = {
           id?: string
           signed_in_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      sku_sales_history: {
+        Row: {
+          created_at: string
+          forecast_units: number | null
+          id: string
+          month: number
+          revenue: number
+          sku: string
+          units_sold: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          forecast_units?: number | null
+          id?: string
+          month: number
+          revenue?: number
+          sku: string
+          units_sold?: number
+          year: number
+        }
+        Update: {
+          created_at?: string
+          forecast_units?: number | null
+          id?: string
+          month?: number
+          revenue?: number
+          sku?: string
+          units_sold?: number
+          year?: number
         }
         Relationships: []
       }
