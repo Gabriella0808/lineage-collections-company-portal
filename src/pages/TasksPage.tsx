@@ -672,19 +672,18 @@ export default function TasksPage() {
               const items = filteredTasks.filter((t) => t.status === col.key);
               return (
                 <div key={col.key} className="">
-                  {/* Group header */}
-                  <div
-                    className={`flex items-center gap-2 px-3 py-2 ${col.headerBg} border-b`}
-                  >
-                    <span className={`inline-block h-3 w-1 rounded-sm ${col.accent}`} />
-                    <h2 className="text-sm font-semibold">{col.label}</h2>
-                    <span className="text-xs text-muted-foreground">{items.length}</span>
+                  {/* Group header — editorial style */}
+                  <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/30 border-b border-border/70">
+                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${col.accent}`} />
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/80">{col.label}</h2>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">{items.length}</span>
+                    <span className="flex-1 h-px bg-border/60" />
                   </div>
 
                   {/* Group rows */}
                   {items.length === 0 ? (
-                    <div className="px-3 py-3 pl-6 text-xs italic text-muted-foreground">
-                      No tasks
+                    <div className="px-4 py-4 text-xs italic text-muted-foreground/70">
+                      No items in this lane.
                     </div>
                   ) : (
                     <ul className="divide-y">
