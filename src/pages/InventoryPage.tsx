@@ -390,8 +390,7 @@ export default function InventoryPage() {
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">On Hand <ArrowUpDown className="h-3 w-3" /></span></th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Available <ArrowUpDown className="h-3 w-3" /></span></th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Avg Mo. Sales <ArrowUpDown className="h-3 w-3" /></span></th>
-                <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Mo. Supply <ArrowUpDown className="h-3 w-3" /></span></th>
-                
+                <th className="text-right px-4 py-3 font-medium" title="Months of supply remaining at current sales pace (On Hand ÷ Avg Monthly Sales)"><span className="inline-flex items-center gap-1">Avg Burn-down <ArrowUpDown className="h-3 w-3" /></span></th>
               </tr>
             </thead>
             <tbody>
