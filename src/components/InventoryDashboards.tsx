@@ -14,6 +14,7 @@ import {
 import type { InventoryItem } from "@/data/inventoryMock";
 import { useInventoryHub, type PurchaseOrder } from "@/hooks/useInventoryHub";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
