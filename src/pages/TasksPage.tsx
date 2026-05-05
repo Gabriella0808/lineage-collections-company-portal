@@ -102,7 +102,7 @@ const COLUMNS: {
     label: "Completed",
     tone: "border-success/40",
     accent: "bg-success",
-    headerBg: "bg-success/[0.06]",
+    headerBg: "bg-success/15",
     pillBg: "bg-success",
     pillText: "text-success-foreground",
   },
