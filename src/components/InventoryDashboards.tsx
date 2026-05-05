@@ -643,161 +643,434 @@ export default function InventoryDashboards({ items }: Props) {
       </TabsContent>
 
       {/* ============ SECTION 2: ANALYSIS ============ */}
-      <TabsContent value="analysis" className="space-y-6 mt-4">
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Layers className="h-4 w-4 text-primary" />
-            <h3 className="text-base font-semibold">SKU Analysis</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="text-left px-3 py-2">SKU</th>
-                  <th className="text-left px-3 py-2">Product</th>
-                  <th className="text-right px-3 py-2">On Hand</th>
-                  <th className="text-right px-3 py-2">Value</th>
-                  <th className="text-right px-3 py-2">% Total Inv</th>
-                  <th className="text-right px-3 py-2">% Total Sales</th>
-                  <th className="text-right px-3 py-2">Velocity / mo</th>
-                  <th className="text-right px-3 py-2">Trend</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analysisRows.slice(0, 30).map((it) => {
-                  const fc = it.forecastMonthly ?? 0;
-                  const trend = fc > 0 ? (it.avgMonthlySales - fc) / fc : null;
-                  return (
-                    <tr key={it.sku} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{it.sku}</td>
-                      <td className="px-3 py-2">{it.product}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(it.value)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalInv.toFixed(1)}%</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalSales.toFixed(1)}%</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
-                      <td className={cn("px-3 py-2 text-right tabular-nums", trend == null ? "text-muted-foreground" : trend > 0 ? "text-success" : trend < 0 ? "text-destructive" : "")}>
-                        {trend == null ? "—" : `${trend > 0 ? "▲ +" : trend < 0 ? "▼ " : ""}${(trend * 100).toFixed(0)}%`}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+      <TabsContent value="analysis" className="space-y-4 mt-4">
+        <Tabs value={analysisTab} onValueChange={setAnalysisTab}>
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="sku">SKU Table</TabsTrigger>
+            <TabsTrigger value="compare">Compare Periods</TabsTrigger>
+            <TabsTrigger value="vendor">By Vendor</TabsTrigger>
+            <TabsTrigger value="collection">By Collection</TabsTrigger>
+            <TabsTrigger value="slow">Slow Movers</TabsTrigger>
+            <TabsTrigger value="aging">Aging</TabsTrigger>
+            <TabsTrigger value="health">Health</TabsTrigger>
+            <TabsTrigger value="ranking">Ranking</TabsTrigger>
+            <TabsTrigger value="discontinued">Discontinued</TabsTrigger>
+            <TabsTrigger value="forecast">Forecast vs Reality</TabsTrigger>
+            <TabsTrigger value="demand">Dealer Demand</TabsTrigger>
+          </TabsList>
 
-        {/* Comparative sales by SKU */}
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-            <h3 className="text-base font-semibold">Comparative Sales — Pick 2 Periods</h3>
-            <div className="flex gap-2">
-              <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodA} onChange={(e) => setPeriodA(e.target.value)}>
-                <option value="">Period A</option>
-                {periods.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodB} onChange={(e) => setPeriodB(e.target.value)}>
-                <option value="">Period B</option>
-                {periods.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-          </div>
-          {compareRows.length === 0 ? <EmptyState message={periods.length === 0 ? "No sales history synced yet." : "Pick two periods to compare."} /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+          <TabsContent value="sku" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <h3 className="text-base font-semibold">SKU Analysis</h3>
+                </div>
+                <div className="relative w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input value={skuSearch} onChange={(e) => setSkuSearch(e.target.value)} placeholder="Search SKU, product, brand…" className="pl-8 h-9 text-sm" />
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+                    <tr>
+                      <th className="text-left px-3 py-2">SKU</th>
+                      <th className="text-left px-3 py-2">Product</th>
+                      <th className="text-left px-3 py-2">Collection</th>
+                      <th className="text-left px-3 py-2">Brand</th>
+                      <th className="text-left px-3 py-2">Vendor</th>
+                      <th className="text-right px-3 py-2">On Hand</th>
+                      <th className="text-right px-3 py-2">Value</th>
+                      <th className="text-right px-3 py-2">% Inv</th>
+                      <th className="text-right px-3 py-2">% Sales</th>
+                      <th className="text-right px-3 py-2">Vel/mo</th>
+                      <th className="text-right px-3 py-2">Inv/Sales</th>
+                      <th className="text-right px-3 py-2">Turn</th>
+                      <th className="text-right px-3 py-2">Trend</th>
+                      <th className="text-center px-3 py-2">Clr</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analysisRows.filter(matchesSearch).slice(0, 100).map((it) => {
+                      const fc = it.forecastMonthly ?? 0;
+                      const trend = fc > 0 ? (it.avgMonthlySales - fc) / fc : null;
+                      const invToSales = it.avgMonthlySales > 0 ? it.onHand / it.avgMonthlySales : null;
+                      const turn = it.value > 0 ? (it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0) * 12) / it.value : 0;
+                      return (
+                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                          <td className="px-3 py-2 font-mono">{it.sku}</td>
+                          <td className="px-3 py-2 max-w-[220px] truncate" title={it.product}>{it.product}</td>
+                          <td className="px-3 py-2">{it.collection}</td>
+                          <td className="px-3 py-2">{it.brand ?? "—"}</td>
+                          <td className="px-3 py-2 max-w-[140px] truncate">{it.supplier}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(it.value)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalInv.toFixed(1)}%</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalSales.toFixed(1)}%</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{invToSales == null ? "—" : invToSales.toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{turn.toFixed(1)}×</td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums", trend == null ? "text-muted-foreground" : trend > 0 ? "text-success" : trend < 0 ? "text-destructive" : "")}>
+                            {trend == null ? "—" : `${trend > 0 ? "▲ +" : trend < 0 ? "▼ " : ""}${(trend * 100).toFixed(0)}%`}
+                          </td>
+                          <td className="px-3 py-2 text-center">{it.isClearance ? <Badge variant="secondary" className="text-[10px]">Yes</Badge> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="compare" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <h3 className="text-base font-semibold">Comparative Sales — Pick 2 Periods</h3>
+                <div className="flex gap-2">
+                  <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodA} onChange={(e) => setPeriodA(e.target.value)}>
+                    <option value="">Period A</option>
+                    {periods.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodB} onChange={(e) => setPeriodB(e.target.value)}>
+                    <option value="">Period B</option>
+                    {periods.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+              {compareRows.length === 0 ? <EmptyState message={periods.length === 0 ? "No sales history synced yet." : "Pick two periods to compare."} /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-right px-3 py-2">{periodA}</th>
+                        <th className="text-right px-3 py-2">{periodB}</th>
+                        <th className="text-right px-3 py-2">Δ</th>
+                        <th className="text-right px-3 py-2">% change</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {compareRows.map((r) => (
+                        <tr key={r.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(r.sku)}>
+                          <td className="px-3 py-2 font-mono">{r.sku}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.periodA}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.periodB}</td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", r.diff > 0 ? "text-success" : r.diff < 0 ? "text-destructive" : "")}>{r.diff > 0 ? "+" : ""}{r.diff}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.pct == null ? "—" : `${r.pct > 0 ? "+" : ""}${r.pct.toFixed(0)}%`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="vendor" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <h3 className="text-base font-semibold">Performance by Vendor / Factory</h3>
+              </div>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={vendorPerf} layout="vertical" margin={{ left: 4, right: 12 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis type="category" dataKey="vendor" width={140} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                    <Bar dataKey="sales" fill="hsl(var(--primary))" name="Monthly Sales" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <table className="w-full text-sm mt-4">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="text-left px-3 py-2">SKU</th>
-                    <th className="text-right px-3 py-2">{periodA}</th>
-                    <th className="text-right px-3 py-2">{periodB}</th>
-                    <th className="text-right px-3 py-2">Δ</th>
-                    <th className="text-right px-3 py-2">% change</th>
+                    <th className="text-left px-3 py-2">Vendor</th>
+                    <th className="text-right px-3 py-2">Monthly Sales</th>
+                    <th className="text-right px-3 py-2">% of Total</th>
+                    <th className="text-right px-3 py-2">Inv Value</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {compareRows.map((r) => (
-                    <tr key={r.sku} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{r.sku}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.periodA}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.periodB}</td>
-                      <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", r.diff > 0 ? "text-success" : r.diff < 0 ? "text-destructive" : "")}>{r.diff > 0 ? "+" : ""}{r.diff}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.pct == null ? "—" : `${r.pct > 0 ? "+" : ""}${r.pct.toFixed(0)}%`}</td>
+                  {vendorPerf.slice(0, 20).map((v) => (
+                    <tr key={v.vendor} className="border-t border-border">
+                      <td className="px-3 py-2">{v.vendor}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(v.sales)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{v.pctSales.toFixed(1)}%</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(v.value)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-        </Card>
+            </Card>
+          </TabsContent>
 
-        {/* Performance by vendor */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <h3 className="text-base font-semibold">Performance by Vendor</h3>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={vendorPerf} layout="vertical" margin={{ left: 4, right: 12 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis type="category" dataKey="vendor" width={140} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="sales" fill="hsl(var(--primary))" name="Monthly Sales" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Slow movers */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingDown className="h-4 w-4 text-warning-foreground" />
-            <h3 className="text-base font-semibold">Slow Movers (≥6 months supply)</h3>
-          </div>
-          {slowMovers.length === 0 ? <EmptyState message="No slow movers." /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="text-left px-3 py-2">SKU</th>
-                    <th className="text-left px-3 py-2">Product</th>
-                    <th className="text-right px-3 py-2">On Hand</th>
-                    <th className="text-right px-3 py-2">Mo. Supply</th>
-                    <th className="text-right px-3 py-2">Tied-up Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {slowMovers.map((it) => (
-                    <tr key={it.sku} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{it.sku}</td>
-                      <td className="px-3 py-2">{it.product}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{(it.monthsSupply ?? 0).toFixed(1)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
+          <TabsContent value="collection" className="mt-4">
+            <Card className="p-5">
+              <h3 className="text-base font-semibold mb-3">Performance by Collection</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="text-left px-3 py-2">Collection</th>
+                      <th className="text-right px-3 py-2">SKUs</th>
+                      <th className="text-right px-3 py-2">Monthly Sales</th>
+                      <th className="text-right px-3 py-2">% of Sales</th>
+                      <th className="text-right px-3 py-2">Inv Value</th>
+                      <th className="text-right px-3 py-2">Turnover</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+                  </thead>
+                  <tbody>
+                    {collectionPerf.map((c) => (
+                      <tr key={c.name} className="border-t border-border">
+                        <td className="px-3 py-2">{c.name}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{c.skus}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(c.sales)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{c.pctSales.toFixed(1)}%</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(c.value)}</td>
+                        <td className={cn("px-3 py-2 text-right tabular-nums", c.turnover < 1 ? "text-warning-foreground" : c.turnover > 4 ? "text-success" : "")}>{c.turnover.toFixed(1)}×</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
 
-        {/* Aging */}
-        <Card className="p-5">
-          <h3 className="text-base font-semibold mb-3">Inventory Aging</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={aging}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="value" fill="hsl(var(--accent))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+          <TabsContent value="slow" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingDown className="h-4 w-4 text-warning-foreground" />
+                <h3 className="text-base font-semibold">Slow Movers (≥6 months supply)</h3>
+              </div>
+              {slowMovers.length === 0 ? <EmptyState message="No slow movers." /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-left px-3 py-2">Product</th>
+                        <th className="text-left px-3 py-2">Collection</th>
+                        <th className="text-right px-3 py-2">On Hand</th>
+                        <th className="text-right px-3 py-2">Mo. Supply</th>
+                        <th className="text-right px-3 py-2">Tied-up Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {slowMovers.map((it) => (
+                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                          <td className="px-3 py-2 font-mono">{it.sku}</td>
+                          <td className="px-3 py-2">{it.product}</td>
+                          <td className="px-3 py-2">{it.collection}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold">{(it.monthsSupply ?? 0).toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="aging" className="mt-4">
+            <Card className="p-5">
+              <h3 className="text-base font-semibold mb-3">Inventory Aging</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={aging}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                    <Bar dataKey="value" fill="hsl(var(--accent))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="health" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="h-4 w-4 text-success" />
+                <h3 className="text-base font-semibold">Inventory Health</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
+                {[
+                  { label: "Healthy", val: healthSnapshot.healthy, tone: "text-success" },
+                  { label: "Low Stock", val: healthSnapshot.low, tone: "text-warning-foreground" },
+                  { label: "Risk", val: healthSnapshot.risk, tone: "text-destructive" },
+                  { label: "Out of Stock", val: healthSnapshot.outOfStock, tone: "text-destructive" },
+                  { label: "Overstock", val: healthSnapshot.overstock, tone: "text-accent-foreground" },
+                  { label: "Slow Movers", val: healthSnapshot.slow, tone: "text-warning-foreground" },
+                  { label: "Discontinued", val: healthSnapshot.discontinued, tone: "text-muted-foreground" },
+                ].map((b) => (
+                  <div key={b.label} className="rounded-lg border border-border p-4">
+                    <div className="text-xs text-muted-foreground">{b.label}</div>
+                    <div className={cn("text-3xl font-semibold mt-2 tabular-nums", b.tone)}>{b.val}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="ranking" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="h-4 w-4 text-accent-foreground" />
+                <h3 className="text-base font-semibold">Top SKUs by Sales Velocity</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="text-left px-3 py-2">#</th>
+                      <th className="text-left px-3 py-2">SKU</th>
+                      <th className="text-left px-3 py-2">Product</th>
+                      <th className="text-left px-3 py-2">Collection</th>
+                      <th className="text-right px-3 py-2">Vel/mo</th>
+                      <th className="text-right px-3 py-2">Monthly $</th>
+                      <th className="text-right px-3 py-2">On Hand</th>
+                      <th className="text-center px-3 py-2">Buy Now?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranking.map((it, i) => (
+                      <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                        <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                        <td className="px-3 py-2 font-mono">{it.sku}</td>
+                        <td className="px-3 py-2 max-w-[200px] truncate" title={it.product}>{it.product}</td>
+                        <td className="px-3 py-2">{it.collection}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(it.salesValue)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                        <td className="px-3 py-2 text-center">
+                          {(it.monthsSupply ?? 99) < 2 ? <Badge className="text-[10px]">Buy</Badge> : <span className="text-muted-foreground text-xs">—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="discontinued" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Ban className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-base font-semibold">Discontinued Inventory</h3>
+              </div>
+              {discontinuedRows.length === 0 ? <EmptyState message="No discontinued items flagged." /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-left px-3 py-2">Product</th>
+                        <th className="text-left px-3 py-2">Collection</th>
+                        <th className="text-right px-3 py-2">On Hand</th>
+                        <th className="text-right px-3 py-2">Mo. Supply</th>
+                        <th className="text-right px-3 py-2">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {discontinuedRows.map((it) => (
+                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                          <td className="px-3 py-2 font-mono">{it.sku}</td>
+                          <td className="px-3 py-2">{it.product}</td>
+                          <td className="px-3 py-2">{it.collection}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.monthsSupply == null ? "—" : it.monthsSupply.toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="forecast" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-4 w-4 text-primary" />
+                <h3 className="text-base font-semibold">Forecast vs Reality</h3>
+              </div>
+              {forecastRows.length === 0 ? <EmptyState message="No forecast data yet." /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-left px-3 py-2">Product</th>
+                        <th className="text-right px-3 py-2">Forecast/mo</th>
+                        <th className="text-right px-3 py-2">Actual/mo</th>
+                        <th className="text-right px-3 py-2">Variance</th>
+                        <th className="text-right px-3 py-2">% Diff</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {forecastRows.map((it) => (
+                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
+                          <td className="px-3 py-2 font-mono">{it.sku}</td>
+                          <td className="px-3 py-2 max-w-[220px] truncate">{it.product}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.fc.toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", it.variance > 0 ? "text-success" : it.variance < 0 ? "text-destructive" : "")}>{it.variance > 0 ? "+" : ""}{it.variance.toFixed(1)}</td>
+                          <td className={cn("px-3 py-2 text-right tabular-nums", it.pct > 0 ? "text-success" : it.pct < 0 ? "text-destructive" : "")}>{it.pct > 0 ? "+" : ""}{it.pct.toFixed(0)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="demand" className="mt-4">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="h-4 w-4 text-primary" />
+                <h3 className="text-base font-semibold">Dealer Demand Signals</h3>
+              </div>
+              {hub.demandSignals.length === 0 ? <EmptyState message="No dealer demand signals captured yet." /> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="text-left px-3 py-2">Date</th>
+                        <th className="text-left px-3 py-2">SKU</th>
+                        <th className="text-left px-3 py-2">Dealer</th>
+                        <th className="text-left px-3 py-2">Signal</th>
+                        <th className="text-right px-3 py-2">Strength</th>
+                        <th className="text-left px-3 py-2">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hub.demandSignals.slice(0, 50).map((s) => (
+                        <tr key={s.id} className="border-t border-border">
+                          <td className="px-3 py-2">{s.signal_date}</td>
+                          <td className="px-3 py-2 font-mono">{s.sku}</td>
+                          <td className="px-3 py-2">{s.dealer_name ?? "—"}</td>
+                          <td className="px-3 py-2"><Badge variant="secondary" className="text-[10px]">{s.signal_type}</Badge></td>
+                          <td className="px-3 py-2 text-right tabular-nums">{Number(s.signal_strength).toFixed(1)}</td>
+                          <td className="px-3 py-2 max-w-[260px] truncate" title={s.notes ?? ""}>{s.notes ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+        </Tabs>
       </TabsContent>
 
       {/* ============ SECTION 3: REORDER ============ */}
