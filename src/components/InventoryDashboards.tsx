@@ -82,16 +82,18 @@ export default function InventoryDashboards({ items }: Props) {
   // ============ SECTION 1: HIGH LEVEL SUMMARY ============
   const summary = useMemo(() => {
     let value = 0, units = 0, monthlySales = 0, lostSales = 0;
-    let outOfStockValue = 0;
+    let outOfStockValue = 0, closeoutValue = 0, annualUnits = 0;
     for (const it of items) {
       const cost = it.unitCost ?? 0;
       value += cost * it.onHand;
       units += it.onHand;
       monthlySales += it.avgMonthlySales * (it.listPrice ?? cost);
+      annualUnits += it.avgMonthlySales * 12;
       if (it.status === "out-of-stock") {
         lostSales += it.avgMonthlySales * (it.listPrice ?? cost);
         outOfStockValue += it.avgMonthlySales * (it.listPrice ?? cost);
       }
+      if (it.isCloseout || it.isClearance) closeoutValue += cost * it.onHand;
     }
     const backlogValue = hub.openOrders.reduce((s, o) => s + Number(o.extended_value ?? 0), 0);
     const backlogUnits = hub.openOrders.reduce((s, o) => s + Number(o.qty_open ?? 0), 0);
@@ -102,8 +104,38 @@ export default function InventoryDashboards({ items }: Props) {
       .filter((p) => p.is_prepaid)
       .reduce((s, p) => s + Number(p.prepaid_amount ?? 0), 0);
     const salesToInv = value > 0 ? monthlySales / value : 0;
-    return { value, units, monthlySales, backlogValue, backlogUnits, openPoValue, prepaidValue, salesToInv, lostSales, outOfStockValue };
+    // Annual turnover ≈ annual COGS / avg inventory value (proxy: annual units * cost / value)
+    const turnover = value > 0 ? (monthlySales * 12) / value : 0;
+    return { value, units, monthlySales, backlogValue, backlogUnits, openPoValue, prepaidValue, salesToInv, lostSales, outOfStockValue, closeoutValue, turnover };
   }, [items, hub.openOrders, hub.purchaseOrders]);
+
+  // Value by collection / brand for drilldown
+  const valueByCollection = useMemo(() => {
+    const m = new Map<string, { value: number; skus: number; units: number }>();
+    for (const it of items) {
+      const k = it.collection || "—";
+      const e = m.get(k) ?? { value: 0, skus: 0, units: 0 };
+      e.value += (it.unitCost ?? 0) * it.onHand;
+      e.skus += 1;
+      e.units += it.onHand;
+      m.set(k, e);
+    }
+    return Array.from(m, ([name, v]) => ({ name, ...v })).sort((a, b) => b.value - a.value);
+  }, [items]);
+
+  const valueByBrand = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const it of items) {
+      const k = it.brand || "—";
+      m.set(k, (m.get(k) ?? 0) + (it.unitCost ?? 0) * it.onHand);
+    }
+    return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [items]);
+
+  const newProducts = useMemo(
+    () => items.filter((it) => it.avgMonthlySales === 0 && (it.unitsL12m ?? 0) === 0).slice(0, 50),
+    [items],
+  );
 
   // PO arrival buckets (next 30/60/90, late)
   const poBuckets = useMemo(() => {
