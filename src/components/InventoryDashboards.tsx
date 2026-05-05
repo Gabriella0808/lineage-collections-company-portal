@@ -1240,6 +1240,7 @@ export default function InventoryDashboards({ items }: Props) {
                         />
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums font-semibold">{it.salesPerWeek.toFixed(1)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{(it.salesPerWeek * 4.35).toFixed(1)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{Math.round(it.newMin)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{it.netAvail}</td>
                       <td className={cn("px-2 py-1.5 text-right tabular-nums font-semibold", it.overUnder < 0 ? "text-destructive" : "text-success")}>
