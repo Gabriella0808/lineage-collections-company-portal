@@ -502,6 +502,7 @@ export type Database = {
           moq: number | null
           on_hand: number | null
           on_hand_nc: number | null
+          on_hand_value: number | null
           on_hand_vn: number | null
           on_po: number | null
           on_sales_order: number | null
@@ -545,6 +546,7 @@ export type Database = {
           moq?: number | null
           on_hand?: number | null
           on_hand_nc?: number | null
+          on_hand_value?: number | null
           on_hand_vn?: number | null
           on_po?: number | null
           on_sales_order?: number | null
@@ -588,6 +590,7 @@ export type Database = {
           moq?: number | null
           on_hand?: number | null
           on_hand_nc?: number | null
+          on_hand_value?: number | null
           on_hand_vn?: number | null
           on_po?: number | null
           on_sales_order?: number | null
