@@ -58,7 +58,7 @@ export function useInventory() {
 
     const { data, error } = await supabase
       .from("inventory")
-      .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at")
+      .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly")
       .order("status", { ascending: true })
       .limit(1000);
 
@@ -83,6 +83,14 @@ export function useInventory() {
           monthsSupply: mos,
           status: normalizeStatus(r.status, onHand, mos),
           link: r.link ?? undefined,
+          unitCost: r.unit_cost == null ? undefined : Number(r.unit_cost),
+          listPrice: r.list_price == null ? undefined : Number(r.list_price),
+          isCloseout: r.is_closeout ?? false,
+          isDiscontinued: r.is_discontinued ?? false,
+          factory: r.factory ?? undefined,
+          moq: r.moq ?? undefined,
+          leadTimeDays: r.lead_time_days ?? undefined,
+          forecastMonthly: r.forecast_monthly == null ? undefined : Number(r.forecast_monthly),
         } satisfies InventoryItem;
       });
 
