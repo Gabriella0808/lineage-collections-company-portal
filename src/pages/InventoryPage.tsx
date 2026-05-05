@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type InventoryStatus } from "@/data/inventoryMock";
 import { useInventory } from "@/hooks/useInventory";
+import InventoryDashboards from "@/components/InventoryDashboards";
 import { cn } from "@/lib/utils";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip,
@@ -209,6 +210,8 @@ export default function InventoryPage() {
         <StatTile label="Reorder Soon" value={counts.reorder} icon={RefreshCw} accent="text-warning-foreground" />
         <StatTile label="Fast Moving" value={counts.fast} icon={Zap} accent="text-success" />
       </div>
+
+      <InventoryDashboards items={items} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-5">
