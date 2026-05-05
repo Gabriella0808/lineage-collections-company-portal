@@ -240,27 +240,43 @@ export default function InventoryDashboards({ items }: Props) {
 
   const closeoutTotal = closeoutRows.reduce((s, it) => s + (it.unitCost ?? 0) * it.onHand, 0);
 
-  // ============ SECTION 3: REORDER ============
-  const reorderSuggestions = useMemo(() => {
-    return items
-      .map((it) => {
-        const target = (it.avgMonthlySales || 0) * 3;
-        const need = Math.max(0, target - it.available);
-        const suggested = it.moq ? Math.max(it.moq, Math.ceil(need / it.moq) * it.moq) : Math.ceil(need);
-        return { ...it, suggested, need };
-      })
-      .filter((it) => it.need > 0 && (it.status === "critical" || it.status === "out-of-stock" || it.status === "reorder-soon"))
-      .sort((a, b) => b.need - a.need);
+  // ============ SECTION 3: REORDER (Justin's InvCut model) ============
+  // Sales/Week = LTM/52 ; New Min = Sales/Week*4.5*4.5 ; Net Avail = OnHand+OnPO
+  // Over/Under = Net Avail - New Min ; Weeks = (NetAvail+Order)/SalesPerWeek
+  // Total Cubes = Order * Cubes
+  const reorderRows = useMemo(() => {
+    return items.map((it) => {
+      const salesPerWeek = it.ltmUnits != null
+        ? it.ltmUnits / 52
+        : (it.avgMonthlySales || 0) * 12 / 52;
+      const newMin = salesPerWeek * 4.5 * 4.5;
+      const onPo = it.onPo ?? 0;
+      const netAvail = it.onHand + onPo;
+      const overUnder = netAvail - newMin;
+      const rawNeed = Math.max(0, Math.ceil(newMin - netAvail));
+      const moq = it.moq ?? 0;
+      const suggestedOrder = moq > 0
+        ? (rawNeed > 0 ? Math.ceil(rawNeed / moq) * moq : 0)
+        : rawNeed;
+      const projectedWeeks = salesPerWeek > 0 ? (netAvail + suggestedOrder) / salesPerWeek : null;
+      return { ...it, salesPerWeek, newMin, netAvail, overUnder, suggestedOrder, onPo, projectedWeeks, cubesPerUnit: it.cubes ?? 0 };
+    });
   }, [items]);
 
+  const reorderSuggestions = useMemo(
+    () => reorderRows.filter((r) => r.suggestedOrder > 0).sort((a, b) => a.overUnder - b.overUnder),
+    [reorderRows]
+  );
+
   const reorderByFactory = useMemo(() => {
-    const m = new Map<string, { suggested: number; moq: number; skus: number }>();
+    const m = new Map<string, { suggested: number; moq: number; skus: number; totalCubes: number }>();
     for (const it of reorderSuggestions) {
       const f = it.factory ?? it.supplier ?? "—";
-      const e = m.get(f) ?? { suggested: 0, moq: 0, skus: 0 };
-      e.suggested += it.suggested;
+      const e = m.get(f) ?? { suggested: 0, moq: 0, skus: 0, totalCubes: 0 };
+      e.suggested += it.suggestedOrder;
       e.moq += it.moq ?? 0;
       e.skus += 1;
+      e.totalCubes += it.suggestedOrder * (it.cubes ?? 0);
       m.set(f, e);
     }
     return Array.from(m, ([factory, v]) => ({ factory, ...v }));
@@ -546,7 +562,7 @@ export default function InventoryDashboards({ items }: Props) {
           <div className="flex items-center gap-2 mb-3">
             <Factory className="h-4 w-4 text-primary" />
             <h3 className="text-base font-semibold">Reorder by Factory — Suggested vs MOQ</h3>
-            <Badge variant="secondary" className="ml-auto">Justin's section — model on his spreadsheet</Badge>
+            <Badge variant="secondary" className="ml-auto">Justin's InvCut model</Badge>
           </div>
           {reorderByFactory.length === 0 ? <EmptyState message="Nothing to reorder right now." /> : (
             <div className="overflow-x-auto mb-4">
@@ -558,20 +574,28 @@ export default function InventoryDashboards({ items }: Props) {
                     <th className="text-right px-3 py-2">Total MOQ</th>
                     <th className="text-right px-3 py-2">Suggested</th>
                     <th className="text-right px-3 py-2">vs MOQ</th>
+                    <th className="text-right px-3 py-2">Total Cubes</th>
+                    <th className="text-right px-3 py-2">~Containers</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reorderByFactory.map((f) => (
-                    <tr key={f.factory} className="border-t border-border">
-                      <td className="px-3 py-2">{f.factory}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{f.skus}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{f.moq}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{f.suggested}</td>
-                      <td className={cn("px-3 py-2 text-right tabular-nums", f.suggested >= f.moq ? "text-success" : "text-warning-foreground")}>
-                        {f.moq > 0 ? `${Math.round((f.suggested / f.moq) * 100)}%` : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {reorderByFactory.map((f) => {
+                    // 40' HC ≈ 2,350 cu ft usable
+                    const containers = f.totalCubes > 0 ? f.totalCubes / 2350 : 0;
+                    return (
+                      <tr key={f.factory} className="border-t border-border">
+                        <td className="px-3 py-2">{f.factory}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{f.skus}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{f.moq || "—"}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtNum(f.suggested)}</td>
+                        <td className={cn("px-3 py-2 text-right tabular-nums", f.moq > 0 && f.suggested >= f.moq ? "text-success" : "text-warning-foreground")}>
+                          {f.moq > 0 ? `${Math.round((f.suggested / f.moq) * 100)}%` : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">{f.totalCubes ? f.totalCubes.toFixed(1) : "—"}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{containers ? containers.toFixed(2) : "—"}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -579,33 +603,58 @@ export default function InventoryDashboards({ items }: Props) {
         </Card>
 
         <Card className="p-5">
-          <h3 className="text-base font-semibold mb-3">Suggested Order Lines</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold">Suggested Order Lines</h3>
+            <span className="text-xs text-muted-foreground">
+              New Min = Sales/Wk × 4.5 × 4.5 (~20 wks cover) · Net Avail = On Hand + On PO
+            </span>
+          </div>
           {reorderSuggestions.length === 0 ? <EmptyState message="No items need reorder." /> : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="text-left px-3 py-2">SKU</th>
-                    <th className="text-left px-3 py-2">Product</th>
-                    <th className="text-left px-3 py-2">Factory</th>
-                    <th className="text-right px-3 py-2">Available</th>
-                    <th className="text-right px-3 py-2">Avg Mo.</th>
-                    <th className="text-right px-3 py-2">Need</th>
+                    <th className="text-left px-3 py-2">Item Description</th>
+                    <th className="text-right px-3 py-2">Min</th>
+                    <th className="text-right px-3 py-2">Max</th>
+                    <th className="text-right px-3 py-2">On Hand</th>
+                    <th className="text-right px-3 py-2">On SO</th>
+                    <th className="text-right px-3 py-2">Avail</th>
+                    <th className="text-right px-3 py-2">On PO</th>
+                    <th className="text-right px-3 py-2">Sales/Wk</th>
+                    <th className="text-right px-3 py-2">New Min</th>
+                    <th className="text-right px-3 py-2">Net Avail</th>
+                    <th className="text-right px-3 py-2">Over/Under</th>
                     <th className="text-right px-3 py-2">MOQ</th>
-                    <th className="text-right px-3 py-2">Suggested</th>
+                    <th className="text-right px-3 py-2">Order</th>
+                    <th className="text-right px-3 py-2">Wks</th>
+                    <th className="text-right px-3 py-2">Cubes</th>
+                    <th className="text-right px-3 py-2">Total Cubes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reorderSuggestions.map((it) => (
                     <tr key={it.sku} className="border-t border-border">
                       <td className="px-3 py-2 font-mono">{it.sku}</td>
-                      <td className="px-3 py-2">{it.product}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{it.factory ?? it.supplier}</td>
+                      <td className="px-3 py-2 max-w-[260px] truncate" title={it.product}>{it.product}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.reorderMin ?? "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.reorderMax ?? "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.onSalesOrder ?? 0}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{it.available}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-destructive font-semibold">{Math.ceil(it.need)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.onPo}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.salesPerWeek.toFixed(1)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{Math.round(it.newMin)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.netAvail}</td>
+                      <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", it.overUnder < 0 ? "text-destructive" : "text-success")}>
+                        {Math.round(it.overUnder)}
+                      </td>
                       <td className="px-3 py-2 text-right tabular-nums">{it.moq ?? "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{it.suggested}</td>
+                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtNum(it.suggestedOrder)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.projectedWeeks != null ? it.projectedWeeks.toFixed(1) : "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.cubesPerUnit ? it.cubesPerUnit.toFixed(2) : "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{(it.suggestedOrder * it.cubesPerUnit).toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>
