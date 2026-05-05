@@ -84,7 +84,7 @@ const COLUMNS: {
     label: "In Motion",
     tone: "border-accent/40",
     accent: "bg-accent",
-    headerBg: "bg-accent/[0.06]",
+    headerBg: "bg-accent/15",
     pillBg: "bg-accent",
     pillText: "text-accent-foreground",
   },
