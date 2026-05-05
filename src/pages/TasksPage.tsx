@@ -432,7 +432,7 @@ export default function TasksPage() {
       <PageHeader
         eyebrow="Command Center"
         title="My Tasks"
-        subtitle="Track internal follow-ups, ownership, and operational priorities across the Lineage team."
+        subtitle="\n"
         actions={
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
             <DialogTrigger asChild>
