@@ -191,7 +191,7 @@ function SidebarNav() {
     <Sidebar collapsible="icon" className="border-r-0 bg-sidebar">
       <SidebarHeader className="px-4 py-5 border-b border-sidebar-border/70">
         <div className="flex items-center gap-3">
-          <img src={lineageLogo} alt="Lineage Collections" className="h-7 w-auto" />
+          <img src={lineageLogo} alt="Lineage Collections" className="h-10 w-auto" />
         </div>
       </SidebarHeader>
 
