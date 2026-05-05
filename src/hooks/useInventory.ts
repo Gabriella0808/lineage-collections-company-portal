@@ -73,7 +73,7 @@ export function useInventory() {
 
     const { data, error } = await supabase
       .from("inventory")
-      .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly")
+      .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly, units_l12m, units_l6m, units_l3m, on_po, on_sales_order, in_transit, on_hand_nc, on_hand_vn, reorder_basis, reorder_override_per_week, lead_time_months, cubes, reorder_min, reorder_max, is_clearance")
       .order("status", { ascending: true })
       .limit(1000);
 
