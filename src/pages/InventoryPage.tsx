@@ -178,7 +178,7 @@ export default function InventoryPage() {
         <div>
           <h1 className="page-title">Inventory</h1>
           <p className="page-subtitle">
-            SKU master — health snapshot.{" "}
+            SKU master — snapshot.{" "}
             {usingMock
               ? "Showing sample data — Acctivate sync hasn't run yet."
               : lastSyncedAt
