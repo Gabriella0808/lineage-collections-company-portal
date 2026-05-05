@@ -241,17 +241,39 @@ export default function InventoryDashboards({ items }: Props) {
   const closeoutTotal = closeoutRows.reduce((s, it) => s + (it.unitCost ?? 0) * it.onHand, 0);
 
   // ============ SECTION 3: REORDER ============
-  // Sales/Week = LTM/52 ; New Min = Sales/Week*4.5*4.5 ; Net Avail = OnHand+OnPO
-  // Over/Under = Net Avail - New Min ; Weeks = (NetAvail+Order)/SalesPerWeek
-  // Total Cubes = Order * Cubes
+  // Per Justin: weekly unit-sales windows L12M / L6M / L3M / Override.
+  // New Min = SalesPerWeek * 4.35 (wks/mo) * leadTimeMonths (default 4.5)
+  // Net Avail = OnHand + OnPO + InTransit
+  // Order is rounded up to MOQ. Wks of cover = (NetAvail+Order) / SalesPerWeek
+  type Basis = "L12M" | "L6M" | "L3M" | "OVERRIDE";
+  interface Override { basis?: Basis; perWeek?: number; leadMonths?: number }
+  const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  const setOv = (sku: string, patch: Override) =>
+    setOverrides((prev) => ({ ...prev, [sku]: { ...prev[sku], ...patch } }));
+
   const reorderRows = useMemo(() => {
     return items.map((it) => {
-      const salesPerWeek = it.ltmUnits != null
-        ? it.ltmUnits / 52
-        : (it.avgMonthlySales || 0) * 12 / 52;
-      const newMin = salesPerWeek * 4.5 * 4.5;
+      const ov = overrides[it.sku] ?? {};
+      const wkL12 = it.unitsL12m != null ? it.unitsL12m / 52
+                  : it.ltmUnits != null ? it.ltmUnits / 52
+                  : (it.avgMonthlySales || 0) * 12 / 52;
+      const wkL6  = it.unitsL6m != null ? it.unitsL6m / 26 : null;
+      const wkL3  = it.unitsL3m != null ? it.unitsL3m / 13 : null;
+
+      const basis: Basis = ov.basis ?? (it.reorderBasis as Basis) ?? "L12M";
+      const overrideWk = ov.perWeek ?? it.reorderOverridePerWeek;
+      const leadMonths = ov.leadMonths ?? it.leadTimeMonths ?? 4.5;
+
+      let salesPerWeek = wkL12;
+      if (basis === "L6M" && wkL6 != null) salesPerWeek = wkL6;
+      else if (basis === "L3M" && wkL3 != null) salesPerWeek = wkL3;
+      else if (basis === "OVERRIDE" && overrideWk != null) salesPerWeek = overrideWk;
+      else if (overrideWk != null && basis === "OVERRIDE") salesPerWeek = overrideWk;
+
+      const newMin = salesPerWeek * 4.35 * leadMonths;
       const onPo = it.onPo ?? 0;
-      const netAvail = it.onHand + onPo;
+      const inTransit = it.inTransit ?? 0;
+      const netAvail = it.onHand + onPo + inTransit;
       const overUnder = netAvail - newMin;
       const rawNeed = Math.max(0, Math.ceil(newMin - netAvail));
       const moq = it.moq ?? 0;
@@ -259,9 +281,14 @@ export default function InventoryDashboards({ items }: Props) {
         ? (rawNeed > 0 ? Math.ceil(rawNeed / moq) * moq : 0)
         : rawNeed;
       const projectedWeeks = salesPerWeek > 0 ? (netAvail + suggestedOrder) / salesPerWeek : null;
-      return { ...it, salesPerWeek, newMin, netAvail, overUnder, suggestedOrder, onPo, projectedWeeks, cubesPerUnit: it.cubes ?? 0 };
+      return {
+        ...it, basis, overrideWk, leadMonths,
+        wkL12, wkL6, wkL3, salesPerWeek, newMin, onPo, inTransit,
+        netAvail, overUnder, suggestedOrder, projectedWeeks,
+        cubesPerUnit: it.cubes ?? 0,
+      };
     });
-  }, [items]);
+  }, [items, overrides]);
 
   const reorderSuggestions = useMemo(
     () => reorderRows.filter((r) => r.suggestedOrder > 0).sort((a, b) => a.overUnder - b.overUnder),
@@ -281,6 +308,24 @@ export default function InventoryDashboards({ items }: Props) {
     }
     return Array.from(m, ([factory, v]) => ({ factory, ...v }));
   }, [reorderSuggestions]);
+
+  // Segregation: On PO (in production / waiting), In Transit, On Hand (NC + VN)
+  const segregation = useMemo(() => {
+    let onPoUnits = 0, onPoValue = 0;
+    let inTransitUnits = 0, inTransitValue = 0;
+    let onHandNc = 0, onHandVn = 0, onHandValue = 0;
+    for (const it of items) {
+      const cost = it.unitCost ?? 0;
+      onPoUnits += it.onPo ?? 0;
+      onPoValue += (it.onPo ?? 0) * cost;
+      inTransitUnits += it.inTransit ?? 0;
+      inTransitValue += (it.inTransit ?? 0) * cost;
+      onHandNc += it.onHandNc ?? 0;
+      onHandVn += it.onHandVn ?? 0;
+      onHandValue += it.onHand * cost;
+    }
+    return { onPoUnits, onPoValue, inTransitUnits, inTransitValue, onHandNc, onHandVn, onHandValue };
+  }, [items]);
 
   return (
     <Tabs defaultValue="summary" className="w-full">
@@ -609,59 +654,119 @@ export default function InventoryDashboards({ items }: Props) {
           )}
         </Card>
 
+        {/* Inventory segregation: On PO / In Transit / On Hand (NC + VN) */}
         <Card className="p-5">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 mb-3">
+            <Truck className="h-4 w-4 text-primary" />
+            <h3 className="text-base font-semibold">Inventory Segregation</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">On PO (in production / waiting)</div>
+              <div className="text-2xl font-semibold mt-1 tabular-nums">{fmtNum(segregation.onPoUnits)}</div>
+              <div className="text-xs text-muted-foreground mt-1">{fmtMoney(segregation.onPoValue)}</div>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">In Transit</div>
+              <div className="text-2xl font-semibold mt-1 tabular-nums">{fmtNum(segregation.inTransitUnits)}</div>
+              <div className="text-xs text-muted-foreground mt-1">{fmtMoney(segregation.inTransitValue)}</div>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">On Hand</div>
+              <div className="text-2xl font-semibold mt-1 tabular-nums">{fmtNum(segregation.onHandNc + segregation.onHandVn)}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                NC {fmtNum(segregation.onHandNc)} · VN {fmtNum(segregation.onHandVn)} · {fmtMoney(segregation.onHandValue)}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
             <h3 className="text-base font-semibold">Suggested Order Lines</h3>
             <span className="text-xs text-muted-foreground">
-              New Min = Sales/Wk × 4.5 × 4.5 (~20 wks cover) · Net Avail = On Hand + On PO
+              Sales/Wk basis: L12M / L6M / L3M or manual override · New Min = Sales/Wk × 4.35 × Lead (mo)
             </span>
           </div>
-          {reorderSuggestions.length === 0 ? <EmptyState message="No items need reorder." /> : (
+          {reorderRows.length === 0 ? <EmptyState message="No items." /> : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="text-left px-3 py-2">SKU</th>
-                    <th className="text-left px-3 py-2">Item Description</th>
-                    <th className="text-right px-3 py-2">Min</th>
-                    <th className="text-right px-3 py-2">Max</th>
-                    <th className="text-right px-3 py-2">On Hand</th>
-                    <th className="text-right px-3 py-2">On SO</th>
-                    <th className="text-right px-3 py-2">Avail</th>
-                    <th className="text-right px-3 py-2">On PO</th>
-                    <th className="text-right px-3 py-2">Sales/Wk</th>
-                    <th className="text-right px-3 py-2">New Min</th>
-                    <th className="text-right px-3 py-2">Net Avail</th>
-                    <th className="text-right px-3 py-2">Over/Under</th>
-                    <th className="text-right px-3 py-2">MOQ</th>
-                    <th className="text-right px-3 py-2">Order</th>
-                    <th className="text-right px-3 py-2">Wks</th>
-                    <th className="text-right px-3 py-2">Cubes</th>
-                    <th className="text-right px-3 py-2">Total Cubes</th>
+                    <th className="text-left px-2 py-2">SKU</th>
+                    <th className="text-left px-2 py-2">Item</th>
+                    <th className="text-right px-2 py-2">On Hand</th>
+                    <th className="text-right px-2 py-2">On PO</th>
+                    <th className="text-right px-2 py-2">In Transit</th>
+                    <th className="text-right px-2 py-2">L12M /wk</th>
+                    <th className="text-right px-2 py-2">L6M /wk</th>
+                    <th className="text-right px-2 py-2">L3M /wk</th>
+                    <th className="text-left px-2 py-2">Active</th>
+                    <th className="text-right px-2 py-2">Override /wk</th>
+                    <th className="text-right px-2 py-2">Lead (mo)</th>
+                    <th className="text-right px-2 py-2">Sales/Wk</th>
+                    <th className="text-right px-2 py-2">New Min</th>
+                    <th className="text-right px-2 py-2">Net Avail</th>
+                    <th className="text-right px-2 py-2">Over/Under</th>
+                    <th className="text-right px-2 py-2">MOQ</th>
+                    <th className="text-right px-2 py-2">Order</th>
+                    <th className="text-right px-2 py-2">Wks</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reorderSuggestions.map((it) => (
+                  {reorderRows.slice(0, 60).map((it) => (
                     <tr key={it.sku} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{it.sku}</td>
-                      <td className="px-3 py-2 max-w-[260px] truncate" title={it.product}>{it.product}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.reorderMin ?? "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.reorderMax ?? "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.onSalesOrder ?? 0}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.available}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.onPo}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.salesPerWeek.toFixed(1)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{Math.round(it.newMin)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.netAvail}</td>
-                      <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", it.overUnder < 0 ? "text-destructive" : "text-success")}>
+                      <td className="px-2 py-1.5 font-mono">{it.sku}</td>
+                      <td className="px-2 py-1.5 max-w-[220px] truncate" title={it.product}>{it.product}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.onHand}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.onPo}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.inTransit}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.wkL12.toFixed(1)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.wkL6 != null ? it.wkL6.toFixed(1) : "—"}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.wkL3 != null ? it.wkL3.toFixed(1) : "—"}</td>
+                      <td className="px-2 py-1.5">
+                        <select
+                          className="h-7 rounded-md border border-input bg-background px-1 text-xs"
+                          value={it.basis}
+                          onChange={(e) => setOv(it.sku, { basis: e.target.value as Basis })}
+                        >
+                          <option value="L12M">L12M</option>
+                          <option value="L6M">L6M</option>
+                          <option value="L3M">L3M</option>
+                          <option value="OVERRIDE">Override</option>
+                        </select>
+                      </td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">
+                        <input
+                          type="number"
+                          step="0.1"
+                          className="h-7 w-16 rounded-md border border-input bg-background px-1 text-right text-xs"
+                          placeholder="—"
+                          value={it.overrideWk ?? ""}
+                          onChange={(e) => setOv(it.sku, {
+                            perWeek: e.target.value === "" ? undefined : Number(e.target.value),
+                            basis: e.target.value === "" ? it.basis : "OVERRIDE",
+                          })}
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">
+                        <input
+                          type="number"
+                          step="0.1"
+                          className="h-7 w-14 rounded-md border border-input bg-background px-1 text-right text-xs"
+                          value={it.leadMonths}
+                          onChange={(e) => setOv(it.sku, { leadMonths: Number(e.target.value) })}
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold">{it.salesPerWeek.toFixed(1)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{Math.round(it.newMin)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.netAvail}</td>
+                      <td className={cn("px-2 py-1.5 text-right tabular-nums font-semibold", it.overUnder < 0 ? "text-destructive" : "text-success")}>
                         {Math.round(it.overUnder)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.moq ?? "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtNum(it.suggestedOrder)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.projectedWeeks != null ? it.projectedWeeks.toFixed(1) : "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{it.cubesPerUnit ? it.cubesPerUnit.toFixed(2) : "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{(it.suggestedOrder * it.cubesPerUnit).toFixed(1)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.moq ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold">{fmtNum(it.suggestedOrder)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.projectedWeeks != null ? it.projectedWeeks.toFixed(1) : "—"}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -24,6 +24,21 @@ interface DbInventoryRow {
   moq: number | null;
   lead_time_days: number | null;
   forecast_monthly: number | null;
+  units_l12m: number | null;
+  units_l6m: number | null;
+  units_l3m: number | null;
+  on_po: number | null;
+  on_sales_order: number | null;
+  in_transit: number | null;
+  on_hand_nc: number | null;
+  on_hand_vn: number | null;
+  reorder_basis: string | null;
+  reorder_override_per_week: number | null;
+  lead_time_months: number | null;
+  cubes: number | null;
+  reorder_min: number | null;
+  reorder_max: number | null;
+  is_clearance: boolean | null;
 }
 
 function deriveStatus(onHand: number, monthsSupply: number | null): InventoryStatus {
@@ -58,7 +73,7 @@ export function useInventory() {
 
     const { data, error } = await supabase
       .from("inventory")
-      .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly")
+      .select("id, sku, product, collection, supplier, on_hand, available, avg_monthly_sales, months_supply, status, link, last_synced_at, unit_cost, list_price, is_closeout, is_discontinued, factory, moq, lead_time_days, forecast_monthly, units_l12m, units_l6m, units_l3m, on_po, on_sales_order, in_transit, on_hand_nc, on_hand_vn, reorder_basis, reorder_override_per_week, lead_time_months, cubes, reorder_min, reorder_max, is_clearance")
       .order("status", { ascending: true })
       .limit(1000);
 
@@ -91,6 +106,21 @@ export function useInventory() {
           moq: r.moq ?? undefined,
           leadTimeDays: r.lead_time_days ?? undefined,
           forecastMonthly: r.forecast_monthly == null ? undefined : Number(r.forecast_monthly),
+          unitsL12m: r.units_l12m == null ? undefined : Number(r.units_l12m),
+          unitsL6m: r.units_l6m == null ? undefined : Number(r.units_l6m),
+          unitsL3m: r.units_l3m == null ? undefined : Number(r.units_l3m),
+          onPo: r.on_po == null ? undefined : Number(r.on_po),
+          onSalesOrder: r.on_sales_order == null ? undefined : Number(r.on_sales_order),
+          inTransit: r.in_transit == null ? undefined : Number(r.in_transit),
+          onHandNc: r.on_hand_nc == null ? undefined : Number(r.on_hand_nc),
+          onHandVn: r.on_hand_vn == null ? undefined : Number(r.on_hand_vn),
+          reorderBasis: (r.reorder_basis as InventoryItem["reorderBasis"]) ?? "L12M",
+          reorderOverridePerWeek: r.reorder_override_per_week == null ? undefined : Number(r.reorder_override_per_week),
+          leadTimeMonths: r.lead_time_months == null ? undefined : Number(r.lead_time_months),
+          cubes: r.cubes == null ? undefined : Number(r.cubes),
+          reorderMin: r.reorder_min == null ? undefined : Number(r.reorder_min),
+          reorderMax: r.reorder_max == null ? undefined : Number(r.reorder_max),
+          isClearance: r.is_clearance ?? false,
         } satisfies InventoryItem;
       });
 
