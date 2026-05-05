@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DollarSign, PackageOpen, TrendingUp, TrendingDown, Tag, Activity,
-  Truck, Factory, Target, Radio, AlertCircle, ShoppingCart, Archive,
+  Truck, Factory, AlertCircle, ShoppingCart, CalendarClock, Layers,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
   LineChart, Line, Legend,
 } from "recharts";
 import type { InventoryItem } from "@/data/inventoryMock";
-import { useInventoryHub } from "@/hooks/useInventoryHub";
+import { useInventoryHub, type PurchaseOrder } from "@/hooks/useInventoryHub";
 import { cn } from "@/lib/utils";
 
 const fmtMoney = (n: number) =>
@@ -19,6 +19,24 @@ const fmtMoney = (n: number) =>
   n >= 1_000 ? `$${(n / 1_000).toFixed(1)}K` :
   `$${n.toFixed(0)}`;
 const fmtNum = (n: number) => n.toLocaleString();
+
+const STAGES = [
+  { key: "in_manufacturing", label: "In Manufacturing" },
+  { key: "loaded", label: "Loaded" },
+  { key: "in_transit", label: "In Transit" },
+  { key: "at_port", label: "At Port" },
+  { key: "arrived", label: "Arrived" },
+  { key: "closed", label: "Closed" },
+] as const;
+
+const STAGE_COLOR: Record<string, string> = {
+  in_manufacturing: "bg-muted text-muted-foreground border-border",
+  loaded: "bg-accent/15 text-accent-foreground border-accent/30",
+  in_transit: "bg-primary/10 text-primary border-primary/20",
+  at_port: "bg-warning/15 text-warning-foreground border-warning/30",
+  arrived: "bg-success/15 text-success border-success/25",
+  closed: "bg-muted text-muted-foreground border-border",
+};
 
 function KPI({ label, value, hint, icon: Icon, accent }: {
   label: string; value: string | number; hint?: string;
@@ -46,126 +64,198 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+function StagePill({ stage }: { stage: string | null }) {
+  if (!stage) return <span className="text-xs text-muted-foreground">—</span>;
+  const cls = STAGE_COLOR[stage] ?? "bg-muted text-muted-foreground border-border";
+  const label = STAGES.find((s) => s.key === stage)?.label ?? stage;
+  return <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs border", cls)}>{label}</span>;
+}
+
 interface Props { items: InventoryItem[] }
 
 export default function InventoryDashboards({ items }: Props) {
   const hub = useInventoryHub();
-  const [trendKey, setTrendKey] = useState<"collection" | "sku">("collection");
 
-  // ===== Top KPIs =====
-  const totals = useMemo(() => {
-    let value = 0, units = 0, monthlySales = 0, closeoutVal = 0, discontinuedVal = 0;
-    let lostUnits = 0;
+  // ============ SECTION 1: HIGH LEVEL SUMMARY ============
+  const summary = useMemo(() => {
+    let value = 0, units = 0, monthlySales = 0, lostSales = 0;
+    let outOfStockValue = 0;
     for (const it of items) {
       const cost = it.unitCost ?? 0;
-      const lineVal = cost * it.onHand;
-      value += lineVal;
+      value += cost * it.onHand;
       units += it.onHand;
       monthlySales += it.avgMonthlySales * (it.listPrice ?? cost);
-      if (it.isCloseout) closeoutVal += lineVal;
-      if (it.isDiscontinued) discontinuedVal += lineVal;
-      if (it.status === "out-of-stock") lostUnits += it.avgMonthlySales;
+      if (it.status === "out-of-stock") {
+        lostSales += it.avgMonthlySales * (it.listPrice ?? cost);
+        outOfStockValue += it.avgMonthlySales * (it.listPrice ?? cost);
+      }
     }
     const backlogValue = hub.openOrders.reduce((s, o) => s + Number(o.extended_value ?? 0), 0);
     const backlogUnits = hub.openOrders.reduce((s, o) => s + Number(o.qty_open ?? 0), 0);
-    const annualSales = monthlySales * 12;
-    const turnover = value > 0 ? annualSales / value : 0;
+    const openPoValue = hub.purchaseOrders
+      .filter((p) => p.production_stage !== "closed" && p.production_stage !== "arrived")
+      .reduce((s, p) => s + Number(p.total_value ?? 0), 0);
+    const prepaidValue = hub.purchaseOrders
+      .filter((p) => p.is_prepaid)
+      .reduce((s, p) => s + Number(p.prepaid_amount ?? 0), 0);
     const salesToInv = value > 0 ? monthlySales / value : 0;
-    const lostSalesEstimate = hub.lostSales.reduce((s, e) => s + Number(e.estimated_value ?? 0), 0);
-    return {
-      value, units, monthlySales, closeoutVal, discontinuedVal,
-      backlogValue, backlogUnits, turnover, salesToInv, lostUnits, lostSalesEstimate,
-    };
-  }, [items, hub.openOrders, hub.lostSales]);
+    return { value, units, monthlySales, backlogValue, backlogUnits, openPoValue, prepaidValue, salesToInv, lostSales, outOfStockValue };
+  }, [items, hub.openOrders, hub.purchaseOrders]);
 
-  // ===== By collection =====
-  const valueByCollection = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const it of items) {
-      const v = (it.unitCost ?? 0) * it.onHand;
-      m.set(it.collection, (m.get(it.collection) ?? 0) + v);
+  // PO arrival buckets (next 30/60/90, late)
+  const poBuckets = useMemo(() => {
+    const today = new Date();
+    const buckets = { late: [] as PurchaseOrder[], d30: [] as PurchaseOrder[], d60: [] as PurchaseOrder[], d90: [] as PurchaseOrder[] };
+    for (const po of hub.purchaseOrders) {
+      if (po.production_stage === "closed" || po.production_stage === "arrived") continue;
+      if (!po.eta) continue;
+      const eta = new Date(po.eta);
+      const days = Math.floor((eta.getTime() - today.getTime()) / 86400000);
+      if (days < 0) buckets.late.push(po);
+      else if (days <= 30) buckets.d30.push(po);
+      else if (days <= 60) buckets.d60.push(po);
+      else if (days <= 90) buckets.d90.push(po);
     }
-    return Array.from(m, ([collection, value]) => ({ collection, value }))
-      .sort((a, b) => b.value - a.value).slice(0, 10);
-  }, [items]);
+    return buckets;
+  }, [hub.purchaseOrders]);
 
-  const closeoutByCollection = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const it of items) {
-      if (!it.isCloseout) continue;
-      const v = (it.unitCost ?? 0) * it.onHand;
-      m.set(it.collection, (m.get(it.collection) ?? 0) + v);
+  // PO stage counts
+  const stageCounts = useMemo(() => {
+    const m = new Map<string, { count: number; value: number }>();
+    for (const po of hub.purchaseOrders) {
+      const k = po.production_stage ?? "unknown";
+      const e = m.get(k) ?? { count: 0, value: 0 };
+      e.count++;
+      e.value += Number(po.total_value ?? 0);
+      m.set(k, e);
     }
-    return Array.from(m, ([collection, value]) => ({ collection, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [items]);
+    return STAGES.map((s) => ({ ...s, ...(m.get(s.key) ?? { count: 0, value: 0 }) }));
+  }, [hub.purchaseOrders]);
 
-  const turnoverByCollection = useMemo(() => {
-    const m = new Map<string, { value: number; sales: number }>();
+  // ============ SECTION 2: ANALYSIS ============
+  const totalInvValue = summary.value || 1;
+  const totalSalesAmount = items.reduce((s, it) => s + it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0), 0) || 1;
+
+  const analysisRows = useMemo(() => {
+    return items.map((it) => {
+      const value = (it.unitCost ?? 0) * it.onHand;
+      const sales = it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0);
+      return {
+        ...it,
+        value,
+        pctTotalInv: (value / totalInvValue) * 100,
+        pctTotalSales: (sales / totalSalesAmount) * 100,
+      };
+    }).sort((a, b) => b.value - a.value);
+  }, [items, totalInvValue, totalSalesAmount]);
+
+  // Vendor performance
+  const vendorPerf = useMemo(() => {
+    const m = new Map<string, { sales: number; value: number }>();
     for (const it of items) {
-      const e = m.get(it.collection) ?? { value: 0, sales: 0 };
+      const v = it.supplier ?? "—";
+      const sales = it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0);
+      const e = m.get(v) ?? { sales: 0, value: 0 };
+      e.sales += sales;
       e.value += (it.unitCost ?? 0) * it.onHand;
-      e.sales += it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0) * 12;
-      m.set(it.collection, e);
+      m.set(v, e);
     }
-    return Array.from(m, ([collection, v]) => ({
-      collection,
-      turnover: v.value > 0 ? +(v.sales / v.value).toFixed(2) : 0,
-    })).sort((a, b) => b.turnover - a.turnover);
+    const total = Array.from(m.values()).reduce((s, e) => s + e.sales, 0) || 1;
+    return Array.from(m, ([vendor, v]) => ({
+      vendor,
+      sales: v.sales,
+      pctSales: (v.sales / total) * 100,
+      value: v.value,
+    })).sort((a, b) => b.sales - a.sales);
   }, [items]);
 
-  // ===== Sales trend (from sku_sales_history) =====
-  const salesTrend = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const r of hub.salesHistory) {
-      const key = `${r.year}-${String(r.month).padStart(2, "0")}`;
-      m.set(key, (m.get(key) ?? 0) + Number(r.revenue ?? 0));
-    }
-    return Array.from(m, ([period, revenue]) => ({ period, revenue }))
-      .sort((a, b) => a.period.localeCompare(b.period));
-  }, [hub.salesHistory]);
+  // Slow movers
+  const slowMovers = useMemo(() =>
+    [...items]
+      .filter((it) => (it.monthsSupply ?? 0) >= 6 && it.onHand > 0)
+      .sort((a, b) => (b.monthsSupply ?? 0) - (a.monthsSupply ?? 0))
+      .slice(0, 30),
+    [items]);
 
-  // ===== Buy now (suggested orders) =====
-  const buyNow = useMemo(() => {
+  // Inventory aging (received_date based — only available items shown)
+  const aging = useMemo(() => {
+    const today = Date.now();
+    const buckets = { d030: 0, d3160: 0, d6190: 0, d90plus: 0, unknown: 0 };
+    for (const it of items) {
+      const received = (it as any).received_date as string | undefined;
+      const value = (it.unitCost ?? 0) * it.onHand;
+      if (!received) { buckets.unknown += value; continue; }
+      const days = Math.floor((today - new Date(received).getTime()) / 86400000);
+      if (days <= 30) buckets.d030 += value;
+      else if (days <= 60) buckets.d3160 += value;
+      else if (days <= 90) buckets.d6190 += value;
+      else buckets.d90plus += value;
+    }
+    return [
+      { bucket: "0–30 days", value: buckets.d030 },
+      { bucket: "31–60 days", value: buckets.d3160 },
+      { bucket: "61–90 days", value: buckets.d6190 },
+      { bucket: "90+ days", value: buckets.d90plus },
+      { bucket: "Unknown", value: buckets.unknown },
+    ];
+  }, [items]);
+
+  // Comparative sales: pick 2 periods
+  const periods = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of hub.salesHistory) set.add(`${r.year}-${String(r.month).padStart(2, "0")}`);
+    return Array.from(set).sort();
+  }, [hub.salesHistory]);
+  const [periodA, setPeriodA] = useState<string>("");
+  const [periodB, setPeriodB] = useState<string>("");
+
+  const compareRows = useMemo(() => {
+    if (!periodA || !periodB) return [];
+    const a = new Map<string, number>();
+    const b = new Map<string, number>();
+    for (const r of hub.salesHistory) {
+      const k = `${r.year}-${String(r.month).padStart(2, "0")}`;
+      if (k === periodA) a.set(r.sku, (a.get(r.sku) ?? 0) + Number(r.units_sold ?? 0));
+      if (k === periodB) b.set(r.sku, (b.get(r.sku) ?? 0) + Number(r.units_sold ?? 0));
+    }
+    const allSkus = new Set<string>([...a.keys(), ...b.keys()]);
+    return Array.from(allSkus, (sku) => {
+      const va = a.get(sku) ?? 0;
+      const vb = b.get(sku) ?? 0;
+      const diff = vb - va;
+      const pct = va > 0 ? (diff / va) * 100 : null;
+      return { sku, periodA: va, periodB: vb, diff, pct };
+    }).sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff)).slice(0, 25);
+  }, [hub.salesHistory, periodA, periodB]);
+
+  // ============ SECTION 4: CLOSEOUT ============
+  const closeoutRows = useMemo(() =>
+    items.filter((it) => it.isCloseout).map((it) => {
+      const initial = (it as any).closeout_initial_qty as number | undefined;
+      const sold = (it as any).closeout_units_sold as number | undefined;
+      const pctSold = initial && initial > 0 ? ((sold ?? 0) / initial) * 100 : null;
+      const burnDownMonths = it.avgMonthlySales > 0 ? it.onHand / it.avgMonthlySales : null;
+      return { ...it, initial, sold, pctSold, burnDownMonths };
+    }), [items]);
+
+  const closeoutTotal = closeoutRows.reduce((s, it) => s + (it.unitCost ?? 0) * it.onHand, 0);
+
+  // ============ SECTION 3: REORDER ============
+  const reorderSuggestions = useMemo(() => {
     return items
       .map((it) => {
-        const target = (it.avgMonthlySales || 0) * 3; // 3 months target
+        const target = (it.avgMonthlySales || 0) * 3;
         const need = Math.max(0, target - it.available);
         const suggested = it.moq ? Math.max(it.moq, Math.ceil(need / it.moq) * it.moq) : Math.ceil(need);
         return { ...it, suggested, need };
       })
       .filter((it) => it.need > 0 && (it.status === "critical" || it.status === "out-of-stock" || it.status === "reorder-soon"))
-      .sort((a, b) => b.need - a.need)
-      .slice(0, 25);
+      .sort((a, b) => b.need - a.need);
   }, [items]);
 
-  // ===== Demand & velocity =====
-  const velocity = useMemo(() => {
-    return [...items]
-      .map((it) => ({
-        ...it,
-        velocity: it.avgMonthlySales,
-        cover: it.monthsSupply ?? 999,
-      }))
-      .sort((a, b) => b.velocity - a.velocity)
-      .slice(0, 15);
-  }, [items]);
-
-  // ===== Slow movers =====
-  const slowMovers = useMemo(() => {
-    return [...items]
-      .filter((it) => (it.monthsSupply ?? 0) >= 6 && it.onHand > 0)
-      .sort((a, b) => (b.monthsSupply ?? 0) - (a.monthsSupply ?? 0))
-      .slice(0, 20);
-  }, [items]);
-
-  // ===== Discontinued =====
-  const discontinued = useMemo(() => items.filter((it) => it.isDiscontinued), [items]);
-
-  // ===== Factory grouping =====
-  const byFactory = useMemo(() => {
+  const reorderByFactory = useMemo(() => {
     const m = new Map<string, { suggested: number; moq: number; skus: number }>();
-    for (const it of buyNow) {
+    for (const it of reorderSuggestions) {
       const f = it.factory ?? it.supplier ?? "—";
       const e = m.get(f) ?? { suggested: 0, moq: 0, skus: 0 };
       e.suggested += it.suggested;
@@ -174,102 +264,238 @@ export default function InventoryDashboards({ items }: Props) {
       m.set(f, e);
     }
     return Array.from(m, ([factory, v]) => ({ factory, ...v }));
-  }, [buyNow]);
-
-  // ===== Forecast vs reality =====
-  const forecastVsReal = useMemo(() => {
-    const m = new Map<string, { forecast: number; actual: number }>();
-    for (const r of hub.salesHistory) {
-      const key = `${r.year}-${String(r.month).padStart(2, "0")}`;
-      const e = m.get(key) ?? { forecast: 0, actual: 0 };
-      e.forecast += Number(r.forecast_units ?? 0);
-      e.actual += Number(r.units_sold ?? 0);
-      m.set(key, e);
-    }
-    return Array.from(m, ([period, v]) => ({ period, ...v }))
-      .sort((a, b) => a.period.localeCompare(b.period));
-  }, [hub.salesHistory]);
+  }, [reorderSuggestions]);
 
   return (
-    <div className="space-y-6">
-      {/* Top-level KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <KPI label="Inventory Value" value={fmtMoney(totals.value)} hint={`${fmtNum(totals.units)} units`} icon={DollarSign} />
-        <KPI label="Open Order Backlog" value={fmtMoney(totals.backlogValue)} hint={`${fmtNum(totals.backlogUnits)} units`} icon={ShoppingCart} />
-        <KPI label="Sales / Inv Ratio" value={totals.salesToInv.toFixed(2)} hint="monthly" icon={Activity} />
-        <KPI label="Turnover (annual)" value={totals.turnover.toFixed(2)} hint="× per year" icon={TrendingUp} />
-        <KPI label="Closeout Value" value={fmtMoney(totals.closeoutVal)} icon={Tag} accent="text-warning-foreground" />
-        <KPI label="Lost Sales (est.)" value={fmtMoney(totals.lostSalesEstimate)} hint={`${fmtNum(Math.round(totals.lostUnits))} units/mo at risk`} icon={AlertCircle} accent="text-destructive" />
-      </div>
+    <Tabs defaultValue="summary" className="w-full">
+      <TabsList className="flex-wrap h-auto">
+        <TabsTrigger value="summary">1. Summary</TabsTrigger>
+        <TabsTrigger value="analysis">2. Analysis</TabsTrigger>
+        <TabsTrigger value="reorder">3. Reorder</TabsTrigger>
+        <TabsTrigger value="closeout">4. Closeout</TabsTrigger>
+      </TabsList>
 
-      <Tabs defaultValue="value" className="w-full">
-        <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="value">Value & Closeouts</TabsTrigger>
-          <TabsTrigger value="turnover">Turnover & Ratios</TabsTrigger>
-          <TabsTrigger value="trends">Sales Trends</TabsTrigger>
-          <TabsTrigger value="buy">Buy Now</TabsTrigger>
-          <TabsTrigger value="velocity">Demand & Velocity</TabsTrigger>
-          <TabsTrigger value="health">Health & Slow Movers</TabsTrigger>
-          <TabsTrigger value="discontinued">Discontinued</TabsTrigger>
-          <TabsTrigger value="po">Purchase Orders</TabsTrigger>
-          <TabsTrigger value="factory">Factory / MOQ</TabsTrigger>
-          <TabsTrigger value="forecast">Forecast vs Reality</TabsTrigger>
-          <TabsTrigger value="signals">Dealer Signals</TabsTrigger>
-        </TabsList>
+      {/* ============ SECTION 1: SUMMARY ============ */}
+      <TabsContent value="summary" className="space-y-6 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} />
+          <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} />
+          <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} />
+          <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} />
+          <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} />
+          <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" />
+          <KPI label="Late POs" value={poBuckets.late.length} hint={fmtMoney(poBuckets.late.reduce((s, p) => s + Number(p.total_value), 0))} icon={AlertCircle} accent={poBuckets.late.length > 0 ? "text-destructive" : undefined} />
+          <KPI label="Arriving ≤30 days" value={poBuckets.d30.length} hint={fmtMoney(poBuckets.d30.reduce((s, p) => s + Number(p.total_value), 0))} icon={CalendarClock} />
+        </div>
 
-        {/* ----- Value & Closeouts ----- */}
-        <TabsContent value="value" className="space-y-4">
-          <Card className="p-5">
-            <h3 className="text-base font-semibold mb-3">Inventory Value by Collection (top 10)</h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={valueByCollection} layout="vertical" margin={{ left: 4, right: 12 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis type="category" dataKey="collection" width={120} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <h3 className="text-base font-semibold mb-3">Closeouts by Collection</h3>
-            {closeoutByCollection.length === 0 ? (
-              <EmptyState message="No closeout SKUs flagged yet." />
-            ) : (
-              <div className="space-y-2">
-                {closeoutByCollection.map((c) => (
-                  <div key={c.collection} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
-                    <span>{c.collection}</span>
-                    <span className="font-mono tabular-nums">{fmtMoney(c.value)}</span>
-                  </div>
-                ))}
+        {/* PO stage status board */}
+        <Card className="p-5">
+          <h3 className="text-base font-semibold mb-3">Purchase Order Status</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {stageCounts.map((s) => (
+              <div key={s.key} className="rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">{s.label}</div>
+                <div className="text-2xl font-semibold mt-1 tabular-nums">{s.count}</div>
+                <div className="text-xs text-muted-foreground mt-1">{fmtMoney(s.value)}</div>
               </div>
-            )}
-          </Card>
-        </TabsContent>
+            ))}
+          </div>
+        </Card>
 
-        {/* ----- Turnover ----- */}
-        <TabsContent value="turnover" className="space-y-4">
-          <Card className="p-5">
-            <h3 className="text-base font-semibold mb-3">Turnover Ratio by Collection (annualized)</h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={turnoverByCollection}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="collection" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval={0} angle={-25} textAnchor="end" height={70} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="turnover" fill="hsl(var(--accent))" />
-                </BarChart>
-              </ResponsiveContainer>
+        {/* Arrival calendar (next 30/60/90) */}
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <CalendarClock className="h-4 w-4 text-primary" />
+            <h3 className="text-base font-semibold">Arrival Calendar</h3>
+          </div>
+          {hub.purchaseOrders.length === 0 ? <EmptyState message="No POs synced yet." /> : (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              {([
+                { label: "Late", pos: poBuckets.late, accent: "border-destructive/40" },
+                { label: "Next 30 days", pos: poBuckets.d30, accent: "border-warning/40" },
+                { label: "Next 60 days", pos: poBuckets.d60, accent: "border-border" },
+                { label: "Next 90 days", pos: poBuckets.d90, accent: "border-border" },
+              ]).map((b) => (
+                <div key={b.label} className={cn("rounded-lg border p-3 space-y-2", b.accent)}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">{b.label}</div>
+                    <Badge variant="secondary" className="text-xs">{b.pos.length}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {fmtMoney(b.pos.reduce((s, p) => s + Number(p.total_value), 0))}
+                  </div>
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {b.pos.slice(0, 8).map((po) => (
+                      <div key={po.id} className="text-xs flex items-center justify-between gap-2">
+                        <span className="font-mono truncate">{po.po_number ?? "—"}</span>
+                        <span className="text-muted-foreground whitespace-nowrap">{po.eta}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          </Card>
+          )}
+        </Card>
 
-          <Card className="p-5">
-            <h3 className="text-base font-semibold mb-3">Inventory-to-Sales Ratio by SKU (top 20)</h3>
+        {/* Backlog detail */}
+        <Card className="p-5">
+          <h3 className="text-base font-semibold mb-3">Backlog</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">Out of Stock value</div>
+              <div className="text-lg font-semibold text-destructive tabular-nums">{fmtMoney(summary.outOfStockValue)}</div>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">Mixed container POs</div>
+              <div className="text-lg font-semibold tabular-nums">{hub.purchaseOrders.filter((p) => p.container_type === "mixed").length}</div>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">Direct container POs</div>
+              <div className="text-lg font-semibold tabular-nums">{hub.purchaseOrders.filter((p) => p.container_type === "direct").length}</div>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <div className="text-xs text-muted-foreground">New product (no avail)</div>
+              <div className="text-lg font-semibold tabular-nums">{items.filter((it) => it.onHand === 0 && it.avgMonthlySales === 0).length}</div>
+            </div>
+          </div>
+          {hub.openOrders.length === 0 ? <EmptyState message="No open orders synced." /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2">Order #</th>
+                    <th className="text-left px-3 py-2">SKU</th>
+                    <th className="text-left px-3 py-2">Dealer</th>
+                    <th className="text-right px-3 py-2">Qty Open</th>
+                    <th className="text-right px-3 py-2">Value</th>
+                    <th className="text-left px-3 py-2">Promised</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hub.openOrders.slice(0, 25).map((o) => (
+                    <tr key={o.id} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono">{o.order_number ?? "—"}</td>
+                      <td className="px-3 py-2 font-mono">{o.sku}</td>
+                      <td className="px-3 py-2">{o.dealer_name ?? "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{o.qty_open}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(Number(o.extended_value))}</td>
+                      <td className="px-3 py-2">{o.promised_date ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      </TabsContent>
+
+      {/* ============ SECTION 2: ANALYSIS ============ */}
+      <TabsContent value="analysis" className="space-y-6 mt-4">
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Layers className="h-4 w-4 text-primary" />
+            <h3 className="text-base font-semibold">SKU Analysis</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2">SKU</th>
+                  <th className="text-left px-3 py-2">Product</th>
+                  <th className="text-right px-3 py-2">On Hand</th>
+                  <th className="text-right px-3 py-2">Value</th>
+                  <th className="text-right px-3 py-2">% Total Inv</th>
+                  <th className="text-right px-3 py-2">% Total Sales</th>
+                  <th className="text-right px-3 py-2">Velocity / mo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analysisRows.slice(0, 30).map((it) => (
+                  <tr key={it.sku} className="border-t border-border">
+                    <td className="px-3 py-2 font-mono">{it.sku}</td>
+                    <td className="px-3 py-2">{it.product}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(it.value)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalInv.toFixed(1)}%</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{it.pctTotalSales.toFixed(1)}%</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {/* Comparative sales by SKU */}
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+            <h3 className="text-base font-semibold">Comparative Sales — Pick 2 Periods</h3>
+            <div className="flex gap-2">
+              <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodA} onChange={(e) => setPeriodA(e.target.value)}>
+                <option value="">Period A</option>
+                {periods.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodB} onChange={(e) => setPeriodB(e.target.value)}>
+                <option value="">Period B</option>
+                {periods.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+          {compareRows.length === 0 ? <EmptyState message={periods.length === 0 ? "No sales history synced yet." : "Pick two periods to compare."} /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2">SKU</th>
+                    <th className="text-right px-3 py-2">{periodA}</th>
+                    <th className="text-right px-3 py-2">{periodB}</th>
+                    <th className="text-right px-3 py-2">Δ</th>
+                    <th className="text-right px-3 py-2">% change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {compareRows.map((r) => (
+                    <tr key={r.sku} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono">{r.sku}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{r.periodA}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{r.periodB}</td>
+                      <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", r.diff > 0 ? "text-success" : r.diff < 0 ? "text-destructive" : "")}>{r.diff > 0 ? "+" : ""}{r.diff}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{r.pct == null ? "—" : `${r.pct > 0 ? "+" : ""}${r.pct.toFixed(0)}%`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* Performance by vendor */}
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <h3 className="text-base font-semibold">Performance by Vendor</h3>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={vendorPerf} layout="vertical" margin={{ left: 4, right: 12 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis type="category" dataKey="vendor" width={140} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                <Bar dataKey="sales" fill="hsl(var(--primary))" name="Monthly Sales" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        {/* Slow movers */}
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingDown className="h-4 w-4 text-warning-foreground" />
+            <h3 className="text-base font-semibold">Slow Movers (≥6 months supply)</h3>
+          </div>
+          {slowMovers.length === 0 ? <EmptyState message="No slow movers." /> : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
@@ -277,357 +503,197 @@ export default function InventoryDashboards({ items }: Props) {
                     <th className="text-left px-3 py-2">SKU</th>
                     <th className="text-left px-3 py-2">Product</th>
                     <th className="text-right px-3 py-2">On Hand</th>
-                    <th className="text-right px-3 py-2">Avg Mo. Sales</th>
-                    <th className="text-right px-3 py-2">Inv/Sales</th>
+                    <th className="text-right px-3 py-2">Mo. Supply</th>
+                    <th className="text-right px-3 py-2">Tied-up Value</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items
-                    .map((it) => ({ ...it, ratio: it.avgMonthlySales > 0 ? it.onHand / it.avgMonthlySales : 999 }))
-                    .sort((a, b) => b.ratio - a.ratio)
-                    .slice(0, 20)
-                    .map((it) => (
-                      <tr key={it.sku} className="border-t border-border">
-                        <td className="px-3 py-2 font-mono">{it.sku}</td>
-                        <td className="px-3 py-2">{it.product}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-semibold">{it.ratio === 999 ? "∞" : it.ratio.toFixed(1)}</td>
-                      </tr>
-                    ))}
+                  {slowMovers.map((it) => (
+                    <tr key={it.sku} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono">{it.sku}</td>
+                      <td className="px-3 py-2">{it.product}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{(it.monthsSupply ?? 0).toFixed(1)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-          </Card>
-        </TabsContent>
+          )}
+        </Card>
 
-        {/* ----- Sales Trends ----- */}
-        <TabsContent value="trends" className="space-y-4">
-          <Card className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold">Revenue Trend</h3>
-              <div className="flex gap-1 text-xs">
-                <button onClick={() => setTrendKey("collection")} className={cn("px-2 py-1 rounded", trendKey === "collection" ? "bg-primary text-primary-foreground" : "border border-border")}>By Collection</button>
-                <button onClick={() => setTrendKey("sku")} className={cn("px-2 py-1 rounded", trendKey === "sku" ? "bg-primary text-primary-foreground" : "border border-border")}>By SKU</button>
-              </div>
-            </div>
-            {salesTrend.length === 0 ? (
-              <EmptyState message="No sales history yet — sync sku_sales_history from Acctivate." />
-            ) : (
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={salesTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
+        {/* Aging */}
+        <Card className="p-5">
+          <h3 className="text-base font-semibold mb-3">Inventory Aging</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={aging}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                <Bar dataKey="value" fill="hsl(var(--accent))" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </TabsContent>
 
-        {/* ----- Buy Now ----- */}
-        <TabsContent value="buy">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Target className="h-4 w-4 text-primary" />
-              <h3 className="text-base font-semibold">Buy Now — Suggested Orders</h3>
-              <Badge variant="secondary" className="ml-auto">{buyNow.length} SKUs</Badge>
-            </div>
-            {buyNow.length === 0 ? <EmptyState message="No SKUs need replenishment right now." /> : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-3 py-2">SKU</th>
-                      <th className="text-left px-3 py-2">Product</th>
-                      <th className="text-left px-3 py-2">Factory</th>
-                      <th className="text-right px-3 py-2">Available</th>
-                      <th className="text-right px-3 py-2">Avg Mo.</th>
-                      <th className="text-right px-3 py-2">Need</th>
-                      <th className="text-right px-3 py-2">MOQ</th>
-                      <th className="text-right px-3 py-2">Suggested</th>
+      {/* ============ SECTION 3: REORDER ============ */}
+      <TabsContent value="reorder" className="space-y-6 mt-4">
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Factory className="h-4 w-4 text-primary" />
+            <h3 className="text-base font-semibold">Reorder by Factory — Suggested vs MOQ</h3>
+            <Badge variant="secondary" className="ml-auto">Justin's section — model on his spreadsheet</Badge>
+          </div>
+          {reorderByFactory.length === 0 ? <EmptyState message="Nothing to reorder right now." /> : (
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2">Factory</th>
+                    <th className="text-right px-3 py-2">SKUs</th>
+                    <th className="text-right px-3 py-2">Total MOQ</th>
+                    <th className="text-right px-3 py-2">Suggested</th>
+                    <th className="text-right px-3 py-2">vs MOQ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reorderByFactory.map((f) => (
+                    <tr key={f.factory} className="border-t border-border">
+                      <td className="px-3 py-2">{f.factory}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{f.skus}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{f.moq}</td>
+                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{f.suggested}</td>
+                      <td className={cn("px-3 py-2 text-right tabular-nums", f.suggested >= f.moq ? "text-success" : "text-warning-foreground")}>
+                        {f.moq > 0 ? `${Math.round((f.suggested / f.moq) * 100)}%` : "—"}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {buyNow.map((it) => (
-                      <tr key={it.sku} className="border-t border-border">
-                        <td className="px-3 py-2 font-mono">{it.sku}</td>
-                        <td className="px-3 py-2">{it.product}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{it.factory ?? it.supplier}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{it.available}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-destructive font-semibold">{Math.ceil(it.need)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{it.moq ?? "—"}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-semibold">{it.suggested}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ----- Velocity ----- */}
-        <TabsContent value="velocity">
-          <Card className="p-5">
-            <h3 className="text-base font-semibold mb-3">Demand & Velocity (top 15 movers)</h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={velocity}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="sku" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval={0} angle={-30} textAnchor="end" height={70} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="velocity" fill="hsl(var(--primary))" name="Avg Monthly Sales" />
-                </BarChart>
-              </ResponsiveContainer>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </Card>
-        </TabsContent>
+          )}
+        </Card>
 
-        {/* ----- Health & Slow ----- */}
-        <TabsContent value="health" className="space-y-4">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingDown className="h-4 w-4 text-warning-foreground" />
-              <h3 className="text-base font-semibold">Slow Movers (≥6 months supply)</h3>
-            </div>
-            {slowMovers.length === 0 ? <EmptyState message="No slow movers — looking healthy." /> : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-3 py-2">SKU</th>
-                      <th className="text-left px-3 py-2">Product</th>
-                      <th className="text-left px-3 py-2">Collection</th>
-                      <th className="text-right px-3 py-2">On Hand</th>
-                      <th className="text-right px-3 py-2">Mo. Supply</th>
-                      <th className="text-right px-3 py-2">Tied-up Value</th>
+        <Card className="p-5">
+          <h3 className="text-base font-semibold mb-3">Suggested Order Lines</h3>
+          {reorderSuggestions.length === 0 ? <EmptyState message="No items need reorder." /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2">SKU</th>
+                    <th className="text-left px-3 py-2">Product</th>
+                    <th className="text-left px-3 py-2">Factory</th>
+                    <th className="text-right px-3 py-2">Available</th>
+                    <th className="text-right px-3 py-2">Avg Mo.</th>
+                    <th className="text-right px-3 py-2">Need</th>
+                    <th className="text-right px-3 py-2">MOQ</th>
+                    <th className="text-right px-3 py-2">Suggested</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reorderSuggestions.map((it) => (
+                    <tr key={it.sku} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono">{it.sku}</td>
+                      <td className="px-3 py-2">{it.product}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{it.factory ?? it.supplier}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.available}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-destructive font-semibold">{Math.ceil(it.need)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.moq ?? "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{it.suggested}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {slowMovers.map((it) => (
-                      <tr key={it.sku} className="border-t border-border">
-                        <td className="px-3 py-2 font-mono">{it.sku}</td>
-                        <td className="px-3 py-2">{it.product}</td>
-                        <td className="px-3 py-2">{it.collection}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-semibold">{(it.monthsSupply ?? 0).toFixed(1)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ----- Discontinued ----- */}
-        <TabsContent value="discontinued">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Archive className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-base font-semibold">Discontinued Inventory</h3>
-              <Badge variant="secondary" className="ml-auto">{discontinued.length} SKUs · {fmtMoney(totals.discontinuedVal)}</Badge>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {discontinued.length === 0 ? <EmptyState message="No discontinued SKUs flagged." /> : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-3 py-2">SKU</th>
-                      <th className="text-left px-3 py-2">Product</th>
-                      <th className="text-right px-3 py-2">On Hand</th>
-                      <th className="text-right px-3 py-2">Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {discontinued.map((it) => (
-                      <tr key={it.sku} className="border-t border-border">
-                        <td className="px-3 py-2 font-mono">{it.sku}</td>
-                        <td className="px-3 py-2">{it.product}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
+          )}
+        </Card>
 
-        {/* ----- POs ----- */}
-        <TabsContent value="po" className="space-y-4">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Truck className="h-4 w-4 text-primary" />
-              <h3 className="text-base font-semibold">Open Purchase Orders</h3>
-            </div>
-            {hub.purchaseOrders.length === 0 ? <EmptyState message="No open POs synced yet." /> : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-3 py-2">PO #</th>
-                      <th className="text-left px-3 py-2">Factory</th>
-                      <th className="text-left px-3 py-2">Status</th>
-                      <th className="text-left px-3 py-2">ETA</th>
-                      <th className="text-right px-3 py-2">Value</th>
+        {/* Open POs detail with stage */}
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <PackageOpen className="h-4 w-4 text-primary" />
+            <h3 className="text-base font-semibold">Open Purchase Orders</h3>
+          </div>
+          {hub.purchaseOrders.length === 0 ? <EmptyState message="No POs synced yet." /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2">PO #</th>
+                    <th className="text-left px-3 py-2">Factory</th>
+                    <th className="text-left px-3 py-2">Stage</th>
+                    <th className="text-left px-3 py-2">ETA</th>
+                    <th className="text-right px-3 py-2">Value</th>
+                    <th className="text-right px-3 py-2">Prepaid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hub.purchaseOrders.map((po) => (
+                    <tr key={po.id} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono">{po.po_number ?? "—"}</td>
+                      <td className="px-3 py-2">{po.factory ?? "—"}</td>
+                      <td className="px-3 py-2"><StagePill stage={po.production_stage} /></td>
+                      <td className="px-3 py-2">{po.eta ?? "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(Number(po.total_value))}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{po.is_prepaid ? fmtMoney(Number(po.prepaid_amount)) : "—"}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {hub.purchaseOrders.map((po) => (
-                      <tr key={po.id} className="border-t border-border">
-                        <td className="px-3 py-2 font-mono">{po.po_number ?? "—"}</td>
-                        <td className="px-3 py-2">{po.factory ?? "—"}</td>
-                        <td className="px-3 py-2">{po.status ?? "—"}</td>
-                        <td className="px-3 py-2">{po.eta ?? "—"}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(Number(po.total_value))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <PackageOpen className="h-4 w-4 text-primary" />
-              <h3 className="text-base font-semibold">Incoming Inventory (line items)</h3>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {hub.poLines.length === 0 ? <EmptyState message="No incoming PO lines yet." /> : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-3 py-2">SKU</th>
-                      <th className="text-right px-3 py-2">Ordered</th>
-                      <th className="text-right px-3 py-2">Received</th>
-                      <th className="text-right px-3 py-2">Open</th>
-                      <th className="text-left px-3 py-2">ETA</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hub.poLines.map((l) => (
-                      <tr key={l.id} className="border-t border-border">
-                        <td className="px-3 py-2 font-mono">{l.sku}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{l.qty_ordered}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{l.qty_received}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-semibold">{Number(l.qty_ordered) - Number(l.qty_received)}</td>
-                        <td className="px-3 py-2">{l.eta ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
+          )}
+        </Card>
+      </TabsContent>
 
-        {/* ----- Factory MOQ ----- */}
-        <TabsContent value="factory">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Factory className="h-4 w-4 text-primary" />
-              <h3 className="text-base font-semibold">SKUs Grouped by Factory — Suggested vs MOQ</h3>
-            </div>
-            {byFactory.length === 0 ? <EmptyState message="Nothing to order right now." /> : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-3 py-2">Factory</th>
-                      <th className="text-right px-3 py-2">SKUs</th>
-                      <th className="text-right px-3 py-2">Total MOQ</th>
-                      <th className="text-right px-3 py-2">Suggested Order</th>
-                      <th className="text-right px-3 py-2">vs MOQ</th>
+      {/* ============ SECTION 4: CLOSEOUT ============ */}
+      <TabsContent value="closeout" className="space-y-6 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <KPI label="Closeout SKUs" value={closeoutRows.length} icon={Tag} />
+          <KPI label="Total Closeout Value" value={fmtMoney(closeoutTotal)} icon={DollarSign} />
+          <KPI
+            label="Avg Burn-Down"
+            value={`${(closeoutRows.reduce((s, r) => s + (r.burnDownMonths ?? 0), 0) / Math.max(1, closeoutRows.filter(r => r.burnDownMonths != null).length) || 0).toFixed(1)} mo`}
+            icon={TrendingDown}
+          />
+        </div>
+        <Card className="p-5">
+          <h3 className="text-base font-semibold mb-3">Closeout Inventory</h3>
+          {closeoutRows.length === 0 ? <EmptyState message="No closeout SKUs flagged. Set is_closeout = true on inventory rows." /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2">SKU</th>
+                    <th className="text-left px-3 py-2">Product</th>
+                    <th className="text-right px-3 py-2">Units Remaining</th>
+                    <th className="text-right px-3 py-2">% Sold</th>
+                    <th className="text-right px-3 py-2">Burn-Down (mo)</th>
+                    <th className="text-right px-3 py-2">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {closeoutRows.map((it) => (
+                    <tr key={it.sku} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono">{it.sku}</td>
+                      <td className="px-3 py-2">{it.product}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.pctSold == null ? "—" : `${it.pctSold.toFixed(0)}%`}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{it.burnDownMonths == null ? "—" : it.burnDownMonths.toFixed(1)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {byFactory.map((f) => (
-                      <tr key={f.factory} className="border-t border-border">
-                        <td className="px-3 py-2">{f.factory}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{f.skus}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{f.moq}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-semibold">{f.suggested}</td>
-                        <td className={cn("px-3 py-2 text-right tabular-nums", f.suggested >= f.moq ? "text-success" : "text-warning-foreground")}>
-                          {f.moq > 0 ? `${Math.round((f.suggested / f.moq) * 100)}%` : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ----- Forecast vs reality ----- */}
-        <TabsContent value="forecast">
-          <Card className="p-5">
-            <h3 className="text-base font-semibold mb-3">Forecast vs Actual</h3>
-            {forecastVsReal.length === 0 ? <EmptyState message="No forecast data yet — populate sku_sales_history.forecast_units." /> : (
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={forecastVsReal}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Line type="monotone" dataKey="forecast" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} name="Forecast" />
-                    <Line type="monotone" dataKey="actual" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Actual" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* ----- Dealer signals ----- */}
-        <TabsContent value="signals">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Radio className="h-4 w-4 text-primary" />
-              <h3 className="text-base font-semibold">Dealer Demand Signals</h3>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {hub.demandSignals.length === 0 ? <EmptyState message="No dealer demand signals yet — capture quote requests, inquiries, or wishlist hits to populate." /> : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-3 py-2">Date</th>
-                      <th className="text-left px-3 py-2">SKU</th>
-                      <th className="text-left px-3 py-2">Dealer</th>
-                      <th className="text-left px-3 py-2">Type</th>
-                      <th className="text-right px-3 py-2">Strength</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hub.demandSignals.map((s) => (
-                      <tr key={s.id} className="border-t border-border">
-                        <td className="px-3 py-2">{s.signal_date}</td>
-                        <td className="px-3 py-2 font-mono">{s.sku}</td>
-                        <td className="px-3 py-2">{s.dealer_name ?? "—"}</td>
-                        <td className="px-3 py-2">{s.signal_type}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{s.signal_strength}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+          )}
+        </Card>
+      </TabsContent>
+    </Tabs>
   );
 }

@@ -18,9 +18,13 @@ export interface PurchaseOrder {
   po_number: string | null;
   factory: string | null;
   status: string | null;
+  production_stage: string | null;
   order_date: string | null;
   eta: string | null;
   total_value: number;
+  prepaid_amount: number;
+  is_prepaid: boolean;
+  container_type: string | null;
 }
 
 export interface PurchaseOrderLine {
@@ -77,7 +81,7 @@ export function useInventoryHub() {
     (async () => {
       const [oso, po, pol, ssh, ls, ds] = await Promise.all([
         supabase.from("open_sales_orders").select("id, order_number, sku, dealer_name, qty_open, unit_price, extended_value, order_date, promised_date").limit(1000),
-        supabase.from("purchase_orders").select("id, po_number, factory, status, order_date, eta, total_value").limit(1000),
+        supabase.from("purchase_orders").select("id, po_number, factory, status, production_stage, order_date, eta, total_value, prepaid_amount, is_prepaid, container_type").limit(1000),
         supabase.from("purchase_order_lines").select("id, po_id, sku, qty_ordered, qty_received, unit_cost, eta").limit(1000),
         supabase.from("sku_sales_history").select("id, sku, year, month, units_sold, revenue, forecast_units").limit(1000),
         supabase.from("lost_sales_events").select("id, sku, event_date, qty_requested, estimated_value, reason, dealer_name").limit(1000),
