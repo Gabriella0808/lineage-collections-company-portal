@@ -1169,7 +1169,10 @@ export default function InventoryDashboards({ items }: Props) {
                   <tr>
                     <th className="text-left px-2 py-2">SKU</th>
                     <th className="text-left px-2 py-2">Item</th>
-                    <th className="text-right px-2 py-2">On Hand</th>
+                    <th className="text-left px-2 py-2">Brand</th>
+                    <th className="text-center px-2 py-2">Clr</th>
+                    <th className="text-right px-2 py-2">NC</th>
+                    <th className="text-right px-2 py-2">VN</th>
                     <th className="text-right px-2 py-2">On PO</th>
                     <th className="text-right px-2 py-2">In Transit</th>
                     <th className="text-right px-2 py-2">L12M /wk</th>
