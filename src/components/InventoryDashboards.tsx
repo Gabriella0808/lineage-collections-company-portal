@@ -241,17 +241,39 @@ export default function InventoryDashboards({ items }: Props) {
   const closeoutTotal = closeoutRows.reduce((s, it) => s + (it.unitCost ?? 0) * it.onHand, 0);
 
   // ============ SECTION 3: REORDER ============
-  // Sales/Week = LTM/52 ; New Min = Sales/Week*4.5*4.5 ; Net Avail = OnHand+OnPO
-  // Over/Under = Net Avail - New Min ; Weeks = (NetAvail+Order)/SalesPerWeek
-  // Total Cubes = Order * Cubes
+  // Per Justin: weekly unit-sales windows L12M / L6M / L3M / Override.
+  // New Min = SalesPerWeek * 4.35 (wks/mo) * leadTimeMonths (default 4.5)
+  // Net Avail = OnHand + OnPO + InTransit
+  // Order is rounded up to MOQ. Wks of cover = (NetAvail+Order) / SalesPerWeek
+  type Basis = "L12M" | "L6M" | "L3M" | "OVERRIDE";
+  interface Override { basis?: Basis; perWeek?: number; leadMonths?: number }
+  const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  const setOv = (sku: string, patch: Override) =>
+    setOverrides((prev) => ({ ...prev, [sku]: { ...prev[sku], ...patch } }));
+
   const reorderRows = useMemo(() => {
     return items.map((it) => {
-      const salesPerWeek = it.ltmUnits != null
-        ? it.ltmUnits / 52
-        : (it.avgMonthlySales || 0) * 12 / 52;
-      const newMin = salesPerWeek * 4.5 * 4.5;
+      const ov = overrides[it.sku] ?? {};
+      const wkL12 = it.unitsL12m != null ? it.unitsL12m / 52
+                  : it.ltmUnits != null ? it.ltmUnits / 52
+                  : (it.avgMonthlySales || 0) * 12 / 52;
+      const wkL6  = it.unitsL6m != null ? it.unitsL6m / 26 : null;
+      const wkL3  = it.unitsL3m != null ? it.unitsL3m / 13 : null;
+
+      const basis: Basis = ov.basis ?? (it.reorderBasis as Basis) ?? "L12M";
+      const overrideWk = ov.perWeek ?? it.reorderOverridePerWeek;
+      const leadMonths = ov.leadMonths ?? it.leadTimeMonths ?? 4.5;
+
+      let salesPerWeek = wkL12;
+      if (basis === "L6M" && wkL6 != null) salesPerWeek = wkL6;
+      else if (basis === "L3M" && wkL3 != null) salesPerWeek = wkL3;
+      else if (basis === "OVERRIDE" && overrideWk != null) salesPerWeek = overrideWk;
+      else if (overrideWk != null && basis === "OVERRIDE") salesPerWeek = overrideWk;
+
+      const newMin = salesPerWeek * 4.35 * leadMonths;
       const onPo = it.onPo ?? 0;
-      const netAvail = it.onHand + onPo;
+      const inTransit = it.inTransit ?? 0;
+      const netAvail = it.onHand + onPo + inTransit;
       const overUnder = netAvail - newMin;
       const rawNeed = Math.max(0, Math.ceil(newMin - netAvail));
       const moq = it.moq ?? 0;
@@ -259,9 +281,14 @@ export default function InventoryDashboards({ items }: Props) {
         ? (rawNeed > 0 ? Math.ceil(rawNeed / moq) * moq : 0)
         : rawNeed;
       const projectedWeeks = salesPerWeek > 0 ? (netAvail + suggestedOrder) / salesPerWeek : null;
-      return { ...it, salesPerWeek, newMin, netAvail, overUnder, suggestedOrder, onPo, projectedWeeks, cubesPerUnit: it.cubes ?? 0 };
+      return {
+        ...it, basis, overrideWk, leadMonths,
+        wkL12, wkL6, wkL3, salesPerWeek, newMin, onPo, inTransit,
+        netAvail, overUnder, suggestedOrder, projectedWeeks,
+        cubesPerUnit: it.cubes ?? 0,
+      };
     });
-  }, [items]);
+  }, [items, overrides]);
 
   const reorderSuggestions = useMemo(
     () => reorderRows.filter((r) => r.suggestedOrder > 0).sort((a, b) => a.overUnder - b.overUnder),
@@ -281,6 +308,24 @@ export default function InventoryDashboards({ items }: Props) {
     }
     return Array.from(m, ([factory, v]) => ({ factory, ...v }));
   }, [reorderSuggestions]);
+
+  // Segregation: On PO (in production / waiting), In Transit, On Hand (NC + VN)
+  const segregation = useMemo(() => {
+    let onPoUnits = 0, onPoValue = 0;
+    let inTransitUnits = 0, inTransitValue = 0;
+    let onHandNc = 0, onHandVn = 0, onHandValue = 0;
+    for (const it of items) {
+      const cost = it.unitCost ?? 0;
+      onPoUnits += it.onPo ?? 0;
+      onPoValue += (it.onPo ?? 0) * cost;
+      inTransitUnits += it.inTransit ?? 0;
+      inTransitValue += (it.inTransit ?? 0) * cost;
+      onHandNc += it.onHandNc ?? 0;
+      onHandVn += it.onHandVn ?? 0;
+      onHandValue += it.onHand * cost;
+    }
+    return { onPoUnits, onPoValue, inTransitUnits, inTransitValue, onHandNc, onHandVn, onHandValue };
+  }, [items]);
 
   return (
     <Tabs defaultValue="summary" className="w-full">
