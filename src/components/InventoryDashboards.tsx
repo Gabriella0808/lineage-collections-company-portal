@@ -1182,6 +1182,7 @@ export default function InventoryDashboards({ items }: Props) {
                     <th className="text-right px-2 py-2">Override /wk</th>
                     <th className="text-right px-2 py-2">Lead (mo)</th>
                     <th className="text-right px-2 py-2">Sales/Wk</th>
+                    <th className="text-right px-2 py-2">Mo Equiv</th>
                     <th className="text-right px-2 py-2">New Min</th>
                     <th className="text-right px-2 py-2">Net Avail</th>
                     <th className="text-right px-2 py-2">Over/Under</th>
@@ -1192,10 +1193,13 @@ export default function InventoryDashboards({ items }: Props) {
                 </thead>
                 <tbody>
                   {reorderRows.slice(0, 60).map((it) => (
-                    <tr key={it.sku} className="border-t border-border">
-                      <td className="px-2 py-1.5 font-mono">{it.sku}</td>
-                      <td className="px-2 py-1.5 max-w-[220px] truncate" title={it.product}>{it.product}</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums">{it.onHand}</td>
+                    <tr key={it.sku} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-2 py-1.5 font-mono cursor-pointer" onClick={() => setDrawerSku(it.sku)}>{it.sku}</td>
+                      <td className="px-2 py-1.5 max-w-[200px] truncate" title={it.product}>{it.product}</td>
+                      <td className="px-2 py-1.5 text-xs text-muted-foreground">{it.brand ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-center">{it.isClearance ? <Badge variant="secondary" className="text-[10px]">Yes</Badge> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.onHandNc ?? 0}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{it.onHandVn ?? 0}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{it.onPo}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{it.inTransit}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{it.wkL12.toFixed(1)}</td>
