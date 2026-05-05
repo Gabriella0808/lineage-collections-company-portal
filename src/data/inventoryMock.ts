@@ -27,6 +27,13 @@ export interface InventoryItem {
   moq?: number;
   leadTimeDays?: number;
   forecastMonthly?: number;
+  // Justin's reorder model fields (mirrors InvCut spreadsheet)
+  reorderMin?: number;        // D - Reorder Pt (Min)
+  reorderMax?: number;        // E - Max
+  onSalesOrder?: number;      // G - On Sales Order
+  onPo?: number;              // I - On PO
+  cubes?: number;             // S - Cubes per unit (cu ft)
+  ltmUnits?: number;          // L source - LTM units sold (for Sales/Week)
 }
 
 // Dummy SKUs — modeled on Acctivate-style codes. Replace with real feed once cleaned.
