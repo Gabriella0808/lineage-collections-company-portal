@@ -27,13 +27,24 @@ export interface InventoryItem {
   moq?: number;
   leadTimeDays?: number;
   forecastMonthly?: number;
-  // Justin's reorder model fields (mirrors InvCut spreadsheet)
-  reorderMin?: number;        // D - Reorder Pt (Min)
-  reorderMax?: number;        // E - Max
-  onSalesOrder?: number;      // G - On Sales Order
-  onPo?: number;              // I - On PO
-  cubes?: number;             // S - Cubes per unit (cu ft)
-  ltmUnits?: number;          // L source - LTM units sold (for Sales/Week)
+  // Reorder model
+  reorderMin?: number;
+  reorderMax?: number;
+  onSalesOrder?: number;
+  onPo?: number;
+  inTransit?: number;
+  onHandNc?: number;
+  onHandVn?: number;
+  cubes?: number;
+  ltmUnits?: number;        // legacy fallback
+  // Weekly unit-sales rolling windows (units/week)
+  unitsL12m?: number;       // raw L12M units (sum)
+  unitsL6m?: number;        // raw L6M units (sum)
+  unitsL3m?: number;        // raw L3M units (sum)
+  reorderBasis?: "L12M" | "L6M" | "L3M" | "OVERRIDE";
+  reorderOverridePerWeek?: number;  // user-typed units/week
+  leadTimeMonths?: number;  // default 4.5
+  isClearance?: boolean;
 }
 
 // Dummy SKUs — modeled on Acctivate-style codes. Replace with real feed once cleaned.
