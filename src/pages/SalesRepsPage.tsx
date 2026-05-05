@@ -405,7 +405,7 @@ export default function SalesRepsPage() {
                         value={editForm!.territory_ids}
                         onChange={(next) => setEditForm({ ...editForm!, territory_ids: next })}
                         placeholder="Select territories"
-                        triggerClassName="h-8 w-44 text-xs"
+                        triggerClassName="h-8 min-w-[12rem] w-full text-xs"
                       />
                     ) : (
                       <div className="flex flex-wrap gap-1">
