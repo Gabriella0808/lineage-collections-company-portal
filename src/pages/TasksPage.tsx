@@ -709,10 +709,10 @@ export default function TasksPage() {
                           <li
                             key={t.id}
                             onClick={() => { setDetailTask(t); markRead(t.id); }}
-                            className="grid grid-cols-[8px_minmax(0,1fr)] md:grid-cols-[8px_minmax(0,1fr)_180px_160px_120px_80px] items-center gap-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                            className="group/row grid grid-cols-[4px_minmax(0,1fr)] md:grid-cols-[4px_minmax(0,1fr)_180px_160px_120px_80px] items-center gap-0 hover:bg-muted/40 transition-colors cursor-pointer"
                           >
-                            {/* Colored left accent bar */}
-                            <div className={`self-stretch ${col.accent}`} />
+                            {/* Subtle hover accent */}
+                            <div className={`self-stretch ${col.accent} opacity-0 group-hover/row:opacity-100 transition-opacity`} />
 
                             {/* Task title + description */}
                             <div className="px-3 py-2 min-w-0">
