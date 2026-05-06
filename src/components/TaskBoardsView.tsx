@@ -516,21 +516,6 @@ export default function TaskBoardsView() {
                     <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openNewTask(g.id)}>
                       <Plus className="h-3.5 w-3.5" /> Item
                     </Button>
-                    {isBoardOwner && (
-                      <>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditGroup(g)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive"
-                          onClick={() => deleteGroup(g)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </>
-                    )}
                   </div>
 
                   {/* Group rows */}
