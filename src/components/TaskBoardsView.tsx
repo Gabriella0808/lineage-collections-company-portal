@@ -747,6 +747,74 @@ export default function TaskBoardsView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Share / subscribers dialog */}
+      <Dialog open={shareDlgOpen} onOpenChange={setShareDlgOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Share board</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground -mt-1">
+            Subscribers can view this board and add tasks to it.
+          </p>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Select value={addUserId} onValueChange={setAddUserId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select a person to add…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignableUsers
+                    .filter((u) => u.user_id !== user?.id && !members.some((m) => m.user_id === u.user_id))
+                    .map((u) => (
+                      <SelectItem key={u.user_id} value={u.user_id}>
+                        {u.full_name || u.email || u.user_id.slice(0, 8)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={addMember} disabled={!addUserId}>
+                <Plus className="h-4 w-4" /> Add
+              </Button>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                Subscribers ({members.length})
+              </p>
+              {members.length === 0 ? (
+                <p className="text-sm italic text-muted-foreground">No subscribers yet.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {members.map((m) => {
+                    const u = assignableUsers.find((x) => x.user_id === m.user_id);
+                    return (
+                      <li
+                        key={m.user_id}
+                        className="flex items-center justify-between rounded-md border px-3 py-2"
+                      >
+                        <span className="text-sm">
+                          {u?.full_name || u?.email || m.user_id.slice(0, 8)}
+                        </span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => removeMember(m.user_id)}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShareDlgOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
