@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Users, Store, BookOpen, BarChart3, Settings,
   UserCog, LogOut, LayoutGrid, ListChecks, Boxes, MapPinned, Plane, PieChart,
-  ChevronDown, Megaphone, ClipboardList, Compass,
+  ChevronDown, Megaphone, ClipboardList, Compass, Network,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -89,6 +89,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Administration",
     items: [
       { title: "Sales Managers", url: "/managers", icon: UserCog,  roles: ["admin"] },
+      { title: "Org Chart",      url: "/org-chart", icon: Network,  roles: ["admin"] },
       { title: "Sales Reps",     url: "/reps",     icon: Users,    roles: ["admin", "manager"] },
       { title: "Settings",       url: "/settings", icon: Settings, roles: ["admin", "manager", "rep"] },
     ],
