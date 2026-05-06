@@ -6,6 +6,7 @@ import {
   DollarSign, PackageOpen, TrendingUp, TrendingDown, Tag, Activity,
   Truck, Factory, AlertCircle, ShoppingCart, CalendarClock, Layers,
   Heart, Trophy, Ban, Target, Users, Search,
+  Package, AlertTriangle, XCircle, RefreshCw, Zap,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
