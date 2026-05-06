@@ -42,12 +42,16 @@ interface DbInventoryRow {
   is_clearance: boolean | null;
 }
 
-function deriveStatus(onHand: number, monthsSupply: number | null): InventoryStatus {
+// Lead time per Acctivate model: ~32 weeks
+const LEAD_WEEKS = 32;
+
+function deriveStatus(onHand: number, weeks: number | null): InventoryStatus {
   if (onHand <= 0) return "out-of-stock";
-  if (onHand <= 5) return "critical";
-  if (onHand <= 20) return "reorder-soon";
-  if (monthsSupply != null && monthsSupply > 12) return "overstock";
-  if (monthsSupply != null && monthsSupply >= 3) return "fast-moving";
+  if (weeks == null) return onHand <= 5 ? "critical" : "healthy";
+  if (weeks < LEAD_WEEKS * 0.5) return "critical";       // < 16 wk
+  if (weeks < LEAD_WEEKS) return "reorder-soon";          // < 32 wk
+  if (weeks > LEAD_WEEKS * 2) return "overstock";         // > 64 wk
+  if (weeks >= LEAD_WEEKS && weeks <= LEAD_WEEKS * 1.5) return "fast-moving";
   return "healthy";
 }
 
@@ -56,9 +60,9 @@ const ALLOWED: ReadonlySet<InventoryStatus> = new Set([
   "fast-moving", "overstock", "liquidate", "healthy",
 ]);
 
-function normalizeStatus(raw: string | null, onHand: number, monthsSupply: number | null): InventoryStatus {
+function normalizeStatus(raw: string | null, onHand: number, weeks: number | null): InventoryStatus {
   if (raw && ALLOWED.has(raw as InventoryStatus)) return raw as InventoryStatus;
-  return deriveStatus(onHand, monthsSupply);
+  return deriveStatus(onHand, weeks);
 }
 
 export function useInventory() {
