@@ -1190,7 +1190,7 @@ export default function InventoryDashboards({ items }: Props) {
                           <td className="px-3 py-2">{it.product}</td>
                           <td className="px-3 py-2">{it.collection}</td>
                           <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                          <td className="px-3 py-2 text-right tabular-nums font-semibold">{(it.monthsSupply ?? 0).toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold">{(() => { const w = weeksOfSupply(it); return w == null ? "—" : `${w.toFixed(1)} wk`; })()}</td>
                           <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
                         </tr>
                       ))}
