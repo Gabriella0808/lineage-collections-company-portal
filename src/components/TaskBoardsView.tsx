@@ -727,24 +727,11 @@ export default function TaskBoardsView() {
               value={taskForm.description}
               onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
             />
-            <div className="grid grid-cols-2 gap-3">
-              <Select
-                value={taskForm.status}
-                onValueChange={(v: Status) => setTaskForm({ ...taskForm, status: v })}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(STATUS_META) as Status[]).map((s) => (
-                    <SelectItem key={s} value={s}>{STATUS_META[s].label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                type="date"
-                value={taskForm.due_date}
-                onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
-              />
-            </div>
+            <Input
+              type="date"
+              value={taskForm.due_date}
+              onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+            />
             <Select
               value={taskForm.group_id ?? ""}
               onValueChange={(v) => setTaskForm({ ...taskForm, group_id: v || null })}
