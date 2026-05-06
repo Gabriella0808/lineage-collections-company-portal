@@ -390,8 +390,9 @@ export default function InventoryPage() {
                 <th className="text-left px-4 py-3 font-medium">Supplier</th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">On Hand <ArrowUpDown className="h-3 w-3" /></span></th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Available <ArrowUpDown className="h-3 w-3" /></span></th>
-                <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Avg Mo. Sales <ArrowUpDown className="h-3 w-3" /></span></th>
-                <th className="text-right px-4 py-3 font-medium" title="Months of supply remaining at current sales pace (On Hand ÷ Avg Monthly Sales)"><span className="inline-flex items-center gap-1">Avg Burn-down <ArrowUpDown className="h-3 w-3" /></span></th>
+                <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Sales/Wk <ArrowUpDown className="h-3 w-3" /></span></th>
+                <th className="text-right px-4 py-3 font-medium" title="Reorder point: Sales/Week × 20.25"><span className="inline-flex items-center gap-1">Reorder Pt <ArrowUpDown className="h-3 w-3" /></span></th>
+                <th className="text-right px-4 py-3 font-medium" title={`Weeks of supply = (Available + On PO) ÷ Sales/Week. Lead time ≈ ${LEAD_TIME_WEEKS} weeks.`}><span className="inline-flex items-center gap-1">Weeks Supply <ArrowUpDown className="h-3 w-3" /></span></th>
               </tr>
             </thead>
             <tbody>
