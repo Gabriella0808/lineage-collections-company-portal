@@ -394,8 +394,33 @@ export default function TasksPage() {
 
   const updateBoard = async (id: string, board_id: string | null) => {
     const prev = tasks;
-    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, board_id } : t)));
-    const { error } = await supabase.from("manager_tasks").update({ board_id } as any).eq("id", id);
+    const task = tasks.find((t) => t.id === id);
+    let group_id: string | null = null;
+
+    if (board_id) {
+      // Find first group for the target board so the task actually shows up there
+      const { data: groups } = await supabase
+        .from("task_board_groups" as any)
+        .select("id,name,position")
+        .eq("board_id", board_id)
+        .order("position", { ascending: true });
+      if (groups && groups.length > 0) {
+        const statusMatch = (groups as any[]).find((g) =>
+          task?.status === "todo" ? /to.?do/i.test(g.name)
+          : task?.status === "in_progress" ? /progress/i.test(g.name)
+          : task?.status === "done" ? /done|complete/i.test(g.name)
+          : task?.status === "blocked" ? /stuck|block/i.test(g.name)
+          : false
+        );
+        group_id = (statusMatch ?? (groups as any[])[0]).id;
+      }
+    }
+
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, board_id, group_id } : t)));
+    const { error } = await supabase
+      .from("manager_tasks")
+      .update({ board_id, group_id } as any)
+      .eq("id", id);
     if (error) {
       setTasks(prev);
       toast({ title: "Move failed", description: error.message, variant: "destructive" });
