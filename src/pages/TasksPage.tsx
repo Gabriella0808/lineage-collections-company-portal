@@ -501,6 +501,7 @@ export default function TasksPage() {
 
         <TabsContent value="list" className="space-y-6 mt-4">
 
+        {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <MetricCard label="Total" value={totalTasks} icon={ListChecks} hint="all action items" />
           <MetricCard label="Overdue" value={overdueCount} icon={AlertTriangle} tone="destructive" hint="past due, open" />
@@ -509,7 +510,7 @@ export default function TasksPage() {
           <MetricCard label="Stuck" value={stuckCount} icon={CircleSlash} tone="destructive" hint="needs unblocking" />
           <MetricCard label="Completed" value={completedCount} icon={CheckCircle2} tone="success" hint="closed" />
         </div>
-      )}
+        )}
 
       {!loading && user && (() => {
         const assignedToMe = tasks.filter(
