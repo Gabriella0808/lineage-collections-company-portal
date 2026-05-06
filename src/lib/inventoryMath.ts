@@ -12,15 +12,17 @@ export function salesPerWeek(it: Pick<InventoryItem, "avgMonthlySales">): number
 }
 
 /**
- * Weeks of supply = (Available + On PO) ÷ Sales/Week
+ * Weeks of supply = (Available + On PO + Order) ÷ Sales/Week
  * Mirrors the InvCut spreadsheet "Weeks" column: =(N+R)/L
- * where N = SUM(Available, On PO) and L = Sales/Week.
+ *   N = SUM(Available, On PO)
+ *   R = Order (planned/suggested order qty)
+ *   L = Sales/Week
  */
-export function weeksOfSupply(it: InventoryItem): number | null {
+export function weeksOfSupply(it: InventoryItem, order: number = 0): number | null {
   const sw = salesPerWeek(it);
   if (sw <= 0) return null;
-  const pipeline = (it.available ?? it.onHand) + (it.onPo ?? 0);
-  return pipeline / sw;
+  const netAvail = (it.available ?? it.onHand) + (it.onPo ?? 0);
+  return (netAvail + (order || 0)) / sw;
 }
 
 /** "New Min" reorder point: Sales/Week × 20.25 */
