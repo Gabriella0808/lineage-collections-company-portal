@@ -162,7 +162,7 @@ export default function OrgChartPage() {
     <div className="animate-fade-in space-y-6">
       <div className="page-header flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title flex items-center gap-2"><Building2 className="h-6 w-6" /> Org Chart</h1>
+          <h1 className="page-title flex items-center gap-2"><Building2 className="h-6 w-6" /> Organizational Chart</h1>
           <p className="page-subtitle">Click any position for job description, objectives, and yearly reviews.</p>
         </div>
         {isAdmin && (
