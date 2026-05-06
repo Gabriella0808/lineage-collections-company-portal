@@ -59,6 +59,13 @@ interface Task {
   assigned_manager_id: string | null;
   assigned_user_id: string | null;
   user_id: string;
+  board_id: string | null;
+}
+
+interface Board {
+  id: string;
+  name: string;
+  color: string | null;
 }
 
 
