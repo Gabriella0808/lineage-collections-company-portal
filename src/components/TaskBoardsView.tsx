@@ -186,6 +186,7 @@ export default function TaskBoardsView() {
           name: boardForm.name.trim(),
           description: boardForm.description.trim() || null,
           color: boardForm.color,
+          created_by: user.id,
         })
         .select("id")
         .single();
