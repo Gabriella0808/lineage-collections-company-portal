@@ -587,7 +587,6 @@ function ChartViewport({ children }: { children: React.ReactNode }) {
     const wrap = wrapRef.current;
     const inner = innerRef.current;
     if (!wrap || !inner) return;
-    // Reset to measure natural size
     inner.style.transform = "scale(1)";
     const naturalWidth = inner.scrollWidth;
     const available = wrap.clientWidth;
@@ -602,12 +601,8 @@ function ChartViewport({ children }: { children: React.ReactNode }) {
   };
 
   useLayoutEffect(() => {
-    fit();
-    const ro = new ResizeObserver(() => fit());
-    if (wrapRef.current) ro.observe(wrapRef.current);
-    if (innerRef.current) ro.observe(innerRef.current);
-    window.addEventListener("resize", fit);
-    return () => { ro.disconnect(); window.removeEventListener("resize", fit); };
+    // Start at 100% — user can pinch / use buttons to zoom
+    if (innerRef.current) innerRef.current.style.transform = "scale(1)";
   }, []);
 
   // Trackpad / ctrl+wheel zoom
