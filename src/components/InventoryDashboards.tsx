@@ -17,6 +17,7 @@ import { useInventoryHub, type PurchaseOrder } from "@/hooks/useInventoryHub";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { weeksOfSupply, weeksTone, LEAD_TIME_WEEKS } from "@/lib/inventoryMath";
 
@@ -44,12 +45,13 @@ const STAGE_COLOR: Record<string, string> = {
   closed: "bg-muted text-muted-foreground border-border",
 };
 
-function KPI({ label, value, hint, icon: Icon, accent }: {
+function KPI({ label, value, hint, icon: Icon, accent, onClick }: {
   label: string; value: string | number; hint?: string;
   icon: React.ComponentType<{ className?: string }>; accent?: string;
+  onClick?: () => void;
 }) {
-  return (
-    <Card className="p-5 flex items-start justify-between">
+  const inner = (
+    <>
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
         <div className="text-2xl font-semibold mt-2 tabular-nums">{value}</div>
@@ -58,8 +60,20 @@ function KPI({ label, value, hint, icon: Icon, accent }: {
       <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
         <Icon className="h-4 w-4" />
       </div>
-    </Card>
+    </>
   );
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="text-left rounded-lg border border-border bg-card p-5 flex items-start justify-between transition-colors hover:border-primary/40 hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        {inner}
+      </button>
+    );
+  }
+  return <Card className="p-5 flex items-start justify-between">{inner}</Card>;
 }
 
 function EmptyState({ message }: { message: string }) {
@@ -67,6 +81,254 @@ function EmptyState({ message }: { message: string }) {
     <div className="text-sm text-muted-foreground py-8 text-center border border-dashed border-border rounded-md">
       {message}
     </div>
+  );
+}
+
+type DrilldownType = null | "value" | "openpo" | "prepaid" | "backlog" | "closeout" | "ratio" | "turnover" | "lost";
+
+function DrilldownDialog({
+  type, onClose, items, purchaseOrders, openOrders, summary,
+}: {
+  type: DrilldownType;
+  onClose: () => void;
+  items: InventoryItem[];
+  purchaseOrders: PurchaseOrder[];
+  openOrders: { id: string; order_number: string | null; sku: string; dealer_name: string | null; qty_open: number; unit_price: number; extended_value: number; order_date: string | null; promised_date: string | null }[];
+  summary: { value: number; units: number; openPoValue: number; prepaidValue: number; backlogValue: number; backlogUnits: number; closeoutValue: number; salesToInv: number; turnover: number; lostSales: number };
+}) {
+  const open = type !== null;
+
+  const titles: Record<Exclude<DrilldownType, null>, { title: string; desc: string }> = {
+    value: { title: "Total Inventory Value — by SKU", desc: "All on-hand inventory valued at unit cost." },
+    openpo: { title: "Total Open POs — not yet arrived", desc: "Purchase orders still in production or transit." },
+    prepaid: { title: "Prepaid Inventory — POs with deposits", desc: "Cash already paid out to factories." },
+    backlog: { title: "Backlog — Open Sales Orders", desc: "Customer orders placed but not yet shipped." },
+    closeout: { title: "Closeout Inventory — clearance & closeout", desc: "SKUs flagged closeout or clearance." },
+    ratio: { title: "Sales / Inv Ratio — slowest movers first", desc: "Monthly $ sales ÷ on-hand value, lowest carrying first." },
+    turnover: { title: "Annual Turnover — by SKU", desc: "Annualized turns based on monthly sales velocity." },
+    lost: { title: "Lost Sales — out-of-stock SKUs", desc: "Estimated monthly $ lost from stockouts." },
+  };
+
+  const cfg = type ? titles[type] : null;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle>{cfg?.title}</DialogTitle>
+          {cfg?.desc && <DialogDescription>{cfg.desc}</DialogDescription>}
+        </DialogHeader>
+        <div className="overflow-auto -mx-6 px-6">
+          {type === "value" && <ReportSkuValue items={items} total={summary.value} />}
+          {type === "closeout" && <ReportSkuValue items={items.filter((it) => it.isCloseout || it.isClearance)} total={summary.closeoutValue} />}
+          {type === "openpo" && <ReportPOs pos={purchaseOrders.filter((p) => p.production_stage !== "closed" && p.production_stage !== "arrived")} />}
+          {type === "prepaid" && <ReportPOs pos={purchaseOrders.filter((p) => p.is_prepaid)} prepaidMode />}
+          {type === "backlog" && <ReportBacklog rows={openOrders} />}
+          {type === "ratio" && <ReportSalesRatio items={items} />}
+          {type === "turnover" && <ReportTurnover items={items} />}
+          {type === "lost" && <ReportLost items={items.filter((it) => it.status === "out-of-stock" && it.avgMonthlySales > 0)} />}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReportSkuValue({ items, total }: { items: InventoryItem[]; total: number }) {
+  const rows = useMemo(() => items
+    .map((it) => ({ it, value: it.onHandValue ?? (it.unitCost ?? 0) * it.onHand }))
+    .filter((r) => r.value > 0)
+    .sort((a, b) => b.value - a.value), [items]);
+  if (rows.length === 0) return <EmptyState message="No SKUs to show." />;
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+        <tr>
+          <th className="text-left px-3 py-2">SKU</th>
+          <th className="text-left px-3 py-2">Product</th>
+          <th className="text-left px-3 py-2">Collection</th>
+          <th className="text-right px-3 py-2">On Hand</th>
+          <th className="text-right px-3 py-2">Unit Cost</th>
+          <th className="text-right px-3 py-2">Value</th>
+          <th className="text-right px-3 py-2">% of Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ it, value }) => (
+          <tr key={it.sku} className="border-t border-border hover:bg-muted/30">
+            <td className="px-3 py-2 font-mono text-xs">{it.sku}</td>
+            <td className="px-3 py-2 max-w-[260px] truncate">{it.product}</td>
+            <td className="px-3 py-2 text-xs text-muted-foreground">{it.collection}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{fmtNum(it.onHand)}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{it.unitCost ? `$${it.unitCost.toFixed(2)}` : "—"}</td>
+            <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtMoney(value)}</td>
+            <td className="px-3 py-2 text-right tabular-nums text-xs text-muted-foreground">{total > 0 ? `${((value / total) * 100).toFixed(1)}%` : "—"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function ReportPOs({ pos, prepaidMode }: { pos: PurchaseOrder[]; prepaidMode?: boolean }) {
+  const rows = [...pos].sort((a, b) => Number(b.total_value) - Number(a.total_value));
+  if (rows.length === 0) return <EmptyState message="No POs to show." />;
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+        <tr>
+          <th className="text-left px-3 py-2">PO #</th>
+          <th className="text-left px-3 py-2">Factory</th>
+          <th className="text-left px-3 py-2">Stage</th>
+          <th className="text-left px-3 py-2">ETA</th>
+          <th className="text-right px-3 py-2">Total Value</th>
+          {prepaidMode && <th className="text-right px-3 py-2">Prepaid</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((p) => (
+          <tr key={p.id} className="border-t border-border hover:bg-muted/30">
+            <td className="px-3 py-2 font-mono text-xs">{p.po_number ?? "—"}</td>
+            <td className="px-3 py-2">{p.factory ?? "—"}</td>
+            <td className="px-3 py-2 text-xs">{p.production_stage ?? p.status ?? "—"}</td>
+            <td className="px-3 py-2 text-xs">{p.eta ? new Date(p.eta).toLocaleDateString() : "—"}</td>
+            <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtMoney(Number(p.total_value))}</td>
+            {prepaidMode && <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(Number(p.prepaid_amount ?? 0))}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function ReportBacklog({ rows }: { rows: { id: string; order_number: string | null; sku: string; dealer_name: string | null; qty_open: number; unit_price: number; extended_value: number; order_date: string | null; promised_date: string | null }[] }) {
+  if (rows.length === 0) return <EmptyState message="No open sales orders." />;
+  const sorted = [...rows].sort((a, b) => Number(b.extended_value) - Number(a.extended_value));
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+        <tr>
+          <th className="text-left px-3 py-2">Order #</th>
+          <th className="text-left px-3 py-2">Dealer</th>
+          <th className="text-left px-3 py-2">SKU</th>
+          <th className="text-right px-3 py-2">Qty Open</th>
+          <th className="text-right px-3 py-2">Unit Price</th>
+          <th className="text-right px-3 py-2">Value</th>
+          <th className="text-left px-3 py-2">Promised</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sorted.map((r) => (
+          <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+            <td className="px-3 py-2 font-mono text-xs">{r.order_number ?? "—"}</td>
+            <td className="px-3 py-2 max-w-[200px] truncate">{r.dealer_name ?? "—"}</td>
+            <td className="px-3 py-2 font-mono text-xs">{r.sku}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{fmtNum(Number(r.qty_open))}</td>
+            <td className="px-3 py-2 text-right tabular-nums">${Number(r.unit_price).toFixed(2)}</td>
+            <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtMoney(Number(r.extended_value))}</td>
+            <td className="px-3 py-2 text-xs">{r.promised_date ? new Date(r.promised_date).toLocaleDateString() : "—"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function ReportSalesRatio({ items }: { items: InventoryItem[] }) {
+  const rows = useMemo(() => items.map((it) => {
+    const value = it.onHandValue ?? (it.unitCost ?? 0) * it.onHand;
+    const monthlySales = it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0);
+    const ratio = value > 0 ? monthlySales / value : 0;
+    return { it, value, monthlySales, ratio };
+  }).filter((r) => r.value > 0).sort((a, b) => a.ratio - b.ratio), [items]);
+  if (rows.length === 0) return <EmptyState message="No SKUs to show." />;
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+        <tr>
+          <th className="text-left px-3 py-2">SKU</th>
+          <th className="text-left px-3 py-2">Product</th>
+          <th className="text-right px-3 py-2">Inv Value</th>
+          <th className="text-right px-3 py-2">Mo Sales $</th>
+          <th className="text-right px-3 py-2">Ratio</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.slice(0, 200).map(({ it, value, monthlySales, ratio }) => (
+          <tr key={it.sku} className="border-t border-border hover:bg-muted/30">
+            <td className="px-3 py-2 font-mono text-xs">{it.sku}</td>
+            <td className="px-3 py-2 max-w-[260px] truncate">{it.product}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(value)}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(monthlySales)}</td>
+            <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", ratio < 0.2 && "text-destructive", ratio >= 0.5 && "text-success")}>{ratio.toFixed(2)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function ReportTurnover({ items }: { items: InventoryItem[] }) {
+  const rows = useMemo(() => items.map((it) => {
+    const value = it.onHandValue ?? (it.unitCost ?? 0) * it.onHand;
+    const annualSales = it.avgMonthlySales * 12 * (it.listPrice ?? it.unitCost ?? 0);
+    const turns = value > 0 ? annualSales / value : 0;
+    return { it, value, turns };
+  }).filter((r) => r.value > 0).sort((a, b) => b.turns - a.turns), [items]);
+  if (rows.length === 0) return <EmptyState message="No SKUs to show." />;
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+        <tr>
+          <th className="text-left px-3 py-2">SKU</th>
+          <th className="text-left px-3 py-2">Product</th>
+          <th className="text-right px-3 py-2">Inv Value</th>
+          <th className="text-right px-3 py-2">Mo Sales</th>
+          <th className="text-right px-3 py-2">Turns / yr</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.slice(0, 200).map(({ it, value, turns }) => (
+          <tr key={it.sku} className="border-t border-border hover:bg-muted/30">
+            <td className="px-3 py-2 font-mono text-xs">{it.sku}</td>
+            <td className="px-3 py-2 max-w-[260px] truncate">{it.product}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(value)}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales.toFixed(1)}</td>
+            <td className="px-3 py-2 text-right tabular-nums font-semibold">{turns.toFixed(1)}×</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function ReportLost({ items }: { items: InventoryItem[] }) {
+  const rows = useMemo(() => items.map((it) => ({
+    it, lost: it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0),
+  })).filter((r) => r.lost > 0).sort((a, b) => b.lost - a.lost), [items]);
+  if (rows.length === 0) return <EmptyState message="No active stockouts with sales history." />;
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground sticky top-0">
+        <tr>
+          <th className="text-left px-3 py-2">SKU</th>
+          <th className="text-left px-3 py-2">Product</th>
+          <th className="text-right px-3 py-2">Mo Sales (units)</th>
+          <th className="text-right px-3 py-2">On PO</th>
+          <th className="text-right px-3 py-2">Lost / mo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ it, lost }) => (
+          <tr key={it.sku} className="border-t border-border hover:bg-muted/30">
+            <td className="px-3 py-2 font-mono text-xs">{it.sku}</td>
+            <td className="px-3 py-2 max-w-[260px] truncate">{it.product}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales.toFixed(1)}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{fmtNum(it.onPo ?? 0)}</td>
+            <td className="px-3 py-2 text-right tabular-nums font-semibold text-destructive">{fmtMoney(lost)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -600,18 +862,29 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       || (it.brand ?? "").toLowerCase().includes(q);
   }, [skuSearch]);
 
+  const [drilldown, setDrilldown] = useState<null | "value" | "openpo" | "prepaid" | "backlog" | "closeout" | "ratio" | "turnover" | "lost">(null);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} />
-        <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} />
-        <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} />
-        <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} />
-        <KPI label="Closeout Inventory" value={fmtMoney(summary.closeoutValue)} hint="clearance + closeout" icon={Tag} />
-        <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} />
-        <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} />
-        <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" />
+        <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} onClick={() => setDrilldown("value")} />
+        <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} onClick={() => setDrilldown("openpo")} />
+        <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} onClick={() => setDrilldown("prepaid")} />
+        <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} onClick={() => setDrilldown("backlog")} />
+        <KPI label="Closeout Inventory" value={fmtMoney(summary.closeoutValue)} hint="clearance + closeout" icon={Tag} onClick={() => setDrilldown("closeout")} />
+        <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} onClick={() => setDrilldown("ratio")} />
+        <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} onClick={() => setDrilldown("turnover")} />
+        <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" onClick={() => setDrilldown("lost")} />
       </div>
+
+      <DrilldownDialog
+        type={drilldown}
+        onClose={() => setDrilldown(null)}
+        items={items}
+        purchaseOrders={hub.purchaseOrders}
+        openOrders={hub.openOrders}
+        summary={summary}
+      />
 
       <Tabs defaultValue="buynow" className="w-full">
       <TabsList className="flex-wrap h-auto">
