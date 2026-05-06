@@ -76,10 +76,29 @@ function StagePill({ stage }: { stage: string | null }) {
   return <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs border", cls)}>{label}</span>;
 }
 
-interface Props { items: InventoryItem[] }
+type StatusFilter = "all" | InventoryItem["status"];
 
-export default function InventoryDashboards({ items }: Props) {
+interface Props {
+  items: InventoryItem[];
+  statusFilter?: StatusFilter;
+  onStatusFilterChange?: (s: StatusFilter) => void;
+}
+
+export default function InventoryDashboards({ items, statusFilter, onStatusFilterChange }: Props) {
   const hub = useInventoryHub();
+
+  // Status counts for clickable summary tiles
+  const statusCounts = useMemo(() => {
+    const c = { total: items.length, critical: 0, outOfStock: 0, reorder: 0, fast: 0 };
+    for (const it of items) {
+      if (it.status === "critical") c.critical++;
+      if (it.status === "out-of-stock") c.outOfStock++;
+      if (it.status === "reorder-soon") c.reorder++;
+      if (it.status === "fast-moving") c.fast++;
+    }
+    return c;
+  }, [items]);
+
 
   // ============ SECTION 1: HIGH LEVEL SUMMARY ============
   const summary = useMemo(() => {
