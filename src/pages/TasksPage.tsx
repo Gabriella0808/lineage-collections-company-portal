@@ -489,7 +489,18 @@ export default function TasksPage() {
         }
       />
 
-      {!loading && (
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="boards">Boards</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="boards" className="mt-4">
+          <TaskBoardsView />
+        </TabsContent>
+
+        <TabsContent value="list" className="space-y-6 mt-4">
+
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <MetricCard label="Total" value={totalTasks} icon={ListChecks} hint="all action items" />
           <MetricCard label="Overdue" value={overdueCount} icon={AlertTriangle} tone="destructive" hint="past due, open" />
