@@ -61,21 +61,6 @@ function StatusPill({ status }: { status: InventoryStatus }) {
   );
 }
 
-function StatTile({ label, value, icon: Icon, accent, hint }: { label: string; value: number | string; icon: React.ComponentType<{ className?: string }>; accent?: string; hint?: string }) {
-  return (
-    <Card className="p-5 flex items-start justify-between">
-      <div>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-        <div className="text-3xl font-semibold mt-2 tabular-nums">{value}</div>
-        {hint && <div className={cn("text-xs mt-1", accent ?? "text-muted-foreground")}>{hint}</div>}
-      </div>
-      <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-        <Icon className="h-4 w-4" />
-      </div>
-    </Card>
-  );
-}
-
 export default function InventoryPage() {
   const [filter, setFilter] = useState<"all" | InventoryStatus>("all");
   const [query, setQuery] = useState("");
@@ -204,15 +189,16 @@ export default function InventoryPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        <StatTile label="Total SKUs" value={counts.total} icon={Package} />
-        <StatTile label="Critical Items" value={counts.critical} icon={AlertTriangle} accent="text-destructive" hint="Needs attention" />
-        <StatTile label="Out of Stock" value={counts.outOfStock} icon={XCircle} accent="text-destructive" />
-        <StatTile label="Reorder Soon" value={counts.reorder} icon={RefreshCw} accent="text-warning-foreground" />
-        <StatTile label="Fast Moving" value={counts.fast} icon={Zap} accent="text-success" />
-      </div>
-
-      <InventoryDashboards items={items} />
+      <InventoryDashboards
+        items={items}
+        statusFilter={filter}
+        onStatusFilterChange={(s) => {
+          setFilter(s);
+          requestAnimationFrame(() => {
+            document.getElementById("inventory-sku-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-5">
@@ -379,7 +365,7 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card id="inventory-sku-table" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
