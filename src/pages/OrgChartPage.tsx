@@ -447,8 +447,12 @@ export default function OrgChartPage() {
                       <ChevronDown className="h-4 w-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-2 max-h-72 overflow-y-auto">
-                    <div className="space-y-1">
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <div
+                      className="max-h-72 overflow-y-scroll overscroll-contain touch-pan-y p-2 space-y-1"
+                      onWheel={(e) => e.stopPropagation()}
+                      onTouchMove={(e) => e.stopPropagation()}
+                    >
                       {positions
                         .filter((p) => p.id !== editing.id && p.id !== editing.parent_id)
                         .map((p) => {
