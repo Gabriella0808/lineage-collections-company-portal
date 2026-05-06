@@ -111,7 +111,7 @@ export function useInventory() {
           unitCost: r.unit_cost == null ? undefined : Number(r.unit_cost),
           onHandValue: r.on_hand_value == null ? undefined : Number(r.on_hand_value),
           listPrice: r.list_price == null ? undefined : Number(r.list_price),
-          isCloseout: (r.is_closeout ?? false) || /^C/i.test(r.sku ?? ""),
+          isCloseout: /^C:/i.test(r.sku ?? ""),
           isDiscontinued: r.is_discontinued ?? false,
           factory: r.factory ?? undefined,
           moq: r.moq ?? undefined,
