@@ -262,7 +262,7 @@ export default function OrgChartPage() {
           No positions yet.{isAdmin && " Click 'Add position' to start."}
         </CardContent></Card>
       ) : (
-        <div className="overflow-x-auto pb-4">
+        <ChartViewport>
           <OrgChartCanvas
             roots={byParent.get(null) ?? []}
             byParent={byParent}
@@ -271,7 +271,7 @@ export default function OrgChartPage() {
             positionsWithDotted={positionsWithDotted}
             dotted={dotted}
           />
-        </div>
+        </ChartViewport>
       )}
 
       {/* Position detail drawer */}
