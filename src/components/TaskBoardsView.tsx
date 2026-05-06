@@ -211,6 +211,39 @@ export default function TaskBoardsView() {
     load();
   };
 
+  // --- Members / Subscribers ---
+  const openShareDialog = async () => {
+    if (!activeBoardId) return;
+    setAddUserId("");
+    setShareDlgOpen(true);
+    const [mRes, uRes] = await Promise.all([
+      supabase.from("task_board_members" as any).select("user_id").eq("board_id", activeBoardId),
+      supabase.rpc("assignable_users"),
+    ]);
+    if (!mRes.error) setMembers((mRes.data ?? []) as any);
+    if (!uRes.error) setAssignableUsers((uRes.data ?? []) as any);
+  };
+  const addMember = async () => {
+    if (!activeBoardId || !user || !addUserId) return;
+    const { error } = await supabase
+      .from("task_board_members" as any)
+      .insert({ board_id: activeBoardId, user_id: addUserId, added_by: user.id });
+    if (error) return toast({ title: "Failed to add subscriber", description: error.message, variant: "destructive" });
+    setMembers((m) => [...m, { user_id: addUserId }]);
+    setAddUserId("");
+    toast({ title: "Subscriber added" });
+  };
+  const removeMember = async (uid: string) => {
+    if (!activeBoardId) return;
+    const { error } = await supabase
+      .from("task_board_members" as any)
+      .delete()
+      .eq("board_id", activeBoardId)
+      .eq("user_id", uid);
+    if (error) return toast({ title: "Remove failed", description: error.message, variant: "destructive" });
+    setMembers((m) => m.filter((x) => x.user_id !== uid));
+  };
+
   // --- Group CRUD ---
   const openNewGroup = () => {
     setEditingGroup(null);
