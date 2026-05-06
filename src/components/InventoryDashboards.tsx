@@ -862,29 +862,55 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       || (it.brand ?? "").toLowerCase().includes(q);
   }, [skuSearch]);
 
-  const [drilldown, setDrilldown] = useState<null | "value" | "openpo" | "prepaid" | "backlog" | "closeout" | "ratio" | "turnover" | "lost">(null);
+  type DrilldownKey = "value" | "openpo" | "prepaid" | "backlog" | "closeout" | "ratio" | "turnover" | "lost";
+  const [drilldown, setDrilldown] = useState<null | DrilldownKey>(null);
+  const toggleDrill = (k: DrilldownKey) => setDrilldown((curr) => (curr === k ? null : k));
+
+  const drillTitles: Record<DrilldownKey, { title: string; desc: string }> = {
+    value: { title: "Total Inventory Value — by SKU", desc: "All on-hand inventory valued at unit cost." },
+    openpo: { title: "Total Open POs — not yet arrived", desc: "Purchase orders still in production or transit." },
+    prepaid: { title: "Prepaid Inventory — POs with deposits", desc: "Cash already paid out to factories." },
+    backlog: { title: "Backlog — Open Sales Orders", desc: "Customer orders placed but not yet shipped." },
+    closeout: { title: "Closeout Inventory — clearance & closeout", desc: "SKUs flagged closeout or clearance." },
+    ratio: { title: "Sales / Inv Ratio — slowest movers first", desc: "Monthly $ sales ÷ on-hand value, lowest carrying first." },
+    turnover: { title: "Annual Turnover — by SKU", desc: "Annualized turns based on monthly sales velocity." },
+    lost: { title: "Lost Sales — out-of-stock SKUs", desc: "Estimated monthly $ lost from stockouts." },
+  };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} onClick={() => setDrilldown("value")} />
-        <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} onClick={() => setDrilldown("openpo")} />
-        <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} onClick={() => setDrilldown("prepaid")} />
-        <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} onClick={() => setDrilldown("backlog")} />
-        <KPI label="Closeout Inventory" value={fmtMoney(summary.closeoutValue)} hint="clearance + closeout" icon={Tag} onClick={() => setDrilldown("closeout")} />
-        <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} onClick={() => setDrilldown("ratio")} />
-        <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} onClick={() => setDrilldown("turnover")} />
-        <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" onClick={() => setDrilldown("lost")} />
+        <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} onClick={() => toggleDrill("value")} active={drilldown === "value"} />
+        <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} onClick={() => toggleDrill("openpo")} active={drilldown === "openpo"} />
+        <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} onClick={() => toggleDrill("prepaid")} active={drilldown === "prepaid"} />
+        <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} onClick={() => toggleDrill("backlog")} active={drilldown === "backlog"} />
+        <KPI label="Closeout Inventory" value={fmtMoney(summary.closeoutValue)} hint="clearance + closeout" icon={Tag} onClick={() => toggleDrill("closeout")} active={drilldown === "closeout"} />
+        <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} onClick={() => toggleDrill("ratio")} active={drilldown === "ratio"} />
+        <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} onClick={() => toggleDrill("turnover")} active={drilldown === "turnover"} />
+        <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" onClick={() => toggleDrill("lost")} active={drilldown === "lost"} />
       </div>
 
-      <DrilldownDialog
-        type={drilldown}
-        onClose={() => setDrilldown(null)}
-        items={items}
-        purchaseOrders={hub.purchaseOrders}
-        openOrders={hub.openOrders}
-        summary={summary}
-      />
+      {drilldown && (
+        <Card className="p-5 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <h3 className="text-base font-semibold">{drillTitles[drilldown].title}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">{drillTitles[drilldown].desc}</p>
+            </div>
+            <Button size="sm" variant="ghost" className="h-8" onClick={() => setDrilldown(null)}>Close</Button>
+          </div>
+          <div className="overflow-auto max-h-[60vh]">
+            {drilldown === "value" && <ReportSkuValue items={items} total={summary.value} />}
+            {drilldown === "closeout" && <ReportSkuValue items={items.filter((it) => it.isCloseout || it.isClearance)} total={summary.closeoutValue} />}
+            {drilldown === "openpo" && <ReportPOs pos={hub.purchaseOrders.filter((p) => p.production_stage !== "closed" && p.production_stage !== "arrived")} />}
+            {drilldown === "prepaid" && <ReportPOs pos={hub.purchaseOrders.filter((p) => p.is_prepaid)} prepaidMode />}
+            {drilldown === "backlog" && <ReportBacklog rows={hub.openOrders} />}
+            {drilldown === "ratio" && <ReportSalesRatio items={items} />}
+            {drilldown === "turnover" && <ReportTurnover items={items} />}
+            {drilldown === "lost" && <ReportLost items={items.filter((it) => it.status === "out-of-stock" && it.avgMonthlySales > 0)} />}
+          </div>
+        </Card>
+      )}
 
       <Tabs defaultValue="buynow" className="w-full">
       <TabsList className="flex-wrap h-auto">
