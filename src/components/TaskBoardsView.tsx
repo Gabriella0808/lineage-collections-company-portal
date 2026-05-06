@@ -426,30 +426,34 @@ export default function TaskBoardsView() {
 
   return (
     <div className="space-y-4">
-      {/* Board tabs */}
+      {/* Board selector */}
       <Card className="p-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {boards.map((b) => (
-            <button
-              key={b.id}
-              onClick={() => setActiveBoardId(b.id)}
-              className={`group/tab inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                activeBoardId === b.id
-                  ? "bg-foreground text-background"
-                  : "hover:bg-muted text-foreground/80"
-              }`}
-            >
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: b.color ?? "#6366f1" }}
-              />
-              {b.name}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={activeBoardId ?? ""}
+            onValueChange={(v) => setActiveBoardId(v)}
+          >
+            <SelectTrigger className="h-9 w-[280px] bg-card">
+              <SelectValue placeholder={boards.length ? "Select a board…" : "No boards yet"} />
+            </SelectTrigger>
+            <SelectContent>
+              {boards.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: b.color ?? "#6366f1" }}
+                    />
+                    {b.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 text-xs gap-1"
+            className="h-9 text-xs gap-1"
             onClick={openNewBoard}
           >
             <Plus className="h-3.5 w-3.5" /> New board
