@@ -614,18 +614,29 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       || (it.brand ?? "").toLowerCase().includes(q);
   }, [skuSearch]);
 
+  const [drilldown, setDrilldown] = useState<null | "value" | "openpo" | "prepaid" | "backlog" | "closeout" | "ratio" | "turnover" | "lost">(null);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} />
-        <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} />
-        <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} />
-        <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} />
-        <KPI label="Closeout Inventory" value={fmtMoney(summary.closeoutValue)} hint="clearance + closeout" icon={Tag} />
-        <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} />
-        <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} />
-        <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" />
+        <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} onClick={() => setDrilldown("value")} />
+        <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} onClick={() => setDrilldown("openpo")} />
+        <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} onClick={() => setDrilldown("prepaid")} />
+        <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} onClick={() => setDrilldown("backlog")} />
+        <KPI label="Closeout Inventory" value={fmtMoney(summary.closeoutValue)} hint="clearance + closeout" icon={Tag} onClick={() => setDrilldown("closeout")} />
+        <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} onClick={() => setDrilldown("ratio")} />
+        <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} onClick={() => setDrilldown("turnover")} />
+        <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" onClick={() => setDrilldown("lost")} />
       </div>
+
+      <DrilldownDialog
+        type={drilldown}
+        onClose={() => setDrilldown(null)}
+        items={items}
+        purchaseOrders={hub.purchaseOrders}
+        openOrders={hub.openOrders}
+        summary={summary}
+      />
 
       <Tabs defaultValue="buynow" className="w-full">
       <TabsList className="flex-wrap h-auto">
