@@ -590,32 +590,116 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function OrgTree({
-  roots, byParent, onSelect, selectedId, positionsWithDotted,
+type NodeRefMap = Map<string, HTMLElement>;
+const NodeRefCtx = ({} as any);
+
+function OrgChartCanvas({
+  roots, byParent, onSelect, selectedId, positionsWithDotted, dotted,
 }: {
   roots: Position[];
   byParent: Map<string | null, Position[]>;
   onSelect: (id: string) => void;
   selectedId: string | null;
   positionsWithDotted: Set<string>;
+  dotted: DottedLink[];
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<NodeRefMap>(new Map());
+  const [lines, setLines] = useState<Array<{ id: string; x1: number; y1: number; x2: number; y2: number }>>([]);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+
+  const recompute = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    const cRect = container.getBoundingClientRect();
+    setSize({ w: container.scrollWidth, h: container.scrollHeight });
+    const next: typeof lines = [];
+    dotted.forEach((d) => {
+      const from = nodeRefs.current.get(d.position_id);
+      const to = nodeRefs.current.get(d.reports_to_id);
+      if (!from || !to) return;
+      const a = from.getBoundingClientRect();
+      const b = to.getBoundingClientRect();
+      // Connect side-to-side based on horizontal positions
+      const fromCenterX = a.left + a.width / 2 - cRect.left;
+      const toCenterX = b.left + b.width / 2 - cRect.left;
+      const fromOnLeft = fromCenterX < toCenterX;
+      const x1 = (fromOnLeft ? a.right : a.left) - cRect.left;
+      const y1 = a.top + a.height / 2 - cRect.top;
+      const x2 = (fromOnLeft ? b.left : b.right) - cRect.left;
+      const y2 = b.top + b.height / 2 - cRect.top;
+      next.push({ id: d.id, x1, y1, x2, y2 });
+    });
+    setLines(next);
+  };
+
+  useLayoutEffect(() => {
+    recompute();
+    const ro = new ResizeObserver(() => recompute());
+    if (containerRef.current) ro.observe(containerRef.current);
+    window.addEventListener("resize", recompute);
+    const t = setTimeout(recompute, 100);
+    return () => { ro.disconnect(); window.removeEventListener("resize", recompute); clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dotted, roots, byParent, selectedId]);
+
+  const registerNode = (id: string, el: HTMLElement | null) => {
+    if (el) nodeRefs.current.set(id, el);
+    else nodeRefs.current.delete(id);
+  };
+
   return (
-    <div className="flex gap-6 items-start min-w-fit">
-      {roots.map((r) => (
-        <OrgNode key={r.id} pos={r} byParent={byParent} onSelect={onSelect} selectedId={selectedId} positionsWithDotted={positionsWithDotted} />
-      ))}
+    <div ref={containerRef} className="relative inline-block min-w-full">
+      <div className="flex gap-6 items-start min-w-fit">
+        {roots.map((r) => (
+          <OrgNode
+            key={r.id}
+            pos={r}
+            byParent={byParent}
+            onSelect={onSelect}
+            selectedId={selectedId}
+            positionsWithDotted={positionsWithDotted}
+            registerNode={registerNode}
+          />
+        ))}
+      </div>
+      {size.w > 0 && (
+        <svg
+          className="pointer-events-none absolute inset-0"
+          width={size.w}
+          height={size.h}
+          style={{ overflow: "visible" }}
+        >
+          {lines.map((l) => {
+            const midX = (l.x1 + l.x2) / 2;
+            const path = `M ${l.x1} ${l.y1} C ${midX} ${l.y1}, ${midX} ${l.y2}, ${l.x2} ${l.y2}`;
+            return (
+              <path
+                key={l.id}
+                d={path}
+                fill="none"
+                stroke="hsl(var(--accent))"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </svg>
+      )}
     </div>
   );
 }
 
 function OrgNode({
-  pos, byParent, onSelect, selectedId, positionsWithDotted, depth = 0,
+  pos, byParent, onSelect, selectedId, positionsWithDotted, registerNode, depth = 0,
 }: {
   pos: Position;
   byParent: Map<string | null, Position[]>;
   onSelect: (id: string) => void;
   selectedId: string | null;
   positionsWithDotted: Set<string>;
+  registerNode: (id: string, el: HTMLElement | null) => void;
   depth?: number;
 }) {
   const children = byParent.get(pos.id) ?? [];
@@ -625,6 +709,7 @@ function OrgNode({
   return (
     <div className="flex flex-col items-center">
       <button
+        ref={(el) => registerNode(pos.id, el)}
         onClick={() => onSelect(pos.id)}
         className={cn(
           "relative rounded-lg border bg-card px-4 py-3 text-center min-w-[180px] max-w-[220px] shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5",
@@ -674,7 +759,7 @@ function OrgNode({
                         </div>
                       )}
                       {isOnly && <div className="w-px h-3 bg-border" />}
-                      <OrgNode pos={c} byParent={byParent} onSelect={onSelect} selectedId={selectedId} positionsWithDotted={positionsWithDotted} depth={depth + 1} />
+                      <OrgNode pos={c} byParent={byParent} onSelect={onSelect} selectedId={selectedId} positionsWithDotted={positionsWithDotted} registerNode={registerNode} depth={depth + 1} />
                     </div>
                   );
                 })}
