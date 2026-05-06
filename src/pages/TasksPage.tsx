@@ -409,7 +409,7 @@ export default function TasksPage() {
           task?.status === "todo" ? /to.?do/i.test(g.name)
           : task?.status === "in_progress" ? /progress/i.test(g.name)
           : task?.status === "done" ? /done|complete/i.test(g.name)
-          : task?.status === "stuck" ? /stuck|block/i.test(g.name)
+          : task?.status === "blocked" ? /stuck|block/i.test(g.name)
           : false
         );
         group_id = (statusMatch ?? (groups as any[])[0]).id;
