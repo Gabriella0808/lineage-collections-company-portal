@@ -42,12 +42,16 @@ interface DbInventoryRow {
   is_clearance: boolean | null;
 }
 
-function deriveStatus(onHand: number, monthsSupply: number | null): InventoryStatus {
+// Lead time per Acctivate model: ~32 weeks
+const LEAD_WEEKS = 32;
+
+function deriveStatus(onHand: number, weeks: number | null): InventoryStatus {
   if (onHand <= 0) return "out-of-stock";
-  if (onHand <= 5) return "critical";
-  if (onHand <= 20) return "reorder-soon";
-  if (monthsSupply != null && monthsSupply > 12) return "overstock";
-  if (monthsSupply != null && monthsSupply >= 3) return "fast-moving";
+  if (weeks == null) return onHand <= 5 ? "critical" : "healthy";
+  if (weeks < LEAD_WEEKS * 0.5) return "critical";       // < 16 wk
+  if (weeks < LEAD_WEEKS) return "reorder-soon";          // < 32 wk
+  if (weeks > LEAD_WEEKS * 2) return "overstock";         // > 64 wk
+  if (weeks >= LEAD_WEEKS && weeks <= LEAD_WEEKS * 1.5) return "fast-moving";
   return "healthy";
 }
 
@@ -56,9 +60,9 @@ const ALLOWED: ReadonlySet<InventoryStatus> = new Set([
   "fast-moving", "overstock", "liquidate", "healthy",
 ]);
 
-function normalizeStatus(raw: string | null, onHand: number, monthsSupply: number | null): InventoryStatus {
+function normalizeStatus(raw: string | null, onHand: number, weeks: number | null): InventoryStatus {
   if (raw && ALLOWED.has(raw as InventoryStatus)) return raw as InventoryStatus;
-  return deriveStatus(onHand, monthsSupply);
+  return deriveStatus(onHand, weeks);
 }
 
 export function useInventory() {
@@ -96,6 +100,10 @@ export function useInventory() {
         const available = Number(r.available ?? 0);
         const avg = Number(r.avg_monthly_sales ?? 0);
         const mos = r.months_supply == null ? null : Number(r.months_supply);
+        // Derive weeks of supply from (Available + On PO) ÷ Sales/Week (Acctivate model)
+        const onPo = r.on_po == null ? 0 : Number(r.on_po);
+        const salesPerWeek = avg / 4.333;
+        const weeks = salesPerWeek > 0 ? (available + onPo) / salesPerWeek : null;
         return {
           sku: r.sku,
           product: r.product,
@@ -106,7 +114,7 @@ export function useInventory() {
           available,
           avgMonthlySales: avg,
           monthsSupply: mos,
-          status: normalizeStatus(r.status, onHand, mos),
+          status: normalizeStatus(r.status, onHand, weeks),
           link: r.link ?? undefined,
           unitCost: r.unit_cost == null ? undefined : Number(r.unit_cost),
           onHandValue: r.on_hand_value == null ? undefined : Number(r.on_hand_value),

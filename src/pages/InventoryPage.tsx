@@ -11,6 +11,7 @@ import { type InventoryStatus } from "@/data/inventoryMock";
 import { useInventory } from "@/hooks/useInventory";
 import InventoryDashboards from "@/components/InventoryDashboards";
 import { cn } from "@/lib/utils";
+import { weeksOfSupply, reorderPoint, weeksTone, LEAD_TIME_WEEKS } from "@/lib/inventoryMath";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
@@ -389,8 +390,9 @@ export default function InventoryPage() {
                 <th className="text-left px-4 py-3 font-medium">Supplier</th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">On Hand <ArrowUpDown className="h-3 w-3" /></span></th>
                 <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Available <ArrowUpDown className="h-3 w-3" /></span></th>
-                <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Avg Mo. Sales <ArrowUpDown className="h-3 w-3" /></span></th>
-                <th className="text-right px-4 py-3 font-medium" title="Months of supply remaining at current sales pace (On Hand ÷ Avg Monthly Sales)"><span className="inline-flex items-center gap-1">Avg Burn-down <ArrowUpDown className="h-3 w-3" /></span></th>
+                <th className="text-right px-4 py-3 font-medium"><span className="inline-flex items-center gap-1">Sales/Wk <ArrowUpDown className="h-3 w-3" /></span></th>
+                <th className="text-right px-4 py-3 font-medium" title="Reorder point: Sales/Week × 20.25"><span className="inline-flex items-center gap-1">Reorder Pt <ArrowUpDown className="h-3 w-3" /></span></th>
+                <th className="text-right px-4 py-3 font-medium" title={`Weeks of supply = (Available + On PO) ÷ Sales/Week. Lead time ≈ ${LEAD_TIME_WEEKS} weeks.`}><span className="inline-flex items-center gap-1">Weeks Supply <ArrowUpDown className="h-3 w-3" /></span></th>
               </tr>
             </thead>
             <tbody>
@@ -407,20 +409,14 @@ export default function InventoryPage() {
                     <td className="px-4 py-3 text-muted-foreground">{it.supplier}</td>
                     <td className={cn("px-4 py-3 text-right tabular-nums font-semibold", lowQty && "text-destructive")}>{it.onHand}</td>
                     <td className={cn("px-4 py-3 text-right tabular-nums font-semibold", lowQty && "text-destructive")}>{it.available}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{it.avgMonthlySales ? it.avgMonthlySales.toFixed(1) : "—"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{it.avgMonthlySales > 0 ? (it.avgMonthlySales / 4.333).toFixed(1) : "—"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{it.avgMonthlySales > 0 ? reorderPoint(it) : "—"}</td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       {(() => {
-                        const mos = it.avgMonthlySales > 0
-                          ? it.onHand / it.avgMonthlySales
-                          : (it.monthsSupply ?? null);
-                        if (mos == null) return <span className="text-muted-foreground">No sales</span>;
-                        if (it.onHand <= 0) return <span className="text-destructive font-semibold">0.0 mo</span>;
-                        const tone =
-                          mos < 1 ? "text-destructive font-semibold" :
-                          mos < 3 ? "text-amber-600 font-medium" :
-                          mos > 12 ? "text-blue-600" :
-                          "text-foreground";
-                        return <span className={tone} title={`${it.onHand} on hand ÷ ${it.avgMonthlySales.toFixed(1)}/mo`}>{mos.toFixed(1)} mo</span>;
+                        const w = weeksOfSupply(it);
+                        if (w == null) return <span className="text-muted-foreground">No sales</span>;
+                        if (it.onHand <= 0 && (it.onPo ?? 0) <= 0) return <span className="text-destructive font-semibold">0 wk</span>;
+                        return <span className={weeksTone(w)} title={`(Avail ${it.available} + On PO ${it.onPo ?? 0}) ÷ ${(it.avgMonthlySales/4.333).toFixed(2)}/wk`}>{w.toFixed(1)} wk</span>;
                       })()}
                     </td>
                   </tr>

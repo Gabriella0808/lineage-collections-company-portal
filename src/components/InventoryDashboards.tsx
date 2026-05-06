@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { weeksOfSupply, weeksTone, LEAD_TIME_WEEKS } from "@/lib/inventoryMath";
 
 const fmtMoney = (n: number) =>
   n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` :
@@ -1178,7 +1179,7 @@ export default function InventoryDashboards({ items }: Props) {
                         <th className="text-left px-3 py-2">Product</th>
                         <th className="text-left px-3 py-2">Collection</th>
                         <th className="text-right px-3 py-2">On Hand</th>
-                        <th className="text-right px-3 py-2">Mo. Supply</th>
+                        <th className="text-right px-3 py-2" title={`Lead time ≈ ${LEAD_TIME_WEEKS} weeks`}>Weeks Supply</th>
                         <th className="text-right px-3 py-2">Tied-up Value</th>
                       </tr>
                     </thead>
@@ -1189,7 +1190,7 @@ export default function InventoryDashboards({ items }: Props) {
                           <td className="px-3 py-2">{it.product}</td>
                           <td className="px-3 py-2">{it.collection}</td>
                           <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                          <td className="px-3 py-2 text-right tabular-nums font-semibold">{(it.monthsSupply ?? 0).toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold">{(() => { const w = weeksOfSupply(it); return w == null ? "—" : `${w.toFixed(1)} wk`; })()}</td>
                           <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
                         </tr>
                       ))}
@@ -1298,7 +1299,7 @@ export default function InventoryDashboards({ items }: Props) {
                         <th className="text-left px-3 py-2">Product</th>
                         <th className="text-left px-3 py-2">Collection</th>
                         <th className="text-right px-3 py-2">On Hand</th>
-                        <th className="text-right px-3 py-2">Mo. Supply</th>
+                        <th className="text-right px-3 py-2">Weeks Supply</th>
                         <th className="text-right px-3 py-2">Value</th>
                       </tr>
                     </thead>
@@ -1309,7 +1310,7 @@ export default function InventoryDashboards({ items }: Props) {
                           <td className="px-3 py-2">{it.product}</td>
                           <td className="px-3 py-2">{it.collection}</td>
                           <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{it.monthsSupply == null ? "—" : it.monthsSupply.toFixed(1)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{(() => { const w = weeksOfSupply(it); return w == null ? "—" : `${w.toFixed(1)} wk`; })()}</td>
                           <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
                         </tr>
                       ))}
@@ -1702,7 +1703,7 @@ export default function InventoryDashboards({ items }: Props) {
                   <div><div className="text-xs text-muted-foreground">Override /wk</div><div className="tabular-nums">{drawerItem.reorderOverridePerWeek ?? "—"}</div></div>
                   <div><div className="text-xs text-muted-foreground">Lead time (mo)</div><div className="tabular-nums">{drawerItem.leadTimeMonths ?? 4.5}</div></div>
                   <div><div className="text-xs text-muted-foreground">MOQ</div><div className="tabular-nums">{drawerItem.moq ?? "—"}</div></div>
-                  <div><div className="text-xs text-muted-foreground">Months supply</div><div className="tabular-nums">{drawerItem.monthsSupply == null ? "—" : drawerItem.monthsSupply.toFixed(1)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Weeks supply</div><div className={cn("tabular-nums", weeksTone(weeksOfSupply(drawerItem)))}>{(() => { const w = weeksOfSupply(drawerItem); return w == null ? "—" : `${w.toFixed(1)} wk`; })()}</div></div>
                   <div><div className="text-xs text-muted-foreground">Forecast/mo</div><div className="tabular-nums">{drawerItem.forecastMonthly ?? "—"}</div></div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
