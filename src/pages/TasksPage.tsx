@@ -885,6 +885,37 @@ export default function TasksPage() {
                               )}
                             </div>
 
+                            {/* Board (md+) */}
+                            <div className="hidden md:flex items-center px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                              {isMine ? (
+                                <Select
+                                  value={t.board_id ?? "__none__"}
+                                  onValueChange={(v) => updateBoard(t.id, v === "__none__" ? null : v)}
+                                >
+                                  <SelectTrigger className="h-7 px-2 text-xs w-full">
+                                    <SelectValue placeholder="No board" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__" className="text-xs italic">No board</SelectItem>
+                                    {boards.map((b) => (
+                                      <SelectItem key={b.id} value={b.id} className="text-xs">
+                                        <span className="inline-flex items-center gap-2">
+                                          {b.color && (
+                                            <span className="h-2 w-2 rounded-full" style={{ background: b.color }} />
+                                          )}
+                                          {b.name}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {boards.find((b) => b.id === t.board_id)?.name ?? "—"}
+                                </span>
+                              )}
+                            </div>
+
                             {/* Actions (md+) */}
 
                             {/* Actions (md+) */}
