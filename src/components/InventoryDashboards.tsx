@@ -45,10 +45,11 @@ const STAGE_COLOR: Record<string, string> = {
   closed: "bg-muted text-muted-foreground border-border",
 };
 
-function KPI({ label, value, hint, icon: Icon, accent, onClick }: {
+function KPI({ label, value, hint, icon: Icon, accent, onClick, active }: {
   label: string; value: string | number; hint?: string;
   icon: React.ComponentType<{ className?: string }>; accent?: string;
   onClick?: () => void;
+  active?: boolean;
 }) {
   const inner = (
     <>
