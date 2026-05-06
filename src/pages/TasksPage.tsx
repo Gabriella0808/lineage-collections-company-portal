@@ -695,12 +695,13 @@ export default function TasksPage() {
       ) : (
         <Card className="overflow-hidden p-0">
           {/* Board column header (Monday-style) */}
-          <div className="hidden md:grid grid-cols-[8px_minmax(0,1fr)_180px_160px_120px_80px] items-center gap-0 border-b bg-muted/30 px-0 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="hidden md:grid grid-cols-[8px_minmax(0,1fr)_180px_160px_120px_150px_80px] items-center gap-0 border-b bg-muted/30 px-0 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             <div />
             <div className="px-3">Task</div>
             <div className="px-3">Owner</div>
             <div className="px-3">Status</div>
             <div className="px-3">Due date</div>
+            <div className="px-3">Board</div>
             <div className="px-3 text-right">Actions</div>
           </div>
 
