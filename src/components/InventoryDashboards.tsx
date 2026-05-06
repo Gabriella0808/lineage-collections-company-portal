@@ -546,12 +546,12 @@ export default function InventoryDashboards({ items }: Props) {
     })).sort((a, b) => b.sales - a.sales);
   }, [items]);
 
-  // Closeout by collection
+  // Closeout by brand
   const closeoutByCollection = useMemo(() => {
     const m = new Map<string, number>();
     for (const it of items) {
       if (!(it.isCloseout || it.isClearance)) continue;
-      const k = it.collection || "—";
+      const k = (it as any).brand || "—";
       m.set(k, (m.get(k) ?? 0) + (it.onHandValue ?? (it.unitCost ?? 0) * it.onHand));
     }
     return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
@@ -1628,7 +1628,7 @@ export default function InventoryDashboards({ items }: Props) {
         </div>
         {closeoutByCollection.length > 0 && (
           <Card className="p-5">
-            <h3 className="text-base font-semibold mb-3">Closeout Value</h3>
+            <h3 className="text-base font-semibold mb-3">Closeout Value by Brand</h3>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={closeoutByCollection} layout="vertical" margin={{ left: 4, right: 12 }}>
