@@ -1362,7 +1362,7 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string
           description?: string | null
           id?: string
           name: string
