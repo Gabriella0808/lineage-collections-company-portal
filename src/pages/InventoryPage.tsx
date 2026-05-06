@@ -200,27 +200,7 @@ export default function InventoryPage() {
         }}
       />
 
-      <div className="flex flex-wrap items-center gap-2 justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          {STATUS_FILTERS.map((f) => {
-            const active = filter === f.key;
-            const supplierScoped = supplierFilter === "all" ? items : items.filter((i) => i.supplier === supplierFilter);
-            const count = f.key === "all" ? supplierScoped.length : supplierScoped.filter((i) => i.status === f.key).length;
-            return (
-              <Button
-                key={f.key}
-                size="sm"
-                variant={active ? "default" : "outline"}
-                onClick={() => setFilter(f.key)}
-                className="h-8 rounded-full"
-              >
-                {f.key === "critical" && <span className="h-1.5 w-1.5 rounded-full bg-destructive mr-1.5" />}
-                {f.label}
-                <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">{count}</Badge>
-              </Button>
-            );
-          })}
-        </div>
+      <div className="flex flex-wrap items-center gap-2 justify-end">
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
             value={supplierFilter}
