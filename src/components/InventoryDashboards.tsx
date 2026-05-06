@@ -1017,9 +1017,8 @@ export default function InventoryDashboards({ items }: Props) {
                       <th className="text-right px-3 py-2">% Sales</th>
                       <th className="text-right px-3 py-2">Vel/mo</th>
                       <th className="text-right px-3 py-2">Inv/Sales</th>
-                      <th className="text-right px-3 py-2">Turn</th>
-                      <th className="text-right px-3 py-2">Trend</th>
                       <th className="text-center px-3 py-2">Clr</th>
+
                     </tr>
                   </thead>
                   <tbody>
