@@ -809,6 +809,40 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
 
       {/* ============ SECTION 1: SUMMARY ============ */}
       <TabsContent value="summary" className="space-y-6 mt-4">
+        {/* Clickable status tiles — filter the SKU table below */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {([
+            { key: "all" as StatusFilter, label: "Total SKUs", value: statusCounts.total, icon: Package, accent: undefined as string | undefined, hint: undefined as string | undefined },
+            { key: "critical" as StatusFilter, label: "Critical Items", value: statusCounts.critical, icon: AlertTriangle, accent: "text-destructive", hint: "Needs attention" },
+            { key: "out-of-stock" as StatusFilter, label: "Out of Stock", value: statusCounts.outOfStock, icon: XCircle, accent: "text-destructive", hint: undefined },
+            { key: "reorder-soon" as StatusFilter, label: "Reorder Soon", value: statusCounts.reorder, icon: RefreshCw, accent: "text-warning-foreground", hint: undefined },
+            { key: "fast-moving" as StatusFilter, label: "Fast Moving", value: statusCounts.fast, icon: Zap, accent: "text-success", hint: undefined },
+          ]).map((t) => {
+            const Icon = t.icon;
+            const active = statusFilter === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => onStatusFilterChange?.(t.key)}
+                className={cn(
+                  "text-left rounded-lg border bg-card p-5 flex items-start justify-between transition-colors hover:border-primary/40 hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-ring",
+                  active ? "border-primary ring-1 ring-primary/40" : "border-border",
+                )}
+              >
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{t.label}</div>
+                  <div className="text-3xl font-semibold mt-2 tabular-nums">{t.value}</div>
+                  {t.hint && <div className={cn("text-xs mt-1", t.accent ?? "text-muted-foreground")}>{t.hint}</div>}
+                </div>
+                <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+                  <Icon className="h-4 w-4" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
           <KPI label="Total Inventory Value" value={fmtMoney(summary.value)} hint={`${fmtNum(summary.units)} units`} icon={DollarSign} />
           <KPI label="Total Open POs" value={fmtMoney(summary.openPoValue)} hint="not yet arrived" icon={Truck} />
