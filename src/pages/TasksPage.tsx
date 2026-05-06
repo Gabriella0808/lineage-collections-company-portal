@@ -892,7 +892,7 @@ export default function TasksPage() {
                                   value={t.board_id ?? "__none__"}
                                   onValueChange={(v) => updateBoard(t.id, v === "__none__" ? null : v)}
                                 >
-                                  <SelectTrigger className="h-7 px-2 text-xs w-full">
+                                  <SelectTrigger className="h-7 px-2 text-xs w-full whitespace-nowrap [&>span]:truncate [&>span]:block [&>span]:min-w-0 [&>span]:flex-1">
                                     <SelectValue placeholder="No board" />
                                   </SelectTrigger>
                                   <SelectContent>
