@@ -1179,7 +1179,7 @@ export default function InventoryDashboards({ items }: Props) {
                         <th className="text-left px-3 py-2">Product</th>
                         <th className="text-left px-3 py-2">Collection</th>
                         <th className="text-right px-3 py-2">On Hand</th>
-                        <th className="text-right px-3 py-2">Mo. Supply</th>
+                        <th className="text-right px-3 py-2" title={`Lead time ≈ ${LEAD_TIME_WEEKS} weeks`}>Weeks Supply</th>
                         <th className="text-right px-3 py-2">Tied-up Value</th>
                       </tr>
                     </thead>
