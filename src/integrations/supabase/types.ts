@@ -933,6 +933,45 @@ export type Database = {
         }
         Relationships: []
       }
+      org_position_dotted_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          position_id: string
+          reports_to_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          position_id: string
+          reports_to_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          position_id?: string
+          reports_to_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_position_dotted_reports_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "org_positions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_position_dotted_reports_reports_to_id_fkey"
+            columns: ["reports_to_id"]
+            isOneToOne: false
+            referencedRelation: "org_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_position_reviews: {
         Row: {
           areas_for_improvement: string | null
