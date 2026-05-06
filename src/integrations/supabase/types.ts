@@ -724,11 +724,14 @@ export type Database = {
         Row: {
           assigned_manager_id: string | null
           assigned_user_id: string | null
+          board_id: string | null
           completed_at: string | null
           created_at: string
           description: string | null
           due_date: string | null
+          group_id: string | null
           id: string
+          position: number | null
           status: Database["public"]["Enums"]["manager_task_status"]
           title: string
           updated_at: string
@@ -737,11 +740,14 @@ export type Database = {
         Insert: {
           assigned_manager_id?: string | null
           assigned_user_id?: string | null
+          board_id?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
+          group_id?: string | null
           id?: string
+          position?: number | null
           status?: Database["public"]["Enums"]["manager_task_status"]
           title: string
           updated_at?: string
@@ -750,17 +756,35 @@ export type Database = {
         Update: {
           assigned_manager_id?: string | null
           assigned_user_id?: string | null
+          board_id?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
+          group_id?: string | null
           id?: string
+          position?: number | null
           status?: Database["public"]["Enums"]["manager_task_status"]
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "manager_tasks_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "task_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_tasks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "task_board_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       managers: {
         Row: {
@@ -1258,6 +1282,74 @@ export type Database = {
         }
         Relationships: []
       }
+      task_board_groups: {
+        Row: {
+          board_id: string
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          board_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_board_groups_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "task_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_boards: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           completed_at: string | null
@@ -1624,6 +1716,7 @@ export type Database = {
         }[]
       }
       can_view_manager_task: { Args: { _task_id: string }; Returns: boolean }
+      can_view_task_board: { Args: { _board_id: string }; Returns: boolean }
       current_manager_id: { Args: never; Returns: string }
       current_manager_rep_ids: { Args: never; Returns: string[] }
       current_rep_id: { Args: never; Returns: string }
