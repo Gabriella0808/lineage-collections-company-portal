@@ -5,17 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Star, ChevronDown, ChevronRight, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, ChevronDown, ChevronRight, Building2, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +48,12 @@ type Review = {
   created_at: string;
 };
 
+type DottedLink = {
+  id: string;
+  position_id: string;
+  reports_to_id: string;
+};
+
 const emptyPos = {
   title: "", holder_name: "", department: "",
   parent_id: null as string | null,
@@ -55,10 +66,12 @@ export default function OrgChartPage() {
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [dotted, setDotted] = useState<DottedLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<Partial<Position> | null>(null);
+  const [editingDotted, setEditingDotted] = useState<string[]>([]);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewDraft, setReviewDraft] = useState<Partial<Review>>({
     review_year: new Date().getFullYear(),
@@ -68,12 +81,14 @@ export default function OrgChartPage() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: p }, { data: r }] = await Promise.all([
+    const [{ data: p }, { data: r }, { data: d }] = await Promise.all([
       supabase.from("org_positions").select("*").order("position_order").order("title"),
       supabase.from("org_position_reviews").select("*").order("review_year", { ascending: false }),
+      supabase.from("org_position_dotted_reports").select("*"),
     ]);
     setPositions((p ?? []) as Position[]);
     setReviews((r ?? []) as Review[]);
+    setDotted((d ?? []) as DottedLink[]);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -88,8 +103,38 @@ export default function OrgChartPage() {
     return map;
   }, [positions]);
 
+  const posById = useMemo(() => {
+    const m = new Map<string, Position>();
+    positions.forEach((p) => m.set(p.id, p));
+    return m;
+  }, [positions]);
+
+  const dottedByPosition = useMemo(() => {
+    const m = new Map<string, DottedLink[]>();
+    dotted.forEach((d) => {
+      if (!m.has(d.position_id)) m.set(d.position_id, []);
+      m.get(d.position_id)!.push(d);
+    });
+    return m;
+  }, [dotted]);
+
+  const positionsWithDotted = useMemo(
+    () => new Set(dotted.map((d) => d.position_id)),
+    [dotted],
+  );
+
   const selected = positions.find((p) => p.id === selectedId) ?? null;
   const selectedReviews = reviews.filter((r) => r.position_id === selectedId);
+  const selectedDotted = selected ? (dottedByPosition.get(selected.id) ?? []) : [];
+
+  const startEdit = (pos: Partial<Position> | null) => {
+    setEditing(pos);
+    if (pos?.id) {
+      setEditingDotted((dottedByPosition.get(pos.id) ?? []).map((d) => d.reports_to_id));
+    } else {
+      setEditingDotted([]);
+    }
+  };
 
   const savePosition = async () => {
     if (!editing?.title?.trim()) { toast.error("Title required"); return; }
@@ -101,21 +146,41 @@ export default function OrgChartPage() {
       job_description: editing.job_description || null,
       main_objectives: editing.main_objectives || null,
     };
-    if (editing.id) {
-      const { error } = await supabase.from("org_positions").update(payload).eq("id", editing.id);
+    let positionId = editing.id as string | undefined;
+    if (positionId) {
+      const { error } = await supabase.from("org_positions").update(payload).eq("id", positionId);
       if (error) return toast.error(error.message);
-      toast.success("Position updated");
     } else {
-      const { error } = await supabase.from("org_positions").insert(payload);
+      const { data, error } = await supabase.from("org_positions").insert(payload).select("id").single();
       if (error) return toast.error(error.message);
-      toast.success("Position added");
+      positionId = data!.id;
     }
+
+    // Sync dotted-line links
+    if (positionId) {
+      const existing = (dottedByPosition.get(positionId) ?? []).map((d) => d.reports_to_id);
+      const desired = editingDotted.filter((id) => id !== positionId);
+      const toAdd = desired.filter((id) => !existing.includes(id));
+      const toRemove = existing.filter((id) => !desired.includes(id));
+      if (toRemove.length) {
+        await supabase.from("org_position_dotted_reports")
+          .delete().eq("position_id", positionId).in("reports_to_id", toRemove);
+      }
+      if (toAdd.length) {
+        await supabase.from("org_position_dotted_reports").insert(
+          toAdd.map((rid) => ({ position_id: positionId!, reports_to_id: rid })),
+        );
+      }
+    }
+
+    toast.success(editing.id ? "Position updated" : "Position added");
     setEditing(null);
+    setEditingDotted([]);
     load();
   };
 
   const deletePosition = async (id: string) => {
-    if (!confirm("Delete this position? Reviews will also be removed.")) return;
+    if (!confirm("Delete this position? Reviews and dotted-line links will also be removed.")) return;
     const { error } = await supabase.from("org_positions").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Deleted");
@@ -158,6 +223,9 @@ export default function OrgChartPage() {
     load();
   };
 
+  const formatPos = (p: Position) =>
+    `${p.title}${p.holder_name ? ` — ${p.holder_name}` : ""}`;
+
   return (
     <div className="animate-fade-in space-y-6">
       <div className="page-header flex items-center justify-between gap-3">
@@ -166,10 +234,25 @@ export default function OrgChartPage() {
           <p className="page-subtitle">Click any position for job description, objectives, and yearly reviews.</p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setEditing({ ...emptyPos })}>
+          <Button onClick={() => startEdit({ ...emptyPos })}>
             <Plus className="h-4 w-4 mr-1" /> Add position
           </Button>
         )}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-2">
+          <span className="inline-block w-8 h-px bg-border" />
+          Solid line — direct (primary) reporting
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span
+            className="inline-block w-8 h-0 border-t-2 border-dashed"
+            style={{ borderColor: "hsl(var(--accent))" }}
+          />
+          Dotted line — secondary / indirect reporting
+        </span>
       </div>
 
       {loading ? (
@@ -185,6 +268,7 @@ export default function OrgChartPage() {
             byParent={byParent}
             onSelect={setSelectedId}
             selectedId={selectedId}
+            positionsWithDotted={positionsWithDotted}
           />
         </div>
       )}
@@ -203,6 +287,33 @@ export default function OrgChartPage() {
               </SheetHeader>
 
               <div className="mt-5 space-y-5">
+                <Section title="Reports to (solid line)">
+                  {selected.parent_id ? (
+                    <p className="text-sm">{formatPos(posById.get(selected.parent_id)!)}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">— Top level —</p>
+                  )}
+                </Section>
+
+                <Section title="Dotted line reports to">
+                  {selectedDotted.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">None</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedDotted.map((d) => {
+                        const p = posById.get(d.reports_to_id);
+                        if (!p) return null;
+                        return (
+                          <Badge key={d.id} variant="outline" className="gap-1 border-dashed">
+                            <Link2 className="h-3 w-3" />
+                            {formatPos(p)}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Section>
+
                 <Section title="Job description">
                   <p className="text-sm whitespace-pre-wrap text-muted-foreground">
                     {selected.job_description || "—"}
@@ -216,7 +327,7 @@ export default function OrgChartPage() {
 
                 {isAdmin && (
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setEditing(selected)}>
+                    <Button size="sm" variant="outline" onClick={() => startEdit(selected)}>
                       <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => deletePosition(selected.id)}>
@@ -294,8 +405,8 @@ export default function OrgChartPage() {
       </Sheet>
 
       {/* Position editor dialog */}
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-lg">
+      <Dialog open={!!editing} onOpenChange={(o) => { if (!o) { setEditing(null); setEditingDotted([]); } }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing?.id ? "Edit position" : "Add position"}</DialogTitle>
           </DialogHeader>
@@ -316,7 +427,7 @@ export default function OrgChartPage() {
                 </div>
               </div>
               <div>
-                <Label>Reports to</Label>
+                <Label>Reports to (solid line — primary manager)</Label>
                 <Select
                   value={editing.parent_id ?? "__none__"}
                   onValueChange={(v) => setEditing({ ...editing, parent_id: v === "__none__" ? null : v })}
@@ -325,11 +436,76 @@ export default function OrgChartPage() {
                   <SelectContent>
                     <SelectItem value="__none__">— Top level —</SelectItem>
                     {positions.filter((p) => p.id !== editing.id).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.title}{p.holder_name ? ` (${p.holder_name})` : ""}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>{formatPos(p)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="rounded-md border border-dashed p-3 space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Link2 className="h-3.5 w-3.5" />
+                  Dotted line reports to
+                  <span className="text-xs font-normal text-muted-foreground">— secondary / indirect</span>
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Optional. Add one or more secondary reporting relationships separate from the primary manager above.
+                </p>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full justify-between">
+                      {editingDotted.length === 0
+                        ? "Select positions…"
+                        : `${editingDotted.length} selected`}
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-2 max-h-72 overflow-y-auto">
+                    <div className="space-y-1">
+                      {positions
+                        .filter((p) => p.id !== editing.id && p.id !== editing.parent_id)
+                        .map((p) => {
+                          const checked = editingDotted.includes(p.id);
+                          return (
+                            <label key={p.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(v) => {
+                                  setEditingDotted((cur) =>
+                                    v ? [...cur, p.id] : cur.filter((id) => id !== p.id),
+                                  );
+                                }}
+                              />
+                              <span className="truncate">{formatPos(p)}</span>
+                            </label>
+                          );
+                        })}
+                      {positions.filter((p) => p.id !== editing.id && p.id !== editing.parent_id).length === 0 && (
+                        <p className="text-xs text-muted-foreground p-2">No other positions available.</p>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {editingDotted.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {editingDotted.map((id) => {
+                      const p = posById.get(id);
+                      if (!p) return null;
+                      return (
+                        <Badge key={id} variant="outline" className="gap-1 border-dashed">
+                          {formatPos(p)}
+                          <button
+                            type="button"
+                            onClick={() => setEditingDotted((cur) => cur.filter((x) => x !== id))}
+                            className="ml-0.5 text-muted-foreground hover:text-foreground"
+                          >×</button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <Label>Job description</Label>
                 <Textarea rows={4} value={editing.job_description ?? ""} onChange={(e) => setEditing({ ...editing, job_description: e.target.value })} />
@@ -341,7 +517,7 @@ export default function OrgChartPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setEditing(null); setEditingDotted([]); }}>Cancel</Button>
             <Button onClick={savePosition}>Save</Button>
           </DialogFooter>
         </DialogContent>
@@ -414,46 +590,57 @@ function Field({ label, value }: { label: string; value: string }) {
 }
 
 function OrgTree({
-  roots, byParent, onSelect, selectedId,
+  roots, byParent, onSelect, selectedId, positionsWithDotted,
 }: {
   roots: Position[];
   byParent: Map<string | null, Position[]>;
   onSelect: (id: string) => void;
   selectedId: string | null;
+  positionsWithDotted: Set<string>;
 }) {
   return (
     <div className="flex gap-6 items-start min-w-fit">
       {roots.map((r) => (
-        <OrgNode key={r.id} pos={r} byParent={byParent} onSelect={onSelect} selectedId={selectedId} />
+        <OrgNode key={r.id} pos={r} byParent={byParent} onSelect={onSelect} selectedId={selectedId} positionsWithDotted={positionsWithDotted} />
       ))}
     </div>
   );
 }
 
 function OrgNode({
-  pos, byParent, onSelect, selectedId, depth = 0,
+  pos, byParent, onSelect, selectedId, positionsWithDotted, depth = 0,
 }: {
   pos: Position;
   byParent: Map<string | null, Position[]>;
   onSelect: (id: string) => void;
   selectedId: string | null;
+  positionsWithDotted: Set<string>;
   depth?: number;
 }) {
   const children = byParent.get(pos.id) ?? [];
   const [open, setOpen] = useState(true);
   const isSelected = selectedId === pos.id;
+  const hasDotted = positionsWithDotted.has(pos.id);
   return (
     <div className="flex flex-col items-center">
       <button
         onClick={() => onSelect(pos.id)}
         className={cn(
-          "rounded-lg border bg-card px-4 py-3 text-center min-w-[180px] max-w-[220px] shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5",
+          "relative rounded-lg border bg-card px-4 py-3 text-center min-w-[180px] max-w-[220px] shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5",
           isSelected && "ring-2 ring-primary border-primary",
         )}
       >
         <p className="font-semibold text-sm truncate">{pos.title}</p>
         <p className="text-xs text-muted-foreground truncate">{pos.holder_name || "Vacant"}</p>
         {pos.department && <p className="text-[10px] uppercase tracking-wider text-accent mt-0.5 truncate">{pos.department}</p>}
+        {hasDotted && (
+          <span
+            title="Has dotted-line reporting"
+            className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-accent text-accent-foreground"
+          >
+            <Link2 className="h-2.5 w-2.5" />
+          </span>
+        )}
       </button>
       {children.length > 0 && (
         <>
@@ -476,19 +663,17 @@ function OrgNode({
                     <div key={c.id} className="flex flex-col items-center px-3">
                       {!isOnly && (
                         <div className="relative h-3 w-full">
-                          {/* horizontal connector */}
                           <div
                             className={cn(
                               "absolute top-0 h-px bg-border",
                               isFirst ? "left-1/2 right-0" : isLast ? "left-0 right-1/2" : "left-0 right-0",
                             )}
                           />
-                          {/* vertical drop to child */}
                           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-3 bg-border" />
                         </div>
                       )}
                       {isOnly && <div className="w-px h-3 bg-border" />}
-                      <OrgNode pos={c} byParent={byParent} onSelect={onSelect} selectedId={selectedId} depth={depth + 1} />
+                      <OrgNode pos={c} byParent={byParent} onSelect={onSelect} selectedId={selectedId} positionsWithDotted={positionsWithDotted} depth={depth + 1} />
                     </div>
                   );
                 })}
