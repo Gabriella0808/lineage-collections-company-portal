@@ -392,6 +392,19 @@ export default function TasksPage() {
     }
   };
 
+  const updateBoard = async (id: string, board_id: string | null) => {
+    const prev = tasks;
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, board_id } : t)));
+    const { error } = await supabase.from("manager_tasks").update({ board_id } as any).eq("id", id);
+    if (error) {
+      setTasks(prev);
+      toast({ title: "Move failed", description: error.message, variant: "destructive" });
+    } else {
+      const board = boards.find((b) => b.id === board_id);
+      toast({ title: board_id ? `Moved to "${board?.name ?? "board"}"` : "Removed from board" });
+    }
+  };
+
   const remove = async (id: string) => {
     const { error } = await supabase.from("manager_tasks").delete().eq("id", id);
     if (error) {
