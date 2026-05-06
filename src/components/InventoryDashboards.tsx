@@ -289,6 +289,11 @@ export default function InventoryDashboards({ items }: Props) {
   const setOv = (sku: string, patch: Override) =>
     setOverrides((prev) => ({ ...prev, [sku]: { ...prev[sku], ...patch } }));
 
+  // User-entered Order quantities (the ONLY editable column in the InvCut-style sheet)
+  const [orderQty, setOrderQty] = useState<Record<string, number>>({});
+  const setOrder = (sku: string, qty: number) =>
+    setOrderQty((prev) => ({ ...prev, [sku]: qty }));
+
   const reorderRows = useMemo(() => {
     return items.map((it) => {
       const ov = overrides[it.sku] ?? {};
