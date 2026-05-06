@@ -610,6 +610,25 @@ function ChartViewport({ children }: { children: React.ReactNode }) {
     return () => { ro.disconnect(); window.removeEventListener("resize", fit); };
   }, []);
 
+  // Trackpad / ctrl+wheel zoom
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const onWheel = (e: WheelEvent) => {
+      // Pinch-zoom on trackpads sets ctrlKey=true; also support ctrl/cmd+wheel
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      const delta = -e.deltaY * 0.005;
+      setZoom((cur) => {
+        const next = Math.min(1.5, Math.max(0.3, cur + delta));
+        if (innerRef.current) innerRef.current.style.transform = `scale(${next})`;
+        return next;
+      });
+    };
+    wrap.addEventListener("wheel", onWheel, { passive: false });
+    return () => wrap.removeEventListener("wheel", onWheel);
+  }, []);
+
   return (
     <div className="relative">
       <div className="absolute right-0 -top-9 flex items-center gap-2 text-xs text-muted-foreground">
