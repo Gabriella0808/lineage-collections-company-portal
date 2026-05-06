@@ -225,14 +225,46 @@ export default function TaskBoardsView() {
     if (!uRes.error) setAssignableUsers((uRes.data ?? []) as any);
   };
   const addMember = async () => {
-    if (!activeBoardId || !user || !addUserId) return;
+    if (!activeBoardId || !user || !addUserId || !activeBoard) return;
     const { error } = await supabase
       .from("task_board_members" as any)
       .insert({ board_id: activeBoardId, user_id: addUserId, added_by: user.id });
     if (error) return toast({ title: "Failed to add subscriber", description: error.message, variant: "destructive" });
     setMembers((m) => [...m, { user_id: addUserId }]);
+
+    // In-app notification
+    const recipient = assignableUsers.find((u) => u.user_id === addUserId);
+    const inviter = assignableUsers.find((u) => u.user_id === user.id);
+    const inviterName = inviter?.full_name || inviter?.email || "A teammate";
+    await supabase.from("notifications").insert({
+      user_id: addUserId,
+      type: "board_subscribed",
+      title: `${inviterName} added you to a board`,
+      body: activeBoard.name,
+      link: "/tasks",
+      related_id: activeBoardId,
+    });
+
+    // Email notification
+    if (recipient?.email) {
+      supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "board-subscribed",
+          recipientEmail: recipient.email,
+          idempotencyKey: `board-sub-${activeBoardId}-${addUserId}-${Date.now()}`,
+          templateData: {
+            recipientName: recipient.full_name || undefined,
+            inviterName,
+            boardName: activeBoard.name,
+            boardDescription: activeBoard.description || undefined,
+            link: `${window.location.origin}/tasks`,
+          },
+        },
+      }).catch(() => {});
+    }
+
     setAddUserId("");
-    toast({ title: "Subscriber added" });
+    toast({ title: "Subscriber added", description: recipient?.email ? "Email invite sent." : undefined });
   };
   const removeMember = async (uid: string) => {
     if (!activeBoardId) return;
