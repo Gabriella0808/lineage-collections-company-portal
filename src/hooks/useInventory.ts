@@ -100,6 +100,10 @@ export function useInventory() {
         const available = Number(r.available ?? 0);
         const avg = Number(r.avg_monthly_sales ?? 0);
         const mos = r.months_supply == null ? null : Number(r.months_supply);
+        // Derive weeks of supply from (Available + On PO) ÷ Sales/Week (Acctivate model)
+        const onPo = r.on_po == null ? 0 : Number(r.on_po);
+        const salesPerWeek = avg / 4.333;
+        const weeks = salesPerWeek > 0 ? (available + onPo) / salesPerWeek : null;
         return {
           sku: r.sku,
           product: r.product,
@@ -110,7 +114,7 @@ export function useInventory() {
           available,
           avgMonthlySales: avg,
           monthsSupply: mos,
-          status: normalizeStatus(r.status, onHand, mos),
+          status: normalizeStatus(r.status, onHand, weeks),
           link: r.link ?? undefined,
           unitCost: r.unit_cost == null ? undefined : Number(r.unit_cost),
           onHandValue: r.on_hand_value == null ? undefined : Number(r.on_hand_value),
