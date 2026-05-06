@@ -263,12 +263,13 @@ export default function OrgChartPage() {
         </CardContent></Card>
       ) : (
         <div className="overflow-x-auto pb-4">
-          <OrgTree
+          <OrgChartCanvas
             roots={byParent.get(null) ?? []}
             byParent={byParent}
             onSelect={setSelectedId}
             selectedId={selectedId}
             positionsWithDotted={positionsWithDotted}
+            dotted={dotted}
           />
         </div>
       )}
