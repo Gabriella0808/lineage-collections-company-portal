@@ -262,7 +262,7 @@ export default function TasksPage() {
       supabase.from("manager_task_assignees" as any).select("task_id, user_id"),
       supabase.from("task_boards" as any).select("id, name, color").order("name"),
     ]);
-    if (!boardsRes.error) setBoards((boardsRes.data ?? []) as Board[]);
+    if (!boardsRes.error) setBoards(((boardsRes.data ?? []) as unknown) as Board[]);
     if (tasksRes.error) {
       toast({ title: "Failed to load tasks", description: tasksRes.error.message, variant: "destructive" });
     } else {
