@@ -31,6 +31,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, isWithinInterval, parseISO } from "date-fns";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import TaskBoardsView from "@/components/TaskBoardsView";
 
 type Status = "todo" | "in_progress" | "blocked" | "done";
 
@@ -487,7 +489,19 @@ export default function TasksPage() {
         }
       />
 
-      {!loading && (
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="boards">Boards</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="boards" className="mt-4">
+          <TaskBoardsView />
+        </TabsContent>
+
+        <TabsContent value="list" className="space-y-6 mt-4">
+
+        {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <MetricCard label="Total" value={totalTasks} icon={ListChecks} hint="all action items" />
           <MetricCard label="Overdue" value={overdueCount} icon={AlertTriangle} tone="destructive" hint="past due, open" />
@@ -496,7 +510,7 @@ export default function TasksPage() {
           <MetricCard label="Stuck" value={stuckCount} icon={CircleSlash} tone="destructive" hint="needs unblocking" />
           <MetricCard label="Completed" value={completedCount} icon={CheckCircle2} tone="success" hint="closed" />
         </div>
-      )}
+        )}
 
       {!loading && user && (() => {
         const assignedToMe = tasks.filter(
@@ -905,8 +919,9 @@ export default function TasksPage() {
           </div>
         </Card>
       )}
+        </TabsContent>
+      </Tabs>
 
-      {/* Task detail panel */}
       <Sheet open={!!detailTask} onOpenChange={(o) => !o && setDetailTask(null)}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           {detailTask && (() => {
