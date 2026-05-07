@@ -85,8 +85,7 @@ interface Props {
 type Preset = "L3M_VS_PRIOR" | "LM_VS_PRIOR" | "FIRST3_VS_LAST3" | "CUSTOM";
 
 export default function ComparePeriodsReport(_props: Props) {
-  const { getNote, saveNote, loading: notesLoading } = useComparePeriodsNotes();
-  const [liveTick, setLiveTick] = useState(0);
+  const { getNote, saveNote } = useComparePeriodsNotes();
   // -------------------- State --------------------
   const months = SEED.months;
   const monthCount = months.length;
