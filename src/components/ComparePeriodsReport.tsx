@@ -579,9 +579,9 @@ export default function ComparePeriodsReport(_props: Props) {
         </div>
         <div className="overflow-x-auto max-h-[720px]">
           <table className="w-full text-sm border-separate border-spacing-0">
-            <thead className="bg-muted/60 text-[11px] uppercase tracking-wide text-muted-foreground sticky top-0 z-10">
+            <thead className="bg-muted text-[11px] uppercase tracking-wide text-muted-foreground sticky top-0 z-20 shadow-[0_2px_4px_-2px_hsl(var(--border))]">
               <tr>
-                <th className="text-left px-3 py-2 sticky left-0 bg-muted z-30 min-w-[260px] shadow-[2px_0_4px_-2px_hsl(var(--border))] border-r border-border">Account / Collection</th>
+                <th className="text-left px-3 py-2 sticky left-0 top-0 bg-muted z-30 min-w-[260px] shadow-[2px_0_4px_-2px_hsl(var(--border))] border-r border-border">Account / Collection</th>
                 {months.map((m, i) => (
                   <th key={m} className={cn("text-right px-3 py-2 min-w-[88px]",
                     inRange(i, p1Idx) && "bg-muted/40",
