@@ -1155,7 +1155,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             <TabsTrigger value="ranking" className="whitespace-nowrap px-2.5 text-sm">Ranking</TabsTrigger>
             
             
-            <TabsTrigger value="demand" className="whitespace-nowrap px-2.5 text-sm">Dealer Demand</TabsTrigger>
+            
           </TabsList>
 
           <TabsContent value="sku" className="mt-4">
@@ -1409,42 +1409,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             </Card>
           </TabsContent>
 
-          <TabsContent value="demand" className="mt-4">
-            <Card className="p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="h-4 w-4 text-primary" />
-                <h3 className="text-base font-semibold">Dealer Demand Signals</h3>
-              </div>
-              {hub.demandSignals.length === 0 ? <EmptyState message="No dealer demand signals captured yet." /> : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                      <tr>
-                        <th className="text-left px-3 py-2">Date</th>
-                        <th className="text-left px-3 py-2">SKU</th>
-                        <th className="text-left px-3 py-2">Dealer</th>
-                        <th className="text-left px-3 py-2">Signal</th>
-                        <th className="text-right px-3 py-2">Strength</th>
-                        <th className="text-left px-3 py-2">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {hub.demandSignals.slice(0, 50).map((s) => (
-                        <tr key={s.id} className="border-t border-border">
-                          <td className="px-3 py-2">{s.signal_date}</td>
-                          <td className="px-3 py-2 font-mono">{s.sku}</td>
-                          <td className="px-3 py-2">{s.dealer_name ?? "—"}</td>
-                          <td className="px-3 py-2"><Badge variant="secondary" className="text-[10px]">{s.signal_type}</Badge></td>
-                          <td className="px-3 py-2 text-right tabular-nums">{Number(s.signal_strength).toFixed(1)}</td>
-                          <td className="px-3 py-2 max-w-[260px] truncate" title={s.notes ?? ""}>{s.notes ?? "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
-          </TabsContent>
         </Tabs>
       </TabsContent>
 
