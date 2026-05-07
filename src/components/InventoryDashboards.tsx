@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { weeksOfSupply, weeksTone, LEAD_TIME_WEEKS } from "@/lib/inventoryMath";
+import ComparePeriodsReport from "@/components/ComparePeriodsReport";
 
 const fmtMoney = (n: number) =>
   n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` :
@@ -1216,47 +1217,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
           </TabsContent>
 
           <TabsContent value="compare" className="mt-4">
-            <Card className="p-5">
-              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                <h3 className="text-base font-semibold">Comparative Sales</h3>
-                <div className="flex gap-2">
-                  <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodA} onChange={(e) => setPeriodA(e.target.value)}>
-                    <option value="">Period A</option>
-                    {periods.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                  <select className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={periodB} onChange={(e) => setPeriodB(e.target.value)}>
-                    <option value="">Period B</option>
-                    {periods.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-              </div>
-              {compareRows.length === 0 ? <EmptyState message={periods.length === 0 ? "No sales history synced yet." : "Pick two periods to compare."} /> : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                      <tr>
-                        <th className="text-left px-3 py-2">SKU</th>
-                        <th className="text-right px-3 py-2">{periodA}</th>
-                        <th className="text-right px-3 py-2">{periodB}</th>
-                        <th className="text-right px-3 py-2">Δ</th>
-                        <th className="text-right px-3 py-2">% change</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {compareRows.map((r) => (
-                        <tr key={r.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(r.sku)}>
-                          <td className="px-3 py-2 font-mono">{r.sku}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{r.periodA}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{r.periodB}</td>
-                          <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", r.diff > 0 ? "text-success" : r.diff < 0 ? "text-destructive" : "")}>{r.diff > 0 ? "+" : ""}{r.diff}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{r.pct == null ? "—" : `${r.pct > 0 ? "+" : ""}${r.pct.toFixed(0)}%`}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
+            <ComparePeriodsReport items={items} salesHistory={hub.salesHistory} />
           </TabsContent>
 
           <TabsContent value="vendor" className="mt-4">
