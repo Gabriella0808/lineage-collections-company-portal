@@ -559,9 +559,15 @@ export default function ComparePeriodsReport(_props: Props) {
       <Card className="p-0 overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h3 className="text-base font-semibold">Comparative Sales by Account & Collection</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-semibold">Comparative Sales by Account & Collection</h3>
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                Live
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Mirrors the monthly comparison report. Click an account row to expand collections. Click a collection to drill into the line.
+              Auto-refreshes when sales data syncs from Acctivate. Hover the Notes column to edit commentary — saved instantly and shared across the team.
             </p>
           </div>
           <div className="flex items-center gap-2">
