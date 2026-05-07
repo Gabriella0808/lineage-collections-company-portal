@@ -436,21 +436,55 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
       <div className="glass-card p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-3 pb-3 border-b">
           <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Filter Report By Rep</span>
-          <select
-            value={repFilter}
-            onChange={(e) => setRepFilter(e.target.value)}
-            disabled={!!lockedRepName}
-            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[200px] disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {!lockedRepName && (
-              <option value="all">
-                {allowedRepNames === null ? "All Reps (Combined)" : `All ${managerName}'s Reps (Combined)`}
-              </option>
-            )}
-            {[...visibleReps].sort((a, b) => a.name.localeCompare(b.name)).map((r) => (
-              <option key={r.name} value={r.name}>{r.name}</option>
-            ))}
-          </select>
+          <Popover open={repPickerOpen} onOpenChange={(o) => !lockedRepName && setRepPickerOpen(o)}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                disabled={!!lockedRepName}
+                className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[220px] disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center justify-between gap-2"
+              >
+                <span className={cn(repFilter.length === 0 && "text-muted-foreground")}>
+                  {repFilter.length === 0
+                    ? (allowedRepNames === null ? "All Reps (Combined)" : `All ${managerName}'s Reps (Combined)`)
+                    : repFilter.length === 1
+                      ? repFilter[0]
+                      : `${repFilter.length} reps selected`}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[260px] p-0 overflow-hidden">
+              <div className="max-h-72 overflow-y-auto py-1">
+                {[...visibleReps].sort((a, b) => a.name.localeCompare(b.name)).map((r) => {
+                  const checked = repFilter.includes(r.name);
+                  return (
+                    <button
+                      type="button"
+                      key={r.name}
+                      onClick={() =>
+                        setRepFilter((prev) =>
+                          prev.includes(r.name) ? prev.filter((n) => n !== r.name) : [...prev, r.name],
+                        )
+                      }
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-sm hover:bg-accent text-left"
+                    >
+                      <span>{r.name}</span>
+                      <Check className={cn("h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
+                    </button>
+                  );
+                })}
+              </div>
+              {repFilter.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setRepFilter([])}
+                  className="w-full px-3 py-2 text-xs text-primary hover:bg-accent text-left border-t"
+                >
+                  Clear selection
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
           <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold ml-2">Territory</span>
           <select
             value={territoryFilter}
@@ -476,20 +510,32 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
           {!lockedRepName && allowedRepNames !== null && visibleReps.length === 0 && (
             <span className="text-xs text-muted-foreground">No reps mapped for this manager yet.</span>
           )}
-          {selectedRep && (
-            <>
-              <span className="text-xs text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{selectedRep.name}</span>
-              </span>
+          {hasRepSelection && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {repFilter.map((name) => (
+                <Badge key={name} variant="secondary" className="gap-1 pr-1">
+                  {name}
+                  {!lockedRepName && (
+                    <button
+                      type="button"
+                      onClick={() => setRepFilter((prev) => prev.filter((n) => n !== name))}
+                      className="hover:bg-muted-foreground/20 rounded-sm"
+                      aria-label={`Remove ${name}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </Badge>
+              ))}
               {!lockedRepName && (
                 <button
-                  onClick={() => setRepFilter("all")}
-                  className="ml-auto text-xs text-primary hover:underline"
+                  onClick={() => setRepFilter([])}
+                  className="ml-1 text-xs text-primary hover:underline"
                 >
-                  Clear filter
+                  Clear
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
