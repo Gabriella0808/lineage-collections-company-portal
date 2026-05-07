@@ -385,10 +385,9 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
     flP: r.flP * repShare,   flA: r.flA * repShare,
   })), [repShare, baseLine]);
 
-  const monthly = useMemo(() => {
-    const filtered = monthFilter === "All" ? scaledMonthly : scaledMonthly.filter((r) => r.m === monthFilter);
-    if (monthlyLineFilter.length === 0) return filtered;
-    return filtered.map((r) => {
+  const applyBrandFilter = (rows: typeof scaledMonthly) => {
+    if (monthlyLineFilter.length === 0) return rows;
+    return rows.map((r) => {
       const lineRow = scaledLine.find((l) => l.m === r.m);
       if (!lineRow) return r;
       const totalP = lineRow.luxP + lineRow.swP + lineRow.flP;
@@ -411,7 +410,12 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
         ytdI: r.ytdI * share,
       };
     });
-  }, [monthFilter, scaledMonthly, monthlyLineFilter, scaledLine]);
+  };
+
+  const chartMonthly = useMemo(() => applyBrandFilter(scaledMonthly), [scaledMonthly, monthlyLineFilter, scaledLine]);
+  const monthly = useMemo(() => {
+    return monthFilter === "All" ? chartMonthly : chartMonthly.filter((r) => r.m === monthFilter);
+  }, [monthFilter, chartMonthly]);
 
   const sum = (arr: typeof MONTHLY, k: keyof typeof MONTHLY[number]) =>
     arr.reduce((s, r) => s + (r[k] as number), 0);
