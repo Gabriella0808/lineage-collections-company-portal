@@ -1151,7 +1151,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             <TabsTrigger value="collection" className="whitespace-nowrap px-2.5 text-sm">By Collection</TabsTrigger>
             <TabsTrigger value="slow" className="whitespace-nowrap px-2.5 text-sm">Slow Movers</TabsTrigger>
             <TabsTrigger value="aging" className="whitespace-nowrap px-2.5 text-sm">Aging</TabsTrigger>
-            <TabsTrigger value="health" className="whitespace-nowrap px-2.5 text-sm">Inventory</TabsTrigger>
+            
             <TabsTrigger value="ranking" className="whitespace-nowrap px-2.5 text-sm">Ranking</TabsTrigger>
             <TabsTrigger value="discontinued" className="whitespace-nowrap px-2.5 text-sm">Discontinued</TabsTrigger>
             <TabsTrigger value="forecast" className="whitespace-nowrap px-2.5 text-sm">Forecast vs Reality</TabsTrigger>
@@ -1381,31 +1381,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                     <Bar dataKey="value" fill="hsl(var(--accent))" />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="health" className="mt-4">
-            <Card className="p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Heart className="h-4 w-4 text-success" />
-                <h3 className="text-base font-semibold">Inventory</h3>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
-                {[
-                  { label: "Healthy", val: healthSnapshot.healthy, tone: "text-success" },
-                  { label: "Low Stock", val: healthSnapshot.low, tone: "text-warning-foreground" },
-                  { label: "Risk", val: healthSnapshot.risk, tone: "text-destructive" },
-                  { label: "Out of Stock", val: healthSnapshot.outOfStock, tone: "text-destructive" },
-                  { label: "Overstock", val: healthSnapshot.overstock, tone: "text-slate-500" },
-                  { label: "Slow Movers", val: healthSnapshot.slow, tone: "text-warning-foreground" },
-                  { label: "Discontinued", val: healthSnapshot.discontinued, tone: "text-muted-foreground" },
-                ].map((b) => (
-                  <div key={b.label} className="rounded-lg border border-border p-4">
-                    <div className="text-xs text-muted-foreground">{b.label}</div>
-                    <div className={cn("text-3xl font-semibold mt-2 tabular-nums", b.tone === "text-slate-500" ? "text-accent-foreground text-slate-500" : b.tone)}>{b.val}</div>
-                  </div>
-                ))}
               </div>
             </Card>
           </TabsContent>
