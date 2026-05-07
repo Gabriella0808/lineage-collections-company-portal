@@ -384,6 +384,7 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
                   const monthEnd = endOfMonth(today);
                   let from: Date; let to: Date;
                   switch (v) {
+                    case "today":   from = todayEnd; to = todayEnd; break;
                     case "mtd":     from = startOfMonth(today); to = todayEnd; break;
                     case "qtd":     from = startOfQuarter(today); to = todayEnd; break;
                     case "ytd":     from = startOfYear(today); to = todayEnd; break;
@@ -400,6 +401,7 @@ export function SalesReporting({ groupBy: initialGroupBy, managerScopeRepIds, gr
               >
                 <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder="Select preset…" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="today">Today</SelectItem>
                   <SelectItem value="mtd">Month to date</SelectItem>
                   <SelectItem value="qtd">Quarter to date</SelectItem>
                   <SelectItem value="ytd">Year to date</SelectItem>
