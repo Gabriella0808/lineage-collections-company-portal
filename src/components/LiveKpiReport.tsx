@@ -349,25 +349,33 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
   };
 
   const scaledMonthly = useMemo(() => {
+    // Determine which rep names should be summed for the table/chart.
+    // Priority: explicit rep selection → territory filter → manager scope → all.
+    let repNames: string[] | null = null;
     if (hasRepSelection) {
-      const allKeys = repFilter.flatMap((n) => REP_NAME_TO_MONTHLY_KEYS[n] ?? []);
+      repNames = repFilter;
+    } else if (territoryFilter.length > 0) {
+      repNames = visibleReps.map((r) => r.name);
+    } else if (allowedRepNames && allowedRepNames.length > 0) {
+      repNames = allowedRepNames;
+    }
+
+    if (repNames) {
+      const allKeys = repNames.flatMap((n) => REP_NAME_TO_MONTHLY_KEYS[n] ?? []);
       const rows = allKeys.length > 0 ? sumRepMonthly(allKeys) : null;
       if (rows) return rows;
+      // Fallback: scale team totals by share (or zeros if no share).
+      if (allowedRepNames && !hasRepSelection && territoryFilter.length === 0) {
+        return baseMonthly.map((r) => ({
+          ...r,
+          b25: r.b25 * repShare, b26p: r.b26p * repShare, ytdB: r.ytdB * repShare,
+          i25: r.i25 * repShare, i26p: r.i26p * repShare, ytdI: r.ytdI * repShare,
+        }));
+      }
       return baseMonthly.map((r) => ({ m: r.m, b25: 0, b26p: 0, ytdB: 0, i25: 0, i26p: 0, ytdI: 0 }));
     }
-    // Manager-scoped "All" view: sum the per-rep monthly figures for that manager's reps.
-    if (allowedRepNames && allowedRepNames.length > 0) {
-      const allKeys = allowedRepNames.flatMap((n) => REP_NAME_TO_MONTHLY_KEYS[n] ?? []);
-      const summed = sumRepMonthly(allKeys);
-      if (summed) return summed;
-      // Fallback: scale team totals by manager's share
-      return baseMonthly.map((r) => ({
-        ...r,
-        b25: r.b25 * repShare, b26p: r.b26p * repShare, ytdB: r.ytdB * repShare,
-        i25: r.i25 * repShare, i26p: r.i26p * repShare, ytdI: r.ytdI * repShare,
-      }));
-    }
     return baseMonthly;
+  }, [hasRepSelection, repFilter, territoryFilter, visibleReps, baseMonthly, allowedRepNames, repShare]);
   }, [hasRepSelection, repFilter, baseMonthly, allowedRepNames, repShare]);
 
   const scaledLine = useMemo(() => baseLine.map((r) => ({
