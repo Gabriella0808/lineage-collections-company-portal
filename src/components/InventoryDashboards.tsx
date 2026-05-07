@@ -1151,7 +1151,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             <TabsTrigger value="collection" className="whitespace-nowrap px-2.5 text-sm">By Collection</TabsTrigger>
             <TabsTrigger value="slow" className="whitespace-nowrap px-2.5 text-sm">Slow Movers</TabsTrigger>
             <TabsTrigger value="aging" className="whitespace-nowrap px-2.5 text-sm">Aging</TabsTrigger>
-            <TabsTrigger value="health" className="whitespace-nowrap px-2.5 text-sm">Inventory</TabsTrigger>
+            
             <TabsTrigger value="ranking" className="whitespace-nowrap px-2.5 text-sm">Ranking</TabsTrigger>
             <TabsTrigger value="discontinued" className="whitespace-nowrap px-2.5 text-sm">Discontinued</TabsTrigger>
             <TabsTrigger value="forecast" className="whitespace-nowrap px-2.5 text-sm">Forecast vs Reality</TabsTrigger>
