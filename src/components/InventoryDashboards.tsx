@@ -1153,7 +1153,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             
             
             <TabsTrigger value="ranking" className="whitespace-nowrap px-2.5 text-sm">Ranking</TabsTrigger>
-            <TabsTrigger value="discontinued" className="whitespace-nowrap px-2.5 text-sm">Discontinued</TabsTrigger>
+            
             <TabsTrigger value="forecast" className="whitespace-nowrap px-2.5 text-sm">Forecast vs Reality</TabsTrigger>
             <TabsTrigger value="demand" className="whitespace-nowrap px-2.5 text-sm">Dealer Demand</TabsTrigger>
           </TabsList>
@@ -1406,43 +1406,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                   </tbody>
                 </table>
               </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="discontinued" className="mt-4">
-            <Card className="p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Ban className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-base font-semibold">Discontinued Inventory</h3>
-              </div>
-              {discontinuedRows.length === 0 ? <EmptyState message="No discontinued items flagged." /> : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                      <tr>
-                        <th className="text-left px-3 py-2">SKU</th>
-                        <th className="text-left px-3 py-2">Product</th>
-                        <th className="text-left px-3 py-2">Collection</th>
-                        <th className="text-right px-3 py-2">On Hand</th>
-                        <th className="text-right px-3 py-2">Weeks Supply</th>
-                        <th className="text-right px-3 py-2">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {discontinuedRows.map((it) => (
-                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
-                          <td className="px-3 py-2 font-mono">{it.sku}</td>
-                          <td className="px-3 py-2">{it.product}</td>
-                          <td className="px-3 py-2">{it.collection}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{it.onHand}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{(() => { const w = weeksOfSupply(it); return w == null ? "—" : `${w.toFixed(1)} wk`; })()}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{fmtMoney((it.unitCost ?? 0) * it.onHand)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </Card>
           </TabsContent>
 
