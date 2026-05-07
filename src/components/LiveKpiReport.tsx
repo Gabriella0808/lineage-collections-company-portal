@@ -227,7 +227,8 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
     return list ?? [];
   }, [managerName, lockedRepName]);
 
-  const [territoryFilter, setTerritoryFilter] = useState<string>("all");
+  const [territoryFilter, setTerritoryFilter] = useState<string[]>([]);
+  const [territoryPickerOpen, setTerritoryPickerOpen] = useState(false);
   const { data: dbReps = [] } = useSalesReps();
 
   // Merge REP_BOOK (which has the spreadsheet figures) with all reps from the DB,
@@ -245,8 +246,8 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
     let reps = allowedRepNames === null
       ? allReps
       : allReps.filter((r) => allowedRepNames.includes(r.name));
-    if (territoryFilter !== "all") {
-      reps = reps.filter((r) => (REP_TO_TERRITORIES[r.name] ?? []).includes(territoryFilter));
+    if (territoryFilter.length > 0) {
+      reps = reps.filter((r) => (REP_TO_TERRITORIES[r.name] ?? []).some((t) => territoryFilter.includes(t)));
     }
     return reps;
   }, [allReps, allowedRepNames, territoryFilter]);
@@ -267,7 +268,8 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
 
   const [monthFilter, setMonthFilter] = useState<MonthFilter>("All");
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("both");
-  const [monthlyLineFilter, setMonthlyLineFilter] = useState<LineFilter>("all");
+  const [monthlyLineFilter, setMonthlyLineFilter] = useState<Exclude<LineFilter, "all">[]>([]);
+  const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [lineFilter, setLineFilter] = useState<LineFilter>("all");
   const [lineMonthFilter, setLineMonthFilter] = useState<MonthFilter>("All");
   const [overrides, setOverrides] = useState<ProjOverrides>(() => loadOverrides());
@@ -377,13 +379,19 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
 
   const monthly = useMemo(() => {
     const filtered = monthFilter === "All" ? scaledMonthly : scaledMonthly.filter((r) => r.m === monthFilter);
-    if (monthlyLineFilter === "all") return filtered;
+    if (monthlyLineFilter.length === 0) return filtered;
     return filtered.map((r) => {
       const lineRow = scaledLine.find((l) => l.m === r.m);
       if (!lineRow) return r;
       const totalP = lineRow.luxP + lineRow.swP + lineRow.flP;
-      const lineP = monthlyLineFilter === "lux" ? lineRow.luxP : monthlyLineFilter === "sw" ? lineRow.swP : lineRow.flP;
-      const lineA = monthlyLineFilter === "lux" ? lineRow.luxA : monthlyLineFilter === "sw" ? lineRow.swA : lineRow.flA;
+      const lineP =
+        (monthlyLineFilter.includes("lux") ? lineRow.luxP : 0) +
+        (monthlyLineFilter.includes("sw") ? lineRow.swP : 0) +
+        (monthlyLineFilter.includes("fl") ? lineRow.flP : 0);
+      const lineA =
+        (monthlyLineFilter.includes("lux") ? lineRow.luxA : 0) +
+        (monthlyLineFilter.includes("sw") ? lineRow.swA : 0) +
+        (monthlyLineFilter.includes("fl") ? lineRow.flA : 0);
       const share = totalP > 0 ? lineP / totalP : 0;
       return {
         ...r,
@@ -486,27 +494,107 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
             </PopoverContent>
           </Popover>
           <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold ml-2">Territory</span>
-          <select
-            value={territoryFilter}
-            onChange={(e) => setTerritoryFilter(e.target.value)}
-            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[160px]"
-          >
-            <option value="all">All Territories</option>
-            {ALL_TERRITORIES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+          <Popover open={territoryPickerOpen} onOpenChange={setTerritoryPickerOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[180px] inline-flex items-center justify-between gap-2"
+              >
+                <span className={cn(territoryFilter.length === 0 && "text-muted-foreground")}>
+                  {territoryFilter.length === 0
+                    ? "All Territories"
+                    : territoryFilter.length === 1
+                      ? territoryFilter[0]
+                      : `${territoryFilter.length} territories`}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[240px] p-0 overflow-hidden">
+              <div className="max-h-72 overflow-y-auto py-1">
+                {ALL_TERRITORIES.map((t) => {
+                  const checked = territoryFilter.includes(t);
+                  return (
+                    <button
+                      type="button"
+                      key={t}
+                      onClick={() =>
+                        setTerritoryFilter((prev) =>
+                          prev.includes(t) ? prev.filter((n) => n !== t) : [...prev, t],
+                        )
+                      }
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-sm hover:bg-accent text-left"
+                    >
+                      <span>{t}</span>
+                      <Check className={cn("h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
+                    </button>
+                  );
+                })}
+              </div>
+              {territoryFilter.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setTerritoryFilter([])}
+                  className="w-full px-3 py-2 text-xs text-primary hover:bg-accent text-left border-t"
+                >
+                  Clear selection
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
           <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold ml-2">Brand</span>
-          <select
-            value={monthlyLineFilter}
-            onChange={(e) => setMonthlyLineFilter(e.target.value as LineFilter)}
-            className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[160px]"
-          >
-            <option value="all">All Brands</option>
-            <option value="sw">Sea Winds</option>
-            <option value="fl">Finn & Louise</option>
-            <option value="lux">Lux Lighting</option>
-          </select>
+          <Popover open={brandPickerOpen} onOpenChange={setBrandPickerOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="h-9 px-3 rounded-md border bg-background text-sm font-medium min-w-[180px] inline-flex items-center justify-between gap-2"
+              >
+                <span className={cn(monthlyLineFilter.length === 0 && "text-muted-foreground")}>
+                  {monthlyLineFilter.length === 0
+                    ? "All Brands"
+                    : monthlyLineFilter.length === 1
+                      ? ({ sw: "Sea Winds", fl: "Finn & Louise", lux: "Lux Lighting" } as const)[monthlyLineFilter[0]]
+                      : `${monthlyLineFilter.length} brands`}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[200px] p-0 overflow-hidden">
+              <div className="py-1">
+                {([
+                  { v: "sw", label: "Sea Winds" },
+                  { v: "fl", label: "Finn & Louise" },
+                  { v: "lux", label: "Lux Lighting" },
+                ] as const).map(({ v, label }) => {
+                  const checked = monthlyLineFilter.includes(v);
+                  return (
+                    <button
+                      type="button"
+                      key={v}
+                      onClick={() =>
+                        setMonthlyLineFilter((prev) =>
+                          prev.includes(v) ? prev.filter((n) => n !== v) : [...prev, v],
+                        )
+                      }
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-sm hover:bg-accent text-left"
+                    >
+                      <span>{label}</span>
+                      <Check className={cn("h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
+                    </button>
+                  );
+                })}
+              </div>
+              {monthlyLineFilter.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMonthlyLineFilter([])}
+                  className="w-full px-3 py-2 text-xs text-primary hover:bg-accent text-left border-t"
+                >
+                  Clear selection
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
           {!lockedRepName && allowedRepNames !== null && visibleReps.length === 0 && (
             <span className="text-xs text-muted-foreground">No reps mapped for this manager yet.</span>
           )}
