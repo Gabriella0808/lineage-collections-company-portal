@@ -1154,7 +1154,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             
             <TabsTrigger value="ranking" className="whitespace-nowrap px-2.5 text-sm">Ranking</TabsTrigger>
             
-            <TabsTrigger value="forecast" className="whitespace-nowrap px-2.5 text-sm">Forecast vs Reality</TabsTrigger>
+            
             <TabsTrigger value="demand" className="whitespace-nowrap px-2.5 text-sm">Dealer Demand</TabsTrigger>
           </TabsList>
 
@@ -1406,43 +1406,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                   </tbody>
                 </table>
               </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="forecast" className="mt-4">
-            <Card className="p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="h-4 w-4 text-primary" />
-                <h3 className="text-base font-semibold">Forecast vs Reality</h3>
-              </div>
-              {forecastRows.length === 0 ? <EmptyState message="No forecast data yet." /> : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                      <tr>
-                        <th className="text-left px-3 py-2">SKU</th>
-                        <th className="text-left px-3 py-2">Product</th>
-                        <th className="text-right px-3 py-2">Forecast/mo</th>
-                        <th className="text-right px-3 py-2">Actual/mo</th>
-                        <th className="text-right px-3 py-2">Variance</th>
-                        <th className="text-right px-3 py-2">% Diff</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {forecastRows.map((it) => (
-                        <tr key={it.sku} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDrawerSku(it.sku)}>
-                          <td className="px-3 py-2 font-mono">{it.sku}</td>
-                          <td className="px-3 py-2 max-w-[220px] truncate">{it.product}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{it.fc.toFixed(1)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{it.avgMonthlySales}</td>
-                          <td className={cn("px-3 py-2 text-right tabular-nums font-semibold", it.variance > 0 ? "text-success" : it.variance < 0 ? "text-destructive" : "")}>{it.variance > 0 ? "+" : ""}{it.variance.toFixed(1)}</td>
-                          <td className={cn("px-3 py-2 text-right tabular-nums", it.pct > 0 ? "text-success" : it.pct < 0 ? "text-destructive" : "")}>{it.pct > 0 ? "+" : ""}{it.pct.toFixed(0)}%</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </Card>
           </TabsContent>
 
