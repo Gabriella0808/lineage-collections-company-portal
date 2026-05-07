@@ -1,7 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { formatCurrency, useSalesReps } from "@/hooks/usePortalData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Pencil } from "lucide-react";
+import { Pencil, ChevronsUpDown, Check, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { REP_MONTHLY, type RepMonthRow } from "@/data/repMonthly";
 import { useDealerSalesAggregates } from "@/hooks/useDealerSalesAggregates";
 
