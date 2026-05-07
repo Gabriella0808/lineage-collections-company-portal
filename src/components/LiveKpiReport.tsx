@@ -349,26 +349,34 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
   };
 
   const scaledMonthly = useMemo(() => {
+    // Determine which rep names should be summed for the table/chart.
+    // Priority: explicit rep selection → territory filter → manager scope → all.
+    let repNames: string[] | null = null;
     if (hasRepSelection) {
-      const allKeys = repFilter.flatMap((n) => REP_NAME_TO_MONTHLY_KEYS[n] ?? []);
+      repNames = repFilter;
+    } else if (territoryFilter.length > 0) {
+      repNames = visibleReps.map((r) => r.name);
+    } else if (allowedRepNames && allowedRepNames.length > 0) {
+      repNames = allowedRepNames;
+    }
+
+    if (repNames) {
+      const allKeys = repNames.flatMap((n) => REP_NAME_TO_MONTHLY_KEYS[n] ?? []);
       const rows = allKeys.length > 0 ? sumRepMonthly(allKeys) : null;
       if (rows) return rows;
+      // Fallback: scale team totals by share (or zeros if no share).
+      if (allowedRepNames && !hasRepSelection && territoryFilter.length === 0) {
+        return baseMonthly.map((r) => ({
+          ...r,
+          b25: r.b25 * repShare, b26p: r.b26p * repShare, ytdB: r.ytdB * repShare,
+          i25: r.i25 * repShare, i26p: r.i26p * repShare, ytdI: r.ytdI * repShare,
+        }));
+      }
       return baseMonthly.map((r) => ({ m: r.m, b25: 0, b26p: 0, ytdB: 0, i25: 0, i26p: 0, ytdI: 0 }));
     }
-    // Manager-scoped "All" view: sum the per-rep monthly figures for that manager's reps.
-    if (allowedRepNames && allowedRepNames.length > 0) {
-      const allKeys = allowedRepNames.flatMap((n) => REP_NAME_TO_MONTHLY_KEYS[n] ?? []);
-      const summed = sumRepMonthly(allKeys);
-      if (summed) return summed;
-      // Fallback: scale team totals by manager's share
-      return baseMonthly.map((r) => ({
-        ...r,
-        b25: r.b25 * repShare, b26p: r.b26p * repShare, ytdB: r.ytdB * repShare,
-        i25: r.i25 * repShare, i26p: r.i26p * repShare, ytdI: r.ytdI * repShare,
-      }));
-    }
     return baseMonthly;
-  }, [hasRepSelection, repFilter, baseMonthly, allowedRepNames, repShare]);
+  }, [hasRepSelection, repFilter, territoryFilter, visibleReps, baseMonthly, allowedRepNames, repShare]);
+  
 
   const scaledLine = useMemo(() => baseLine.map((r) => ({
     ...r,
@@ -377,10 +385,9 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
     flP: r.flP * repShare,   flA: r.flA * repShare,
   })), [repShare, baseLine]);
 
-  const monthly = useMemo(() => {
-    const filtered = monthFilter === "All" ? scaledMonthly : scaledMonthly.filter((r) => r.m === monthFilter);
-    if (monthlyLineFilter.length === 0) return filtered;
-    return filtered.map((r) => {
+  const applyBrandFilter = (rows: typeof scaledMonthly) => {
+    if (monthlyLineFilter.length === 0) return rows;
+    return rows.map((r) => {
       const lineRow = scaledLine.find((l) => l.m === r.m);
       if (!lineRow) return r;
       const totalP = lineRow.luxP + lineRow.swP + lineRow.flP;
@@ -403,7 +410,12 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
         ytdI: r.ytdI * share,
       };
     });
-  }, [monthFilter, scaledMonthly, monthlyLineFilter, scaledLine]);
+  };
+
+  const chartMonthly = useMemo(() => applyBrandFilter(scaledMonthly), [scaledMonthly, monthlyLineFilter, scaledLine]);
+  const monthly = useMemo(() => {
+    return monthFilter === "All" ? chartMonthly : chartMonthly.filter((r) => r.m === monthFilter);
+  }, [monthFilter, chartMonthly]);
 
   const sum = (arr: typeof MONTHLY, k: keyof typeof MONTHLY[number]) =>
     arr.reduce((s, r) => s + (r[k] as number), 0);
@@ -665,7 +677,7 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
         </div>
         <div style={{ height: 280 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={scaledMonthly} margin={{ top: 8, right: 16, left: 8, bottom: 8 }} barCategoryGap="20%">
+            <BarChart data={chartMonthly} margin={{ top: 8, right: 16, left: 8, bottom: 8 }} barCategoryGap="20%">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis
                 dataKey="m"
