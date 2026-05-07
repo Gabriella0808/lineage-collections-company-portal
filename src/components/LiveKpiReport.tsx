@@ -565,7 +565,9 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
             <h3 className="text-base font-semibold">Bookings — Actual vs Goal</h3>
             <p className="text-xs text-muted-foreground">
               Monthly 2026 projection (goal) vs YTD actual
-              {selectedRep ? <> · <span className="font-medium text-foreground">{selectedRep.name}</span></> : <> · all reps</>}
+              {hasRepSelection
+                ? <> · <span className="font-medium text-foreground">{repFilter.length === 1 ? repFilter[0] : `${repFilter.length} reps`}</span></>
+                : <> · all reps</>}
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
