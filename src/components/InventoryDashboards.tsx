@@ -871,7 +871,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       <Tabs defaultValue="stockouts" className="w-full">
       <TabsList className="flex-wrap h-auto">
         <TabsTrigger value="stockouts">Stockouts / Lost Sales</TabsTrigger>
-        <TabsTrigger value="incoming">Incoming POs</TabsTrigger>
+        
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="analysis">Analysis</TabsTrigger>
         <TabsTrigger value="reorder">Reorder</TabsTrigger>
