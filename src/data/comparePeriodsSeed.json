@@ -1,0 +1,1572 @@
+{
+  "months": [
+    "Nov 25",
+    "Dec 25",
+    "Jan 26",
+    "Feb 26",
+    "Mar 26",
+    "Apr 26"
+  ],
+  "monthKeys": [
+    "nov25",
+    "dec25",
+    "jan26",
+    "feb26",
+    "mar26",
+    "apr26"
+  ],
+  "accounts": [
+    {
+      "account": "6000 \u00b7 Sales - SW Warehouse",
+      "rows": [
+        {
+          "name": "Cabinet Beds",
+          "vals": [
+            34323.0,
+            41568.0,
+            85886.0,
+            33127.0,
+            38970.0,
+            41519.0
+          ],
+          "notes": "Out of stock",
+          "growth": -0.29769992026060565
+        },
+        {
+          "name": "Cape May Bedroom",
+          "vals": [
+            33128.0,
+            20793.0,
+            61933.0,
+            30866.0,
+            9730.0,
+            38737.0
+          ],
+          "notes": null,
+          "growth": -0.3152329656291539
+        },
+        {
+          "name": "Cape May Dining",
+          "vals": [
+            6526.0,
+            3008.0,
+            1698.0,
+            7372.0,
+            4766.0,
+            12662.0
+          ],
+          "notes": null,
+          "growth": 1.207977207977208
+        },
+        {
+          "name": "Cape May Occasional",
+          "vals": [
+            3922.0,
+            9735.0,
+            0.0,
+            5765.0,
+            3134.0,
+            4618.0
+          ],
+          "notes": null,
+          "growth": -0.01025115325474113
+        },
+        {
+          "name": "Cape May White Bedroom",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            17060.0
+          ],
+          "notes": "HP orders",
+          "growth": null
+        },
+        {
+          "name": "Credenzas",
+          "vals": [
+            49014.0,
+            51522.0,
+            91868.0,
+            82552.0,
+            90413.0,
+            51668.0
+          ],
+          "notes": null,
+          "growth": 0.16750691253820094
+        },
+        {
+          "name": "Geneva Bedroom",
+          "vals": [
+            10301.0,
+            9028.0,
+            9610.0,
+            5722.0,
+            4820.0,
+            8430.0
+          ],
+          "notes": null,
+          "growth": -0.34441411244341547
+        },
+        {
+          "name": "Geneva Dining",
+          "vals": [
+            0.0,
+            5274.0,
+            2739.0,
+            7084.0,
+            6072.0,
+            447.0
+          ],
+          "notes": null,
+          "growth": 0.6976163733932359
+        },
+        {
+          "name": "Geneva Occasional",
+          "vals": [
+            852.0,
+            2336.0,
+            886.0,
+            5998.0,
+            1828.0,
+            2134.0
+          ],
+          "notes": null,
+          "growth": 1.4447717231222388
+        },
+        {
+          "name": "Islamorada Bedroom",
+          "vals": [
+            122285.0,
+            105997.0,
+            139672.0,
+            95803.0,
+            123868.0,
+            76060.0
+          ],
+          "notes": "Slowest at least since August",
+          "growth": -0.19628268750985178
+        },
+        {
+          "name": "Islamorada Dining",
+          "vals": [
+            16149.0,
+            14499.0,
+            19766.0,
+            19035.0,
+            32359.0,
+            31198.0
+          ],
+          "notes": null,
+          "growth": 0.6382750823184036
+        },
+        {
+          "name": "Islamorada Occasional",
+          "vals": [
+            61333.0,
+            50703.0,
+            68033.0,
+            59316.0,
+            73882.0,
+            44922.0
+          ],
+          "notes": null,
+          "growth": -0.010823628720101786
+        },
+        {
+          "name": "Island Breeze Occasional",
+          "vals": [
+            11506.0,
+            4177.0,
+            1421.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Maui Bed",
+          "vals": [
+            6804.0,
+            8151.0,
+            15856.0,
+            6141.0,
+            7705.0,
+            10656.0
+          ],
+          "notes": null,
+          "growth": -0.2047645321476096
+        },
+        {
+          "name": "Miramar Bedroom",
+          "vals": [
+            13643.0,
+            9305.0,
+            8674.0,
+            8187.0,
+            8436.0,
+            8943.0
+          ],
+          "notes": null,
+          "growth": -0.19151223831509712
+        },
+        {
+          "name": "Miramar Dining",
+          "vals": [
+            230.0,
+            899.0,
+            4823.0,
+            2080.0,
+            2513.0,
+            2414.0
+          ],
+          "notes": null,
+          "growth": 0.1772513440860215
+        },
+        {
+          "name": "Miramar Occasional",
+          "vals": [
+            499.0,
+            0.0,
+            2797.0,
+            2399.0,
+            1457.0,
+            1492.0
+          ],
+          "notes": null,
+          "growth": 0.6225728155339805
+        },
+        {
+          "name": "Monaco Blanc Bedroom",
+          "vals": [
+            18996.0,
+            32217.0,
+            21201.0,
+            10907.0,
+            17091.0,
+            11401.0
+          ],
+          "notes": null,
+          "growth": -0.4559201259424973
+        },
+        {
+          "name": "Monaco Blanc Occasional",
+          "vals": [
+            7362.0,
+            8198.0,
+            12126.0,
+            8125.0,
+            12513.0,
+            8373.0
+          ],
+          "notes": null,
+          "growth": 0.04785812323918215
+        },
+        {
+          "name": "Monaco Bleu Bedroom",
+          "vals": [
+            19194.0,
+            15133.0,
+            20189.0,
+            19248.0,
+            21437.0,
+            17414.0
+          ],
+          "notes": "Outperforming Blanc",
+          "growth": 0.0657238241984004
+        },
+        {
+          "name": "Monterey Bedroom",
+          "vals": [
+            21216.0,
+            19241.0,
+            14687.0,
+            9405.0,
+            5859.0,
+            9212.0
+          ],
+          "notes": null,
+          "growth": -0.5561439141157696
+        },
+        {
+          "name": "Ocean Isles Bedroom",
+          "vals": [
+            21548.0,
+            4889.0,
+            16972.0,
+            7388.0,
+            6509.0,
+            15498.0
+          ],
+          "notes": "Several buyers in April",
+          "growth": -0.32283627819115857
+        },
+        {
+          "name": "Picket Fence Occasional",
+          "vals": [
+            22318.0,
+            18165.0,
+            18562.0,
+            25972.0,
+            24680.0,
+            20620.0
+          ],
+          "notes": null,
+          "growth": 0.20707934626132607
+        },
+        {
+          "name": "Surfside Bedroom",
+          "vals": [
+            37344.0,
+            23844.0,
+            37046.0,
+            32535.0,
+            32757.0,
+            33034.0
+          ],
+          "notes": null,
+          "growth": 0.0009365392837510367
+        },
+        {
+          "name": "Surfside Dining",
+          "vals": [
+            1567.0,
+            3577.0,
+            4100.0,
+            1658.0,
+            3822.0,
+            230.0
+          ],
+          "notes": null,
+          "growth": -0.38230203375162264
+        },
+        {
+          "name": "Surfside Occasional",
+          "vals": [
+            1929.0,
+            7032.0,
+            7579.0,
+            6174.0,
+            6145.0,
+            8895.0
+          ],
+          "notes": "3.3k Includes new style",
+          "growth": 0.2825876662636033
+        },
+        {
+          "name": "zCloseouts",
+          "vals": [
+            1300.0,
+            0.0,
+            26724.0,
+            7597.0,
+            1267.0,
+            880.0
+          ],
+          "notes": null,
+          "growth": -0.6522980302597774
+        },
+        {
+          "name": "6000 \u00b7 Sales - SW Warehouse - Other",
+          "vals": [
+            0.0,
+            0.0,
+            145.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        }
+      ],
+      "total": {
+        "vals": [
+          523289.0,
+          469291.0,
+          694993.0,
+          500456.0,
+          542033.0,
+          478517.0
+        ],
+        "notes": null,
+        "growth": -0.09870210059061146
+      }
+    },
+    {
+      "account": "6001 \u00b7 Sales - Lux Warehouse",
+      "rows": [
+        {
+          "name": "zCloseouts",
+          "vals": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "6001 \u00b7 Sales - Lux Warehouse - Other",
+          "vals": [
+            52509.0,
+            54868.0,
+            116490.0,
+            85161.0,
+            63540.0,
+            63770.0
+          ],
+          "notes": null,
+          "growth": -0.0509052249773303
+        }
+      ],
+      "total": {
+        "vals": [
+          53668.0,
+          82128.0,
+          242868.0,
+          85995.0,
+          65299.0,
+          64894.0
+        ],
+        "notes": "It'd probably be flat if it wasn't for Atlanta",
+        "growth": -0.4290769653307418
+      }
+    },
+    {
+      "account": "6002 \u00b7 Sales - F&L Warehouse",
+      "rows": [
+        {
+          "name": "Cabinet Beds",
+          "vals": [
+            2098.0,
+            0.0,
+            3147.0,
+            3147.0,
+            0.0,
+            12588.0
+          ],
+          "notes": "New",
+          "growth": 2.0
+        },
+        {
+          "name": "Chatham Maple Bedroom",
+          "vals": [
+            22970.0,
+            12498.0,
+            6564.0,
+            13858.0,
+            25077.0,
+            32013.0
+          ],
+          "notes": "Increase last 4 months",
+          "growth": 0.6879520365435858
+        },
+        {
+          "name": "Chatham Maple Dining",
+          "vals": [
+            0.0,
+            2685.0,
+            599.0,
+            1241.0,
+            5242.0,
+            2241.0
+          ],
+          "notes": null,
+          "growth": 1.6565164433617539
+        },
+        {
+          "name": "Chatham Maple Occasional",
+          "vals": [
+            1343.0,
+            0.0,
+            0.0,
+            1047.0,
+            0.0,
+            3067.0
+          ],
+          "notes": null,
+          "growth": 2.0632911392405062
+        },
+        {
+          "name": "Chatham Midnight Bedroom",
+          "vals": [
+            2655.0,
+            0.0,
+            0.0,
+            3661.0,
+            0.0,
+            10490.0
+          ],
+          "notes": null,
+          "growth": 4.329943502824859
+        },
+        {
+          "name": "Chatham White Bedroom",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            11973.0
+          ],
+          "notes": "High Point",
+          "growth": null
+        },
+        {
+          "name": "Credenzas",
+          "vals": [
+            0.0,
+            4537.0,
+            10819.0,
+            19544.0,
+            12913.0,
+            7329.0
+          ],
+          "notes": null,
+          "growth": 1.5909090909090908
+        },
+        {
+          "name": "Hyde Park Bedroom",
+          "vals": [
+            11776.0,
+            45988.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Manhattan Valley Dark BR",
+          "vals": [
+            7752.0,
+            9301.0,
+            9514.0,
+            12921.0,
+            14672.0,
+            58111.0
+          ],
+          "notes": "Much from Jordan's",
+          "growth": 2.2259570143411
+        },
+        {
+          "name": "Manhattan Valley Dark Dining",
+          "vals": [
+            11334.0,
+            2440.0,
+            2275.0,
+            12328.0,
+            11103.0,
+            62514.0
+          ],
+          "notes": "Much from Jordan's",
+          "growth": 4.35516231540906
+        },
+        {
+          "name": "Manhattan Valley Dark Occ",
+          "vals": [
+            7831.0,
+            0.0,
+            6475.0,
+            737.0,
+            398.0,
+            10468.0
+          ],
+          "notes": "Much from Jordan's",
+          "growth": -0.18894170278204947
+        },
+        {
+          "name": "Manhattan Valley Light BR",
+          "vals": [
+            13101.0,
+            7004.0,
+            16395.0,
+            3889.0,
+            12229.0,
+            9668.0
+          ],
+          "notes": "Much from Jordan's",
+          "growth": -0.29353424657534244
+        },
+        {
+          "name": "Manhattan Valley Light Dining",
+          "vals": [
+            4386.0,
+            4591.0,
+            4286.0,
+            5887.0,
+            5893.0,
+            1047.0
+          ],
+          "notes": null,
+          "growth": -0.032873407223101836
+        },
+        {
+          "name": "Manhattan Valley Light Occ",
+          "vals": [
+            836.0,
+            0.0,
+            0.0,
+            199.0,
+            2849.0,
+            398.0
+          ],
+          "notes": null,
+          "growth": 3.1220095693779903
+        },
+        {
+          "name": "Montauk Bedroom",
+          "vals": [
+            20735.0,
+            10354.0,
+            33479.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Point Breeze Bedroom",
+          "vals": [
+            21989.0,
+            10200.0,
+            16841.0,
+            17643.0,
+            13622.0,
+            13049.0
+          ],
+          "notes": null,
+          "growth": -0.09618600856618398
+        },
+        {
+          "name": "Point Breeze Dining",
+          "vals": [
+            0.0,
+            2174.0,
+            3572.0,
+            1804.0,
+            5412.0,
+            13674.0
+          ],
+          "notes": "Mostly metal",
+          "growth": 2.635572572224156
+        },
+        {
+          "name": "Point Breeze Occasional",
+          "vals": [
+            1487.0,
+            11130.0,
+            3244.0,
+            399.0,
+            2088.0,
+            1212.0
+          ],
+          "notes": null,
+          "growth": -0.7667864573482126
+        },
+        {
+          "name": "Rio Vista Bedroom",
+          "vals": [
+            17568.0,
+            16351.0,
+            38150.0,
+            10881.0,
+            16918.0,
+            40456.0
+          ],
+          "notes": "Boost in HP",
+          "growth": -0.052921505779183864
+        },
+        {
+          "name": "Rio Vista Dining",
+          "vals": [
+            6317.0,
+            6124.0,
+            10218.0,
+            3674.0,
+            26768.0,
+            51201.0
+          ],
+          "notes": "Boost in HP",
+          "growth": 2.603115759742266
+        },
+        {
+          "name": "Rio Vista Occasional",
+          "vals": [
+            3819.0,
+            549.0,
+            2745.0,
+            2110.0,
+            12909.0,
+            13887.0
+          ],
+          "notes": "Boost in HP",
+          "growth": 3.0638267960073104
+        },
+        {
+          "name": "Sun Haven Bedroom",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            3195.0,
+            9597.0,
+            23509.0
+          ],
+          "notes": "Majority from HP",
+          "growth": null
+        },
+        {
+          "name": "Sun Haven Dining",
+          "vals": [
+            3727.0,
+            3657.0,
+            0.0,
+            3957.0,
+            13035.0,
+            16090.0
+          ],
+          "notes": "Majority from HP",
+          "growth": 3.4802275189599134
+        },
+        {
+          "name": "Sun Haven Occasional",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            349.0,
+            0.0,
+            2012.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "zCloseouts",
+          "vals": [
+            0.0,
+            10713.0,
+            15821.0,
+            21934.0,
+            17578.0,
+            11794.0
+          ],
+          "notes": null,
+          "growth": 0.9335946333006708
+        }
+      ],
+      "total": {
+        "vals": [
+          161724.0,
+          160296.0,
+          184144.0,
+          144405.0,
+          208303.0,
+          408791.0
+        ],
+        "notes": "Jordan's, Rio, PB metal",
+        "growth": 0.5044511265123557
+      }
+    },
+    {
+      "account": "6003 \u00b7 Sales \u2013 SW DC",
+      "rows": [
+        {
+          "name": "Cabinet Beds",
+          "vals": [
+            39100.0,
+            39100.0,
+            13500.0,
+            0.0,
+            40250.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -0.5610687022900763
+        },
+        {
+          "name": "Cape May Bedroom",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            27475.0,
+            18300.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Cape May Dining",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            11600.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Credenzas",
+          "vals": [
+            0.0,
+            0.0,
+            2250.0,
+            0.0,
+            2000.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -0.11111111111111116
+        },
+        {
+          "name": "Geneva Dining",
+          "vals": [
+            0.0,
+            9060.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Geneva Occasional",
+          "vals": [
+            0.0,
+            3520.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Islamorada Bedroom",
+          "vals": [
+            22688.0,
+            7517.0,
+            18415.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Islamorada Dining",
+          "vals": [
+            3426.0,
+            0.0,
+            4674.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Islamorada Occasional",
+          "vals": [
+            128762.0,
+            33720.0,
+            54876.0,
+            0.0,
+            79209.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -0.6355827712805602
+        },
+        {
+          "name": "Monaco Blanc Bedroom",
+          "vals": [
+            0.0,
+            17335.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Monaco Bleu Bedroom",
+          "vals": [
+            0.0,
+            15735.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Monterey Bedroom",
+          "vals": [
+            0.0,
+            0.0,
+            33762.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Santorini Bedroom",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Santorini Occasional",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Surfside Bedroom",
+          "vals": [
+            596.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "Surfside Dining",
+          "vals": [
+            1140.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -1.0
+        },
+        {
+          "name": "zzNon-Stock - Custom",
+          "vals": [
+            0.0,
+            0.0,
+            73160.0,
+            0.0,
+            10880.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": -0.8512848551120831
+        },
+        {
+          "name": "6003 \u00b7 Sales \u2013 SW DC - Other",
+          "vals": [
+            15.0,
+            0.0,
+            0.0,
+            15.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": 0.0
+        }
+      ],
+      "total": {
+        "vals": [
+          195727.0,
+          125987.0,
+          200637.0,
+          27490.0,
+          162239.0,
+          0.0
+        ],
+        "notes": null,
+        "growth": -0.6367787177587485
+      }
+    },
+    {
+      "account": "6004 \u00b7 Sales \u2013 Lux DC",
+      "rows": [
+        {
+          "name": "zzNon-Stock - Custom",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            10710.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        }
+      ],
+      "total": {
+        "vals": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          10710.0,
+          0.0
+        ],
+        "notes": null,
+        "growth": null
+      }
+    },
+    {
+      "account": "6005 \u00b7 Sales \u2013 F&L DC",
+      "rows": [
+        {
+          "name": "Chatham Maple Bedroom",
+          "vals": [
+            0.0,
+            16690.0,
+            6006.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Chatham Maple Dining",
+          "vals": [
+            0.0,
+            50160.0,
+            3960.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Chatham Maple Occasional",
+          "vals": [
+            0.0,
+            4910.0,
+            2265.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Chatham Midnight Bedroom",
+          "vals": [
+            0.0,
+            71999.0,
+            8867.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Chatham Midnight Dining",
+          "vals": [
+            0.0,
+            36400.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Hyde Park Bedroom",
+          "vals": [
+            0.0,
+            0.0,
+            88524.0,
+            0.0,
+            17740.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Manhattan Valley Dark BR",
+          "vals": [
+            12360.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Manhattan Valley Dark Dining",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Manhattan Valley Light BR",
+          "vals": [
+            18695.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Manhattan Valley Light Dining",
+          "vals": [
+            14210.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Point Breeze Bedroom",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Rio Vista Occasional",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            74604.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Sun Haven BR",
+          "vals": [
+            0.0,
+            62630.0,
+            7145.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Sun Haven Dining",
+          "vals": [
+            0.0,
+            46725.0,
+            5755.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Sun Haven Occasional",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "zzNon-Stock - Custom",
+          "vals": [
+            0.0,
+            0.0,
+            63596.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        }
+      ],
+      "total": {
+        "vals": [
+          45265.0,
+          289514.0,
+          186118.0,
+          0.0,
+          92344.0,
+          0.0
+        ],
+        "notes": null,
+        "growth": -0.8227211905616657
+      }
+    },
+    {
+      "account": "6100 \u00b7 SW-Finn Discounts",
+      "rows": [
+        {
+          "name": "5/5/5 Promotion",
+          "vals": [
+            -544.85,
+            0.0,
+            -953.45,
+            -429.35,
+            0.0,
+            -391.25
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Bridge Pricing",
+          "vals": [
+            -3046.6,
+            -969.3,
+            -6871.6,
+            -3755.0,
+            -1416.4,
+            -2834.1
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Customer Allowance",
+          "vals": [
+            669.02,
+            1058.36,
+            2481.34,
+            795.87,
+            727.79,
+            369.58
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Special Quotes",
+          "vals": [
+            -28385.01,
+            -30598.14,
+            -34793.16,
+            -30780.43,
+            -34644.91,
+            -63849.7
+          ],
+          "notes": null,
+          "growth": null
+        }
+      ],
+      "total": {
+        "vals": [
+          -31307.44,
+          -30509.08,
+          -40136.87,
+          -34168.91,
+          -35333.52,
+          -66705.47
+        ],
+        "notes": null,
+        "growth": null
+      }
+    },
+    {
+      "account": "6101 \u00b7 Lux Discounts",
+      "rows": [
+        {
+          "name": "Special Quotes",
+          "vals": [
+            -1329.84,
+            -10519.11,
+            -72635.71,
+            -6850.16,
+            -5639.54,
+            -3271.05
+          ],
+          "notes": null,
+          "growth": null
+        }
+      ],
+      "total": {
+        "vals": [
+          -1329.84,
+          -10519.11,
+          -72635.71,
+          -6850.16,
+          -5639.54,
+          -3271.05
+        ],
+        "notes": null,
+        "growth": null
+      }
+    },
+    {
+      "account": "6110 \u00b7 Samples",
+      "rows": [
+        {
+          "name": "Lux",
+          "vals": [
+            0.0,
+            0.0,
+            -5105.0,
+            -839.0,
+            0.0,
+            -778.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "SW-Finn",
+          "vals": [
+            -2835.8,
+            -12004.0,
+            -14745.25,
+            -4185.95,
+            -28037.0,
+            -30463.3
+          ],
+          "notes": null,
+          "growth": null
+        }
+      ],
+      "total": {
+        "vals": [
+          -2835.8,
+          -12004.0,
+          -19850.25,
+          -5024.95,
+          -28037.0,
+          -31241.3
+        ],
+        "notes": null,
+        "growth": null
+      }
+    },
+    {
+      "account": "6200 \u00b7 Quality Control SW-Finn",
+      "rows": [
+        {
+          "name": "Factory Defects",
+          "vals": [
+            -4797.5,
+            -7893.5,
+            -3171.0,
+            -3073.4,
+            -4529.25,
+            -3487.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Freight Damage",
+          "vals": [
+            -878.39,
+            -140.29,
+            -582.08,
+            -338.7,
+            -4245.62,
+            -545.6
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Internal Oversight",
+          "vals": [
+            -494.5,
+            0.0,
+            -450.4,
+            -119.0,
+            -393.0,
+            -1586.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Replacement Shipping",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            -225.0,
+            0.0,
+            -158.0
+          ],
+          "notes": null,
+          "growth": null
+        }
+      ],
+      "total": {
+        "vals": [
+          -6170.39,
+          -8033.79,
+          -4203.48,
+          -3756.1,
+          -9167.87,
+          -5776.6
+        ],
+        "notes": null,
+        "growth": null
+      }
+    },
+    {
+      "account": "6201 \u00b7 Quality Control Lux",
+      "rows": [
+        {
+          "name": "Factory Defects",
+          "vals": [
+            -150.0,
+            0.0,
+            0.0,
+            -745.0,
+            0.0,
+            -135.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Freight Damage",
+          "vals": [
+            -40.49,
+            -49.19,
+            -63.28,
+            -232.8,
+            -190.19,
+            -139.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Internal Oversight",
+          "vals": [
+            0.0,
+            -7.88,
+            0.0,
+            -49.75,
+            0.0,
+            -150.0
+          ],
+          "notes": null,
+          "growth": null
+        },
+        {
+          "name": "Replacement Shipping",
+          "vals": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "notes": null,
+          "growth": null
+        }
+      ],
+      "total": {
+        "vals": [
+          -190.49,
+          -57.07,
+          -63.28,
+          -1027.55,
+          -190.19,
+          -424.0
+        ],
+        "notes": null,
+        "growth": null
+      }
+    }
+  ]
+}
