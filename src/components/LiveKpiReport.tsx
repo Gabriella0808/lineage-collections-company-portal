@@ -268,7 +268,8 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
 
   const [monthFilter, setMonthFilter] = useState<MonthFilter>("All");
   const [metricFilter, setMetricFilter] = useState<MetricFilter>("both");
-  const [monthlyLineFilter, setMonthlyLineFilter] = useState<LineFilter>("all");
+  const [monthlyLineFilter, setMonthlyLineFilter] = useState<Exclude<LineFilter, "all">[]>([]);
+  const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [lineFilter, setLineFilter] = useState<LineFilter>("all");
   const [lineMonthFilter, setLineMonthFilter] = useState<MonthFilter>("All");
   const [overrides, setOverrides] = useState<ProjOverrides>(() => loadOverrides());
