@@ -1148,7 +1148,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             <TabsTrigger value="sku" className="whitespace-nowrap px-2.5 text-sm">SKU Table</TabsTrigger>
             <TabsTrigger value="compare" className="whitespace-nowrap px-2.5 text-sm">Compare Periods</TabsTrigger>
             <TabsTrigger value="vendor" className="whitespace-nowrap px-2.5 text-sm">By Vendor</TabsTrigger>
-            <TabsTrigger value="collection" className="whitespace-nowrap px-2.5 text-sm">By Collection</TabsTrigger>
+            
             <TabsTrigger value="slow" className="whitespace-nowrap px-2.5 text-sm">Slow Movers</TabsTrigger>
             
             
@@ -1296,38 +1296,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                   ))}
                 </tbody>
               </table>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="collection" className="mt-4">
-            <Card className="p-5">
-              <h3 className="text-base font-semibold mb-3">Performance by Collection</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="text-left px-3 py-2">Collection</th>
-                      <th className="text-right px-3 py-2">SKUs</th>
-                      <th className="text-right px-3 py-2">Monthly Sales</th>
-                      <th className="text-right px-3 py-2">% of Sales</th>
-                      <th className="text-right px-3 py-2">Inv Value</th>
-                      <th className="text-right px-3 py-2">Turnover</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {collectionPerf.map((c) => (
-                      <tr key={c.name} className="border-t border-border">
-                        <td className="px-3 py-2">{c.name}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{c.skus}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(c.sales)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{c.pctSales.toFixed(1)}%</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(c.value)}</td>
-                        <td className={cn("px-3 py-2 text-right tabular-nums", c.turnover < 1 ? "text-warning-foreground" : c.turnover > 4 ? "text-success" : "")}>{c.turnover.toFixed(1)}×</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             </Card>
           </TabsContent>
 
