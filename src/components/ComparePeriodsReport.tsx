@@ -193,7 +193,7 @@ export default function ComparePeriodsReport(_props: Props) {
   const [includeNonStock, setIncludeNonStock] = useState(true);
   const [showOnlyWithNotes, setShowOnlyWithNotes] = useState(false);
 
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(SEED.accounts.map((a) => a.account)));
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(REMAPPED_ACCOUNTS.map((a) => a.account)));
   const [drillRow, setDrillRow] = useState<{ account: string; row: SeedRow } | null>(null);
 
   // -------------------- Preset → indices --------------------
