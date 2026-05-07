@@ -58,6 +58,46 @@ interface SeedShape {
 
 const SEED = seed as SeedShape;
 
+// ---------------- Rolling month window ----------------
+// Show the most recent 6 completed months, ending at last month.
+// Each month a new column appears and the oldest drops automatically.
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function buildRollingWindow(windowSize = 6) {
+  const now = new Date();
+  // End at last completed month
+  const end = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const labels: string[] = [];
+  const seedIdxForCol: (number | null)[] = [];
+  for (let i = windowSize - 1; i >= 0; i--) {
+    const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
+    const label = `${MONTH_ABBR[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`;
+    labels.push(label);
+    const idx = SEED.months.indexOf(label);
+    seedIdxForCol.push(idx >= 0 ? idx : null);
+  }
+  return { labels, seedIdxForCol };
+}
+
+const ROLLING = buildRollingWindow(6);
+
+// Remap seed account rows into the rolling window — values for months
+// outside the seed coverage default to 0 so the column appears empty
+// until live data arrives for that month.
+const REMAPPED_ACCOUNTS: SeedAccount[] = SEED.accounts.map((acc) => ({
+  ...acc,
+  rows: acc.rows.map((r) => ({
+    ...r,
+    vals: ROLLING.seedIdxForCol.map((idx) => (idx === null ? 0 : (r.vals[idx] ?? 0))),
+  })),
+  total: acc.total
+    ? {
+        ...acc.total,
+        vals: ROLLING.seedIdxForCol.map((idx) => (idx === null ? 0 : (acc.total!.vals[idx] ?? 0))),
+      }
+    : null,
+}));
+
 // Account → warehouse/source + brand mapping
 function classifyAccount(account: string): { source: string; brand: string; type: "sales" | "discount" | "qc" | "samples" | "other" } {
   const a = account.toLowerCase();
@@ -136,7 +176,7 @@ function EditableNote({ value, onSave }: { value: string; onSave: (v: string) =>
 export default function ComparePeriodsReport(_props: Props) {
   const { getNote, saveNote } = useComparePeriodsNotes();
   // -------------------- State --------------------
-  const months = SEED.months;
+  const months = ROLLING.labels;
   const monthCount = months.length;
 
   const [preset, setPreset] = useState<Preset>("L3M_VS_PRIOR");
@@ -153,7 +193,7 @@ export default function ComparePeriodsReport(_props: Props) {
   const [includeNonStock, setIncludeNonStock] = useState(true);
   const [showOnlyWithNotes, setShowOnlyWithNotes] = useState(false);
 
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(SEED.accounts.map((a) => a.account)));
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(REMAPPED_ACCOUNTS.map((a) => a.account)));
   const [drillRow, setDrillRow] = useState<{ account: string; row: SeedRow } | null>(null);
 
   // -------------------- Preset → indices --------------------
@@ -176,18 +216,18 @@ export default function ComparePeriodsReport(_props: Props) {
   // -------------------- Filter accounts --------------------
   const allSources = useMemo(() => {
     const set = new Set<string>();
-    for (const a of SEED.accounts) set.add(a.account);
+    for (const a of REMAPPED_ACCOUNTS) set.add(a.account);
     return Array.from(set);
   }, []);
   const allBrands = useMemo(() => {
     const set = new Set<string>();
-    for (const a of SEED.accounts) set.add(classifyAccount(a.account).brand);
+    for (const a of REMAPPED_ACCOUNTS) set.add(classifyAccount(a.account).brand);
     return Array.from(set).sort();
   }, []);
 
   const filteredAccounts = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return SEED.accounts.map((acc) => {
+    return REMAPPED_ACCOUNTS.map((acc) => {
       const meta = classifyAccount(acc.account);
       if (!includeDiscounts && meta.type === "discount") return null;
       if (!includeQc && meta.type === "qc") return null;
