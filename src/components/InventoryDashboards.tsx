@@ -984,26 +984,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
         </div>
 
 
-        {/* Health snapshot strip */}
-        <Card className="p-5">
-          <h3 className="text-base font-semibold mb-3">Snapshot</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
-            {[
-              { label: "Healthy", val: healthSnapshot.healthy, tone: "text-success" },
-              { label: "Low Stock", val: healthSnapshot.low, tone: "text-warning-foreground" },
-              { label: "Risk", val: healthSnapshot.risk, tone: "text-destructive" },
-              { label: "Out of Stock", val: healthSnapshot.outOfStock, tone: "text-destructive" },
-              { label: "Overstock", val: healthSnapshot.overstock, tone: "text-slate-500" },
-              { label: "Slow Movers", val: healthSnapshot.slow, tone: "text-warning-foreground" },
-              { label: "Discontinued", val: healthSnapshot.discontinued, tone: "text-muted-foreground" },
-            ].map((b) => (
-              <div key={b.label} className="rounded-lg border border-border p-3">
-                <div className="text-xs text-muted-foreground">{b.label}</div>
-                <div className={cn("text-2xl font-semibold mt-1 tabular-nums", b.tone === "text-slate-500" ? "text-accent-foreground text-slate-500" : b.tone)}>{b.val}</div>
-              </div>
-            ))}
-          </div>
-        </Card>
 
         {/* Inventory value drilldown by collection / brand */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
