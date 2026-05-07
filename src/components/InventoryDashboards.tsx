@@ -1368,23 +1368,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             </Card>
           </TabsContent>
 
-          <TabsContent value="aging" className="mt-4">
-            <Card className="p-5">
-              <h3 className="text-base font-semibold mb-3">Inventory Aging</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={aging}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Bar dataKey="value" fill="hsl(var(--accent))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="ranking" className="mt-4">
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-3">
