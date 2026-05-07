@@ -84,6 +84,55 @@ interface Props {
 
 type Preset = "L3M_VS_PRIOR" | "LM_VS_PRIOR" | "FIRST3_VS_LAST3" | "CUSTOM";
 
+function EditableNote({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
+
+  if (!editing) {
+    return (
+      <div className="group flex items-start gap-1.5 mb-1 min-h-[20px]">
+        <div className={cn("flex-1 whitespace-pre-wrap", value ? "text-foreground/80" : "text-muted-foreground/60 italic")}>
+          {value || "Add note…"}
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+          aria-label="Edit note"
+        >
+          <Pencil className="h-3 w-3 text-muted-foreground" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 mb-1">
+      <Textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        autoFocus
+        rows={2}
+        className="text-xs min-h-[48px]"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { onSave(draft); setEditing(false); }
+          if (e.key === "Escape") { setDraft(value); setEditing(false); }
+        }}
+      />
+      <div className="flex items-center gap-1">
+        <Button size="sm" className="h-6 px-2 text-[11px]" onClick={() => { onSave(draft); setEditing(false); }}>
+          <Check className="h-3 w-3 mr-1" />Save
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => { setDraft(value); setEditing(false); }}>
+          <X className="h-3 w-3 mr-1" />Cancel
+        </Button>
+        <span className="text-[10px] text-muted-foreground ml-1">⌘↵ to save</span>
+      </div>
+    </div>
+  );
+}
+
 export default function ComparePeriodsReport(_props: Props) {
   const { getNote, saveNote } = useComparePeriodsNotes();
   // -------------------- State --------------------
