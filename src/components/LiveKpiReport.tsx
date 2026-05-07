@@ -251,17 +251,18 @@ export function LiveKpiReport({ managerName, lockedRepName }: { managerName?: st
     return reps;
   }, [allReps, allowedRepNames, territoryFilter]);
 
-  const [repFilter, setRepFilter] = useState<string>(lockedRepName ?? "all");
+  const [repFilter, setRepFilter] = useState<string[]>(lockedRepName ? [lockedRepName] : []);
+  const [repPickerOpen, setRepPickerOpen] = useState(false);
 
-  // Reset rep filter when manager scope changes and current rep isn't in scope.
+  // Reset rep filter when manager scope changes and current selections aren't in scope.
   useEffect(() => {
     if (lockedRepName) {
-      if (repFilter !== lockedRepName) setRepFilter(lockedRepName);
+      if (repFilter.length !== 1 || repFilter[0] !== lockedRepName) setRepFilter([lockedRepName]);
       return;
     }
-    if (repFilter !== "all" && !visibleReps.some((r) => r.name === repFilter)) {
-      setRepFilter("all");
-    }
+    const allowed = new Set(visibleReps.map((r) => r.name));
+    const next = repFilter.filter((n) => allowed.has(n));
+    if (next.length !== repFilter.length) setRepFilter(next);
   }, [visibleReps, repFilter, lockedRepName]);
 
   const [monthFilter, setMonthFilter] = useState<MonthFilter>("All");
