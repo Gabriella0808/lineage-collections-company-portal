@@ -37,6 +37,31 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
+
+// Today's date as YYYY-MM-DD in America/New_York (EST/EDT) so logging a
+// visit always resolves to the user's "today" on the East Coast.
+const todayEST = (): string => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === "year")?.value ?? "1970";
+  const m = parts.find((p) => p.type === "month")?.value ?? "01";
+  const d = parts.find((p) => p.type === "day")?.value ?? "01";
+  return `${y}-${m}-${d}`;
+};
+
+// Safely parse a YYYY-MM-DD (or ISO) value as a calendar date without
+// timezone drift (avoids `new Date("2025-05-08")` becoming the previous
+// day in negative-UTC timezones like EST).
+const parseDateOnly = (s: string | null | undefined): Date => {
+  if (!s) return new Date();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+  return new Date(s);
+};
 import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus, Users, Navigation } from "lucide-react";
 import { STATE_TO_TERRITORY, STATE_NAME_TO_CODE, colorForTerritory } from "@/lib/territoryMap";
 
@@ -180,7 +205,7 @@ export default function CheckInsPage() {
   const [selected, setSelected] = useState<Dealer | null>(null);
   const [detailCheckIn, setDetailCheckIn] = useState<CheckIn | null>(null);
   const [form, setForm] = useState({
-    visit_date: format(new Date(), "yyyy-MM-dd"),
+    visit_date: todayEST(),
     log_type: "",
     new_placement: "",
     brands: [] as string[],
@@ -766,11 +791,11 @@ export default function CheckInsPage() {
           user_id: user.id,
           type: "follow_up_scheduled",
           title: "Follow-up scheduled",
-          body: `${taskTitle} — due ${format(new Date(form.follow_up_date), "MMM d, yyyy")}`,
+          body: `${taskTitle} — due ${format(parseDateOnly(form.follow_up_date), "MMM d, yyyy")}`,
           link: "/tasks",
           related_id: taskRow?.id ?? null,
         });
-        toast({ title: "Follow-up task created", description: `Due ${format(new Date(form.follow_up_date), "MMM d, yyyy")}` });
+        toast({ title: "Follow-up task created", description: `Due ${format(parseDateOnly(form.follow_up_date), "MMM d, yyyy")}` });
       }
     } else {
       toast({ title: "Check-in logged" });
@@ -778,7 +803,7 @@ export default function CheckInsPage() {
 
     setSaving(false);
     setForm({
-      visit_date: format(new Date(), "yyyy-MM-dd"),
+      visit_date: todayEST(),
       log_type: "",
       new_placement: "",
       brands: [],
@@ -1281,7 +1306,7 @@ export default function CheckInsPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(c.visit_date), "MMM d, yyyy")}
+                              {format(parseDateOnly(c.visit_date), "MMM d, yyyy")}
                             </p>
                             {c.outcome && (
                               <Badge variant="secondary" className="text-[10px] mt-0.5">
@@ -1606,7 +1631,7 @@ export default function CheckInsPage() {
                         <Input
                           id="follow-up-date"
                           type="date"
-                          min={format(new Date(), "yyyy-MM-dd")}
+                          min={todayEST()}
                           value={form.follow_up_date}
                           onChange={(e) => setForm({ ...form, follow_up_date: e.target.value })}
                         />
@@ -1649,7 +1674,7 @@ export default function CheckInsPage() {
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-medium">
-                                {format(new Date(c.visit_date), "MMM d, yyyy")}
+                                {format(parseDateOnly(c.visit_date), "MMM d, yyyy")}
                               </span>
                               {c.outcome && (
                                 <Badge variant="secondary" className="text-[10px]">
@@ -1688,7 +1713,7 @@ export default function CheckInsPage() {
                   {(selected?.id === detailCheckIn.dealer_id
                     ? selected?.name
                     : dealers.find((d) => d.id === detailCheckIn.dealer_id)?.name) ?? "Dealer"}{" "}
-                  • {format(new Date(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
+                  • {format(parseDateOnly(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
                 </DialogDescription>
               </DialogHeader>
 
@@ -1699,7 +1724,7 @@ export default function CheckInsPage() {
                       Visit date
                     </Label>
                     <p className="mt-1 font-medium">
-                      {format(new Date(detailCheckIn.visit_date), "MMM d, yyyy")}
+                      {format(parseDateOnly(detailCheckIn.visit_date), "MMM d, yyyy")}
                     </p>
                   </div>
                   <div>
