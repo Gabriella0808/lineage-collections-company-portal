@@ -247,9 +247,15 @@ export default function TasksPage() {
     return /lead from/i.test(desc) || /\bTrade Show\b/i.test(desc) || /\bTrade Show\b/i.test(t.title);
   };
 
+  const isKpiReviewTask = (t: Task): boolean => {
+    const desc = t.description ?? "";
+    return /\bKPI Review\b/i.test(t.title) || /\bKPI Review\b/i.test(desc);
+  };
+
   const matchesAssigneeUser = (t: Task): boolean => {
     if (assigneeUserId === "any") return true;
     if (assigneeUserId === "__trade_show__") return isTradeShowTask(t);
+    if (assigneeUserId === "__kpi_review__") return isKpiReviewTask(t);
     return getAssigneeIds(t).includes(assigneeUserId);
   };
 
