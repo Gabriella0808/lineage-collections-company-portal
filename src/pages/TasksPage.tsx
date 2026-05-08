@@ -336,6 +336,7 @@ export default function TasksPage() {
       due_date: t.due_date ?? "",
       assigned_user_ids: getAssigneeIds(t),
       trade_show: isTradeShowTask(t),
+      kpi_review: isKpiReviewTask(t),
     });
     setOpen(true);
   };
