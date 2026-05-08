@@ -1203,6 +1203,7 @@ function AssigneeMultiPicker({ assignees, selectedIds, onChange, tradeShow, onTr
   const triggerLabel = (() => {
     const parts: string[] = [];
     if (tradeShow) parts.push("Trade Show Leads");
+    if (kpiReview) parts.push("KPI Review");
     if (selectedUsers.length === 1) parts.push(selectedUsers[0].full_name?.trim() || selectedUsers[0].email || "Unknown");
     else if (selectedUsers.length > 1) parts.push(`${selectedUsers.length} people`);
     if (parts.length === 0) return "Assign to...";
