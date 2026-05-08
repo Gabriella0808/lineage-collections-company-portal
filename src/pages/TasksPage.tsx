@@ -537,15 +537,9 @@ export default function TasksPage() {
                   assignees={visibleAssignees}
                   selectedIds={form.assigned_user_ids}
                   onChange={(ids) => setForm({ ...form, assigned_user_ids: ids })}
+                  tradeShow={form.trade_show}
+                  onTradeShowChange={(v) => setForm({ ...form, trade_show: v })}
                 />
-                <label className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm cursor-pointer hover:bg-muted/50">
-                  <Checkbox
-                    checked={form.trade_show}
-                    onCheckedChange={(v) => setForm({ ...form, trade_show: v === true })}
-                  />
-                  <span className="font-medium">Assign to Trade Show Leads</span>
-                  <span className="text-xs text-muted-foreground ml-auto">Tag this task as a trade show lead follow-up</span>
-                </label>
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
