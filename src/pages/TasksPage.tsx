@@ -327,6 +327,7 @@ export default function TasksPage() {
       status: t.status,
       due_date: t.due_date ?? "",
       assigned_user_ids: getAssigneeIds(t),
+      trade_show: isTradeShowTask(t),
     });
     setOpen(true);
   };
