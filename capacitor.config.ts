@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.70f79ed3f0874215913ad377e2fdf8a7',
+  appId: 'com.lineagecollections.portal',
   appName: 'Lineage Collections Portal',
   webDir: 'dist',
   server: {
