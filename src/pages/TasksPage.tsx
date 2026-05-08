@@ -368,6 +368,12 @@ export default function TasksPage() {
     } else if (!form.trade_show && hasTag) {
       finalTitle = finalTitle.replace(/\[Trade Show Leads\]\s*/i, "").replace(/\bTrade Show Leads?\b\s*/i, "").trim() || finalTitle;
     }
+    const hasKpiTag = /\bKPI Review\b/i.test(finalTitle);
+    if (form.kpi_review && !hasKpiTag) {
+      finalTitle = `${KPI_REVIEW_TAG} ${finalTitle}`;
+    } else if (!form.kpi_review && hasKpiTag) {
+      finalTitle = finalTitle.replace(/\[KPI Review\]\s*/i, "").replace(/\bKPI Review\b\s*/i, "").trim() || finalTitle;
+    }
     const payload = {
       title: finalTitle,
       description: form.description.trim() || null,
