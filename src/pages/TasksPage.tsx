@@ -1187,10 +1187,12 @@ function AssigneeMultiPicker({ assignees, selectedIds, onChange, tradeShow, onTr
     .filter(Boolean) as AssignableUser[];
 
   const triggerLabel = (() => {
-    if (selectedUsers.length === 0) return "Assign to...";
-    if (selectedUsers.length === 1)
-      return selectedUsers[0].full_name?.trim() || selectedUsers[0].email || "Unknown";
-    return `${selectedUsers.length} people assigned`;
+    const parts: string[] = [];
+    if (tradeShow) parts.push("Trade Show Leads");
+    if (selectedUsers.length === 1) parts.push(selectedUsers[0].full_name?.trim() || selectedUsers[0].email || "Unknown");
+    else if (selectedUsers.length > 1) parts.push(`${selectedUsers.length} people`);
+    if (parts.length === 0) return "Assign to...";
+    return parts.join(" + ");
   })();
 
   return (
