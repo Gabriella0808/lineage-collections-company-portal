@@ -1227,6 +1227,20 @@ function AssigneeMultiPicker({ assignees, selectedIds, onChange, tradeShow, onTr
           </div>
           <div className="h-64 overflow-y-scroll overscroll-contain touch-pan-y">
             <div className="p-1">
+              {onTradeShowChange && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onTradeShowChange(!tradeShow)}
+                    className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                  >
+                    <Checkbox checked={!!tradeShow} className="pointer-events-none" />
+                    <span className="truncate font-medium">Trade Show Leads</span>
+                    <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">Group</span>
+                  </button>
+                  <div className="my-1 h-px bg-border" />
+                </>
+              )}
               {filtered.map((a) => {
                 const checked = selectedIds.includes(a.user_id);
                 const name = a.full_name?.trim() || a.email || "Unknown";
