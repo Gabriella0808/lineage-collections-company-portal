@@ -174,7 +174,10 @@ export default function TasksPage() {
     status: Status;
     due_date: string;
     assigned_user_ids: string[];
-  }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [] });
+    trade_show: boolean;
+  }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [], trade_show: false });
+
+  const TRADE_SHOW_TAG = "[Trade Show Leads]";
 
   // ---- Filters ----
   type AssigneeFilter = "all" | "mine" | "created";
