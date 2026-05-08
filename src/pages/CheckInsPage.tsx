@@ -205,7 +205,7 @@ export default function CheckInsPage() {
   const [selected, setSelected] = useState<Dealer | null>(null);
   const [detailCheckIn, setDetailCheckIn] = useState<CheckIn | null>(null);
   const [form, setForm] = useState({
-    visit_date: format(new Date(), "yyyy-MM-dd"),
+    visit_date: todayEST(),
     log_type: "",
     new_placement: "",
     brands: [] as string[],
@@ -791,11 +791,11 @@ export default function CheckInsPage() {
           user_id: user.id,
           type: "follow_up_scheduled",
           title: "Follow-up scheduled",
-          body: `${taskTitle} — due ${format(new Date(form.follow_up_date), "MMM d, yyyy")}`,
+          body: `${taskTitle} — due ${format(parseDateOnly(form.follow_up_date), "MMM d, yyyy")}`,
           link: "/tasks",
           related_id: taskRow?.id ?? null,
         });
-        toast({ title: "Follow-up task created", description: `Due ${format(new Date(form.follow_up_date), "MMM d, yyyy")}` });
+        toast({ title: "Follow-up task created", description: `Due ${format(parseDateOnly(form.follow_up_date), "MMM d, yyyy")}` });
       }
     } else {
       toast({ title: "Check-in logged" });
@@ -803,7 +803,7 @@ export default function CheckInsPage() {
 
     setSaving(false);
     setForm({
-      visit_date: format(new Date(), "yyyy-MM-dd"),
+      visit_date: todayEST(),
       log_type: "",
       new_placement: "",
       brands: [],
@@ -1306,7 +1306,7 @@ export default function CheckInsPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(c.visit_date), "MMM d, yyyy")}
+                              {format(parseDateOnly(c.visit_date), "MMM d, yyyy")}
                             </p>
                             {c.outcome && (
                               <Badge variant="secondary" className="text-[10px] mt-0.5">
@@ -1631,7 +1631,7 @@ export default function CheckInsPage() {
                         <Input
                           id="follow-up-date"
                           type="date"
-                          min={format(new Date(), "yyyy-MM-dd")}
+                          min={todayEST()}
                           value={form.follow_up_date}
                           onChange={(e) => setForm({ ...form, follow_up_date: e.target.value })}
                         />
@@ -1674,7 +1674,7 @@ export default function CheckInsPage() {
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-medium">
-                                {format(new Date(c.visit_date), "MMM d, yyyy")}
+                                {format(parseDateOnly(c.visit_date), "MMM d, yyyy")}
                               </span>
                               {c.outcome && (
                                 <Badge variant="secondary" className="text-[10px]">
@@ -1713,7 +1713,7 @@ export default function CheckInsPage() {
                   {(selected?.id === detailCheckIn.dealer_id
                     ? selected?.name
                     : dealers.find((d) => d.id === detailCheckIn.dealer_id)?.name) ?? "Dealer"}{" "}
-                  • {format(new Date(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
+                  • {format(parseDateOnly(detailCheckIn.visit_date), "EEEE, MMM d, yyyy")}
                 </DialogDescription>
               </DialogHeader>
 
@@ -1724,7 +1724,7 @@ export default function CheckInsPage() {
                       Visit date
                     </Label>
                     <p className="mt-1 font-medium">
-                      {format(new Date(detailCheckIn.visit_date), "MMM d, yyyy")}
+                      {format(parseDateOnly(detailCheckIn.visit_date), "MMM d, yyyy")}
                     </p>
                   </div>
                   <div>
