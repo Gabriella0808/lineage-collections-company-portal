@@ -352,8 +352,15 @@ export default function TasksPage() {
     }
     const ids = form.assigned_user_ids;
     const primary = ids[0] ?? null; // keep legacy field in sync with first assignee
+    let finalTitle = form.title.trim();
+    const hasTag = /\bTrade Show\b/i.test(finalTitle);
+    if (form.trade_show && !hasTag) {
+      finalTitle = `${TRADE_SHOW_TAG} ${finalTitle}`;
+    } else if (!form.trade_show && hasTag) {
+      finalTitle = finalTitle.replace(/\[Trade Show Leads\]\s*/i, "").replace(/\bTrade Show Leads?\b\s*/i, "").trim() || finalTitle;
+    }
     const payload = {
-      title: form.title.trim(),
+      title: finalTitle,
       description: form.description.trim() || null,
       status: form.status,
       due_date: form.due_date || null,
