@@ -319,7 +319,7 @@ export default function TasksPage() {
 
   const resetForm = () => {
     setEditing(null);
-    setForm({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [], trade_show: false });
+    setForm({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [], trade_show: false, kpi_review: false });
   };
 
   const openNew = () => {
