@@ -1162,9 +1162,11 @@ interface AssigneeMultiPickerProps {
   onChange: (ids: string[]) => void;
   tradeShow?: boolean;
   onTradeShowChange?: (v: boolean) => void;
+  kpiReview?: boolean;
+  onKpiReviewChange?: (v: boolean) => void;
 }
 
-function AssigneeMultiPicker({ assignees, selectedIds, onChange, tradeShow, onTradeShowChange }: AssigneeMultiPickerProps) {
+function AssigneeMultiPicker({ assignees, selectedIds, onChange, tradeShow, onTradeShowChange, kpiReview, onKpiReviewChange }: AssigneeMultiPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
