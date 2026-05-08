@@ -1148,9 +1148,11 @@ interface AssigneeMultiPickerProps {
   assignees: AssignableUser[];
   selectedIds: string[];
   onChange: (ids: string[]) => void;
+  tradeShow?: boolean;
+  onTradeShowChange?: (v: boolean) => void;
 }
 
-function AssigneeMultiPicker({ assignees, selectedIds, onChange }: AssigneeMultiPickerProps) {
+function AssigneeMultiPicker({ assignees, selectedIds, onChange, tradeShow, onTradeShowChange }: AssigneeMultiPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
