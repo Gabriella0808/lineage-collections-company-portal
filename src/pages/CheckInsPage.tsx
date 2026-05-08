@@ -37,6 +37,31 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
+
+// Today's date as YYYY-MM-DD in America/New_York (EST/EDT) so logging a
+// visit always resolves to the user's "today" on the East Coast.
+const todayEST = (): string => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === "year")?.value ?? "1970";
+  const m = parts.find((p) => p.type === "month")?.value ?? "01";
+  const d = parts.find((p) => p.type === "day")?.value ?? "01";
+  return `${y}-${m}-${d}`;
+};
+
+// Safely parse a YYYY-MM-DD (or ISO) value as a calendar date without
+// timezone drift (avoids `new Date("2025-05-08")` becoming the previous
+// day in negative-UTC timezones like EST).
+const parseDateOnly = (s: string | null | undefined): Date => {
+  if (!s) return new Date();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+  return new Date(s);
+};
 import { MapPin, Calendar, NotebookPen, Search, Loader2, Trash2, Plus, Users, Navigation } from "lucide-react";
 import { STATE_TO_TERRITORY, STATE_NAME_TO_CODE, colorForTerritory } from "@/lib/territoryMap";
 
