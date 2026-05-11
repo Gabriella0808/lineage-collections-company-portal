@@ -513,6 +513,27 @@ export default function TasksPage() {
     exitSelectMode();
   };
 
+  const bulkUpdateVisibility = async (visibility: "public" | "private") => {
+    if (!user || selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    const editable = tasks.filter((t) => ids.includes(t.id) && t.user_id === user.id);
+    if (editable.length === 0) {
+      toast({ title: "Nothing to update", description: "You can only change visibility on tasks you created.", variant: "destructive" });
+      return;
+    }
+    const editableIds = editable.map((t) => t.id);
+    const prev = tasks;
+    setTasks((ts) => ts.map((t) => (editableIds.includes(t.id) ? { ...t, visibility } : t)));
+    const { error } = await supabase.from("manager_tasks").update({ visibility }).in("id", editableIds);
+    if (error) {
+      setTasks(prev);
+      toast({ title: "Bulk update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: `Set ${editableIds.length} task${editableIds.length === 1 ? "" : "s"} to ${visibility}` });
+    exitSelectMode();
+  };
+
   const bulkDelete = async () => {
     if (!user || selectedIds.size === 0) return;
     const ids = [...selectedIds];
