@@ -209,7 +209,6 @@ export default function TasksPage() {
   };
 
   const filtersActive =
-    assigneeFilter !== "all" ||
     assigneeUserId !== "any" ||
     dueFilter !== "any" ||
     contextQuery.trim() !== "";
