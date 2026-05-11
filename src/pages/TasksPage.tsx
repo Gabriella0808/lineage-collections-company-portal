@@ -258,7 +258,7 @@ export default function TasksPage() {
     if (assigneeUserId === "any") return true;
     if (assigneeUserId === "__trade_show__") return isTradeShowTask(t);
     if (assigneeUserId === "__kpi_review__") return isKpiReviewTask(t);
-    return getAssigneeIds(t).includes(assigneeUserId);
+    return getAssigneeIds(t).includes(assigneeUserId) || t.user_id === assigneeUserId;
   };
 
   const filteredTasks = tasks.filter(
