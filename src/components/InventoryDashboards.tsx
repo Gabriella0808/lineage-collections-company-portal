@@ -290,14 +290,15 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
                 fill="hsl(var(--primary))"
                 radius={[4, 4, 0, 0]}
                 cursor="pointer"
-                onClick={(d: { month?: string }) => {
+                onClick={((d: { month?: string }) => {
                   if (!d?.month) return;
                   const subset = rows.filter((r) => {
                     const label = new Date(r.eta.getFullYear(), r.eta.getMonth(), 1).toLocaleDateString(undefined, { month: "short", year: "2-digit" });
                     return label === d.month;
                   });
                   setDetail({ title: `Arrivals: ${d.month}`, subset });
-                }}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                }) as any}
               />
             </BarChart>
           </ResponsiveContainer>
