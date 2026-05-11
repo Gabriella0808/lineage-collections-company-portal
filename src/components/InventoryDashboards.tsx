@@ -1545,24 +1545,36 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                       </div>
                     </div>
 
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} layout="vertical" margin={{ left: 4, right: 12 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                          <YAxis type="category" dataKey="label" width={perfMode === "vendor" ? 140 : 180} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                          <RTooltip
-                            formatter={(v: number) => fmtMoney(v)}
-                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                          />
-                          <Bar dataKey="sales" name="Monthly Sales">
-                            {chartData.map((r, idx) => (
-                              <Cell key={idx} fill={r.fill} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    {(() => {
+                      const rowH = 32;
+                      const fitRows = perfMode === "vendor" ? 12 : 10;
+                      const innerH = Math.max(fitRows, chartData.length) * rowH + 40;
+                      const needsScroll = chartData.length > fitRows;
+                      return (
+                        <div
+                          className={cn("rounded-md", needsScroll && "max-h-80 overflow-y-auto border border-border bg-background/40")}
+                        >
+                          <div style={{ height: innerH }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={chartData} layout="vertical" margin={{ left: 4, right: 12, top: 8, bottom: 8 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                                <YAxis type="category" dataKey="label" width={perfMode === "vendor" ? 140 : 180} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} interval={0} />
+                                <RTooltip
+                                  formatter={(v: number) => fmtMoney(v)}
+                                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                                />
+                                <Bar dataKey="sales" name="Monthly Sales">
+                                  {chartData.map((r, idx) => (
+                                    <Cell key={idx} fill={r.fill} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                       <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-success" /> Growing ≥ +10%</span>
                       <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-primary" /> Stable</span>
