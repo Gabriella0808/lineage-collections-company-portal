@@ -769,27 +769,6 @@ export default function TasksPage() {
       {!loading && (
         <Card className="p-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-3">
-            {/* Quick assignee chips */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              {([
-                { key: "all", label: "All tasks" },
-                { key: "mine", label: "Assigned to me" },
-                { key: "created", label: "Created by me" },
-              ] as { key: AssigneeFilter; label: string }[]).map((opt) => (
-                <Button
-                  key={opt.key}
-                  size="sm"
-                  variant={assigneeFilter === opt.key ? "default" : "outline"}
-                  className="h-8 text-xs"
-                  onClick={() => setAssigneeFilter(opt.key)}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
-
-            <div className="hidden lg:block h-6 w-px bg-border" />
-
             {/* Due date select */}
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
