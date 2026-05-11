@@ -644,6 +644,19 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       }
     }
 
+    // Mock fallback when no real PO line data: seed YTD per SKU from items
+    if (m.size === 0) {
+      const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
+      for (const it of items) {
+        const seed = hash(it.sku);
+        const ty = 4000 + (seed % 38000);
+        const ly = Math.round(ty * (0.7 + ((seed >> 3) % 60) / 100));
+        const tyCount = 1 + (seed % 6);
+        const lyCount = 1 + ((seed >> 5) % 6);
+        m.set(it.sku, { ty, ly, tyCount, lyCount });
+      }
+    }
+
     const totalTy = Array.from(m.values()).reduce((s, e) => s + e.ty, 0) || 1;
     const totalLy = Array.from(m.values()).reduce((s, e) => s + e.ly, 0) || 1;
     return {
@@ -659,7 +672,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
         pctOfTotalLY: (e.ly / totalLy) * 100,
       })).sort((a, b) => b.ytdValue - a.ytdValue),
     };
-  }, [hub.purchaseOrders, hub.poLines]);
+  }, [items, hub.purchaseOrders, hub.poLines]);
   const slowMovers = useMemo(() =>
     [...items]
       .filter((it) => (it.monthsSupply ?? 0) >= 6 && it.onHand > 0)
