@@ -191,6 +191,8 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
       });
   }, [pos]);
 
+  const [detail, setDetail] = useState<{ title: string; subset: typeof rows } | null>(null);
+
   if (rows.length === 0) return <EmptyState message="No POs to show." />;
   const fd = (d: Date) => d.toLocaleDateString();
 
@@ -247,14 +249,24 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Card className="p-3">
           <div className="text-xs font-semibold mb-1">Avg Days Late by Vendor</div>
-          <div className="text-[10px] text-muted-foreground mb-2">Actual ship vs Pro Forma · {totalLate} late POs</div>
+          <div className="text-[10px] text-muted-foreground mb-2">Click a bar to view POs · {totalLate} late POs</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={vendorLateness} layout="vertical" margin={{ left: 10, right: 10, top: 4, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis type="number" tick={{ fontSize: 10 }} />
               <YAxis type="category" dataKey="vendor" tick={{ fontSize: 10 }} width={110} />
               <RTooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
-              <Bar dataKey="avgDaysLate" name="Avg days late" radius={[0, 4, 4, 0]}>
+              <Bar
+                dataKey="avgDaysLate"
+                name="Avg days late"
+                radius={[0, 4, 4, 0]}
+                cursor="pointer"
+                onClick={((d: { vendor?: string }) => {
+                  if (!d?.vendor) return;
+                  setDetail({ title: `Vendor: ${d.vendor}`, subset: rows.filter((r) => r.vendor === d.vendor) });
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                }) as any}
+              >
                 {vendorLateness.map((v, i) => (
                   <Cell key={i} fill={v.avgDaysLate > 7 ? "hsl(var(--destructive))" : v.avgDaysLate > 0 ? "hsl(var(--warning))" : "hsl(var(--success))"} />
                 ))}
@@ -265,24 +277,58 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
 
         <Card className="p-3">
           <div className="text-xs font-semibold mb-1">Estimated Arrivals by Month</div>
-          <div className="text-[10px] text-muted-foreground mb-2">PO count by ETA month</div>
+          <div className="text-[10px] text-muted-foreground mb-2">Click a bar to view POs arriving</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={etaByMonth} margin={{ left: 0, right: 10, top: 4, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
               <RTooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
-              <Bar dataKey="count" name="POs arriving" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="count"
+                name="POs arriving"
+                fill="hsl(var(--primary))"
+                radius={[4, 4, 0, 0]}
+                cursor="pointer"
+                onClick={((d: { month?: string }) => {
+                  if (!d?.month) return;
+                  const subset = rows.filter((r) => {
+                    const label = new Date(r.eta.getFullYear(), r.eta.getMonth(), 1).toLocaleDateString(undefined, { month: "short", year: "2-digit" });
+                    return label === d.month;
+                  });
+                  setDetail({ title: `Arrivals: ${d.month}`, subset });
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                }) as any}
+              />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
         <Card className="p-3">
           <div className="text-xs font-semibold mb-1">Shipment Status</div>
-          <div className="text-[10px] text-muted-foreground mb-2">On time vs delayed vs arrived</div>
+          <div className="text-[10px] text-muted-foreground mb-2">Click a segment to view POs</div>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={statusSplit} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={40} label={{ fontSize: 10 }}>
+              <Pie
+                data={statusSplit}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={70}
+                innerRadius={40}
+                label={{ fontSize: 10 }}
+                cursor="pointer"
+                onClick={(d: { name?: string }) => {
+                  if (!d?.name) return;
+                  const subset = rows.filter((r) => {
+                    if (r.eta.getTime() < now) return d.name === "Arrived";
+                    if (r.actualShip.getTime() > r.proForma.getTime()) return d.name === "Delayed";
+                    return d.name === "On Time";
+                  });
+                  setDetail({ title: `Status: ${d.name}`, subset });
+                }}
+              >
                 {statusSplit.map((d, i) => <Cell key={i} fill={d.fill} />)}
               </Pie>
               <RTooltip contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
@@ -291,6 +337,49 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
           </ResponsiveContainer>
         </Card>
       </div>
+
+      <Dialog open={!!detail} onOpenChange={(o) => { if (!o) setDetail(null); }}>
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{detail?.title}</DialogTitle>
+            <DialogDescription>
+              {detail?.subset.length ?? 0} PO{(detail?.subset.length ?? 0) === 1 ? "" : "s"} · total {fmtMoney((detail?.subset ?? []).reduce((s, r) => s + r.invoiceValue, 0))}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/50 text-[10px] uppercase tracking-wide text-muted-foreground sticky top-0">
+                <tr>
+                  {["PO #","Vendor","Brand","Description","Pro Forma","Actual Ship","ETA","Port","Vessel","Container","Invoice $","Days Late"].map((h) => (
+                    <th key={h} className="text-left px-2 py-2 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(detail?.subset ?? []).map((r) => {
+                  const daysLate = Math.round((r.actualShip.getTime() - r.proForma.getTime()) / 86400000);
+                  return (
+                    <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-2 py-1.5 font-mono whitespace-nowrap">{r.poNumber}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">{r.vendor}</td>
+                      <td className="px-2 py-1.5">{r.brand}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">{r.description}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">{fd(r.proForma)}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">{fd(r.actualShip)}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">{fd(r.eta)}</td>
+                      <td className="px-2 py-1.5">{r.port}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">{r.vessel}</td>
+                      <td className="px-2 py-1.5 font-mono">{r.container}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtMoney(r.invoiceValue)}</td>
+                      <td className={cn("px-2 py-1.5 text-right tabular-nums font-semibold", daysLate > 7 ? "text-destructive" : daysLate > 0 ? "text-warning" : "text-success")}>{daysLate > 0 ? `+${daysLate}` : daysLate}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="overflow-auto">
       <table className="w-full text-xs">
