@@ -1167,7 +1167,7 @@ export default function TasksPage() {
                     )}
                   </div>
 
-                  {isMine && (
+                  {(isMine || (user && getAssigneeIds(t).includes(user.id))) && (
                     <div className="flex items-center gap-2 pt-4 border-t">
                       <Button
                         size="sm"
@@ -1176,17 +1176,19 @@ export default function TasksPage() {
                       >
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => {
-                          remove(t.id);
-                          setDetailTask(null);
-                        }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Delete
-                      </Button>
+                      {isMine && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => {
+                            remove(t.id);
+                            setDetailTask(null);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
