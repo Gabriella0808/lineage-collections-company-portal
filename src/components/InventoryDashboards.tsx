@@ -1654,6 +1654,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                       // Item mode — YTD POs by SKU, joined with item metadata
                       const itemMeta = new Map(items.map((it) => [it.sku, it]));
                       const itemRows = itemPoYtd.rows
+                        .filter((r) => itemPassesFilter(r.sku))
                         .slice(0, 30)
                         .map((r) => {
                           const meta = itemMeta.get(r.sku);
