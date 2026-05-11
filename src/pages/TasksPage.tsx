@@ -191,6 +191,23 @@ export default function TasksPage() {
   const [dueFilter, setDueFilter] = useState<DueFilter>("any");
   const [contextQuery, setContextQuery] = useState("");
 
+  // ---- Bulk select ----
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    clearSelection();
+  };
+
   const filtersActive =
     assigneeFilter !== "all" ||
     assigneeUserId !== "any" ||
@@ -471,6 +488,48 @@ export default function TasksPage() {
     } else {
       setTasks((ts) => ts.filter((t) => t.id !== id));
     }
+  };
+
+  const bulkUpdateStatus = async (status: Status) => {
+    if (!user || selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    const editable = tasks.filter(
+      (t) => ids.includes(t.id) && (t.user_id === user.id || getAssigneeIds(t).includes(user.id)),
+    );
+    if (editable.length === 0) {
+      toast({ title: "Nothing to update", description: "You can only edit tasks you created or are assigned to.", variant: "destructive" });
+      return;
+    }
+    const editableIds = editable.map((t) => t.id);
+    const prev = tasks;
+    setTasks((ts) => ts.map((t) => (editableIds.includes(t.id) ? { ...t, status } : t)));
+    const { error } = await supabase.from("manager_tasks").update({ status }).in("id", editableIds);
+    if (error) {
+      setTasks(prev);
+      toast({ title: "Bulk update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: `Updated ${editableIds.length} task${editableIds.length === 1 ? "" : "s"}` });
+    exitSelectMode();
+  };
+
+  const bulkDelete = async () => {
+    if (!user || selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    const deletable = tasks.filter((t) => ids.includes(t.id) && t.user_id === user.id).map((t) => t.id);
+    if (deletable.length === 0) {
+      toast({ title: "Nothing to delete", description: "You can only delete tasks you created.", variant: "destructive" });
+      return;
+    }
+    if (!confirm(`Delete ${deletable.length} task${deletable.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    const { error } = await supabase.from("manager_tasks").delete().in("id", deletable);
+    if (error) {
+      toast({ title: "Bulk delete failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    setTasks((ts) => ts.filter((t) => !deletable.includes(t.id)));
+    toast({ title: `Deleted ${deletable.length} task${deletable.length === 1 ? "" : "s"}` });
+    exitSelectMode();
   };
 
   const assigneeName = (userId: string | null) => {
@@ -778,6 +837,14 @@ export default function TasksPage() {
               <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {filteredTasks.length} of {tasks.length}
               </span>
+              <Button
+                size="sm"
+                variant={selectMode ? "default" : "outline"}
+                className="h-8 text-xs"
+                onClick={() => { if (selectMode) exitSelectMode(); else setSelectMode(true); }}
+              >
+                {selectMode ? "Done" : "Select"}
+              </Button>
               {filtersActive && (
                 <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={clearFilters}>
                   Clear
@@ -810,6 +877,20 @@ export default function TasksPage() {
                 <div key={col.key} className="">
                   {/* Group header — editorial style */}
                   <div className={`flex items-center gap-3 px-4 py-2.5 ${col.headerBg} border-b border-border/70`}>
+                    {selectMode && items.length > 0 && (
+                      <Checkbox
+                        checked={items.every((t) => selectedIds.has(t.id))}
+                        onCheckedChange={(v) => {
+                          setSelectedIds((prev) => {
+                            const next = new Set(prev);
+                            if (v) items.forEach((t) => next.add(t.id));
+                            else items.forEach((t) => next.delete(t.id));
+                            return next;
+                          });
+                        }}
+                        aria-label={`Select all ${col.label}`}
+                      />
+                    )}
                     <span className={`inline-block h-1.5 w-1.5 rounded-full ${col.accent}`} />
                     <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/80">{col.label}</h2>
                     <span className="text-[11px] text-muted-foreground tabular-nums">{items.length}</span>
@@ -844,14 +925,29 @@ export default function TasksPage() {
                         return (
                           <li
                             key={t.id}
-                            onClick={() => { setDetailTask(t); markRead(t.id); }}
-                            className="group/row grid grid-cols-[4px_minmax(0,1fr)] md:grid-cols-[4px_minmax(0,1fr)_180px_160px_120px_180px_80px] items-center gap-0 hover:bg-muted/40 transition-colors cursor-pointer"
+                            onClick={() => {
+                              if (selectMode) { toggleSelect(t.id); return; }
+                              setDetailTask(t); markRead(t.id);
+                            }}
+                            className={`group/row grid grid-cols-[4px_minmax(0,1fr)] md:grid-cols-[4px_minmax(0,1fr)_180px_160px_120px_180px_80px] items-center gap-0 hover:bg-muted/40 transition-colors cursor-pointer ${
+                              selectMode && selectedIds.has(t.id) ? "bg-primary/10" : ""
+                            }`}
                           >
                             {/* Subtle hover accent */}
                             <div className={`self-stretch ${col.accent} opacity-0 group-hover/row:opacity-100 transition-opacity`} />
 
                             {/* Task title + description */}
-                            <div className="px-3 py-2 min-w-0">
+                            <div className="px-3 py-2 min-w-0 flex items-start gap-2">
+                              {selectMode && (
+                                <Checkbox
+                                  className="mt-0.5"
+                                  checked={selectedIds.has(t.id)}
+                                  onCheckedChange={() => toggleSelect(t.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  aria-label="Select task"
+                                />
+                              )}
+                              <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium leading-snug break-words">
                                 {t.title}
                               </p>
@@ -907,6 +1003,7 @@ export default function TasksPage() {
                                     {format(new Date(t.due_date), "MMM d")}
                                   </span>
                                 )}
+                              </div>
                               </div>
                             </div>
 
@@ -1076,6 +1173,38 @@ export default function TasksPage() {
       )}
         </TabsContent>
       </Tabs>
+
+      {/* Bulk action bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center gap-2 rounded-full border bg-background/95 backdrop-blur px-3 py-2 shadow-lg">
+          <span className="text-xs font-medium px-2">
+            {selectedIds.size} selected
+          </span>
+          <div className="h-5 w-px bg-border" />
+          <Select onValueChange={(v: Status) => bulkUpdateStatus(v)}>
+            <SelectTrigger className="h-8 w-[150px] text-xs">
+              <SelectValue placeholder="Change status" />
+            </SelectTrigger>
+            <SelectContent>
+              {COLUMNS.map((c) => (
+                <SelectItem key={c.key} value={c.key} className="text-xs">{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 text-xs text-destructive hover:text-destructive"
+            onClick={bulkDelete}
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
+          <div className="h-5 w-px bg-border" />
+          <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={exitSelectMode}>
+            Cancel
+          </Button>
+        </div>
+      )}
 
       <Sheet open={!!detailTask} onOpenChange={(o) => !o && setDetailTask(null)}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
