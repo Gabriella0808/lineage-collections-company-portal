@@ -1447,6 +1447,7 @@ export default function CheckInsPage() {
                             none: "Nothing",
                             fmg: "FMG",
                             furniture_first: "Furniture First",
+                            nationwide: "Nationwide",
                           };
                           return bg ? (map[bg] ?? bg) : <span className="text-muted-foreground italic">—</span>;
                         })()}
