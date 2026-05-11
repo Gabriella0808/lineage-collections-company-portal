@@ -1461,7 +1461,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                 const topDeclining = [...withGrowth].sort((a, b) => (a.growthPct ?? 0) - (b.growthPct ?? 0)).slice(0, 5);
 
                 // Top N for chart
-                const chartRows = rows.slice(0, perfMode === "vendor" ? 12 : 15);
+                const chartRows = rows;
                 const chartData = chartRows.map((r) => ({
                   ...r,
                   fill: r.growthPct == null ? "hsl(var(--primary))"
