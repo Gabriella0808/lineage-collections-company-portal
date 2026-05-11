@@ -459,6 +459,90 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
     })).sort((a, b) => b.sales - a.sales);
   }, [items]);
 
+  // YTD Purchase Orders by vendor (current year vs prior year YTD)
+  const vendorPoYtd = useMemo(() => {
+    const skuToSupplier = new Map<string, string>();
+    for (const it of items) skuToSupplier.set(it.sku, it.supplier ?? "—");
+
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const lastYear = thisYear - 1;
+    // Day-of-year cutoff for like-for-like YTD comparison
+    const cutoffMs = now.getTime() - new Date(thisYear, 0, 1).getTime();
+
+    const poById = new Map<string, PurchaseOrder>();
+    for (const po of hub.purchaseOrders) poById.set(po.id, po);
+
+    // Vendor -> { ty: value, ly: value, tyCount, lyCount }
+    const m = new Map<string, { ty: number; ly: number; tyCount: number; lyCount: number }>();
+    const ensure = (v: string) => {
+      let e = m.get(v);
+      if (!e) { e = { ty: 0, ly: 0, tyCount: 0, lyCount: 0 }; m.set(v, e); }
+      return e;
+    };
+
+    // Prefer line-level aggregation (maps vendor by SKU supplier)
+    if (hub.poLines.length > 0) {
+      const seenPoVendor = new Map<string, Set<string>>(); // poId -> vendors counted
+      for (const line of hub.poLines) {
+        const po = poById.get(line.po_id);
+        if (!po?.order_date) continue;
+        const d = new Date(po.order_date);
+        const y = d.getFullYear();
+        if (y !== thisYear && y !== lastYear) continue;
+        const yearStart = new Date(y, 0, 1).getTime();
+        if (d.getTime() - yearStart > cutoffMs) continue;
+
+        const vendor = skuToSupplier.get(line.sku) ?? po.factory ?? "—";
+        const lineValue = Number(line.qty_ordered ?? 0) * Number(line.unit_cost ?? 0);
+        const e = ensure(vendor);
+        if (y === thisYear) e.ty += lineValue; else e.ly += lineValue;
+
+        // Count distinct PO per vendor
+        let vs = seenPoVendor.get(line.po_id);
+        if (!vs) { vs = new Set(); seenPoVendor.set(line.po_id, vs); }
+        if (!vs.has(vendor)) {
+          vs.add(vendor);
+          if (y === thisYear) e.tyCount += 1; else e.lyCount += 1;
+        }
+      }
+    } else {
+      // Fallback: aggregate by PO.factory using total_value
+      for (const po of hub.purchaseOrders) {
+        if (!po.order_date) continue;
+        const d = new Date(po.order_date);
+        const y = d.getFullYear();
+        if (y !== thisYear && y !== lastYear) continue;
+        const yearStart = new Date(y, 0, 1).getTime();
+        if (d.getTime() - yearStart > cutoffMs) continue;
+
+        const vendor = po.factory ?? "—";
+        const e = ensure(vendor);
+        const val = Number(po.total_value ?? 0);
+        if (y === thisYear) { e.ty += val; e.tyCount += 1; }
+        else { e.ly += val; e.lyCount += 1; }
+      }
+    }
+
+    const totalTy = Array.from(m.values()).reduce((s, e) => s + e.ty, 0) || 1;
+    const totalLy = Array.from(m.values()).reduce((s, e) => s + e.ly, 0) || 1;
+    return {
+      thisYear,
+      lastYear,
+      totalTy,
+      totalLy,
+      rows: Array.from(m, ([vendor, e]) => ({
+        vendor,
+        ytdValue: e.ty,
+        ytdValueLY: e.ly,
+        ytdCount: e.tyCount,
+        ytdCountLY: e.lyCount,
+        pctOfTotal: (e.ty / totalTy) * 100,
+        pctOfTotalLY: (e.ly / totalLy) * 100,
+      })).sort((a, b) => b.ytdValue - a.ytdValue),
+    };
+  }, [items, hub.purchaseOrders, hub.poLines]);
+
   // Item performance (with growth/decline)
   const itemPerf = useMemo(() => {
     return items
