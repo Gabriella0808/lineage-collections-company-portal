@@ -339,6 +339,7 @@ export default function TasksPage() {
       assigned_user_ids: getAssigneeIds(t),
       trade_show: isTradeShowTask(t),
       kpi_review: isKpiReviewTask(t),
+      visibility: t.visibility ?? "public",
     });
     setOpen(true);
   };
