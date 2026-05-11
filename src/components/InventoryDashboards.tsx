@@ -426,15 +426,27 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
     }).sort((a, b) => b.value - a.value);
   }, [items, totalInvValue, totalSalesAmount]);
 
-  // Vendor performance
+  // Growth helper: compare recent 3 months (L3M/3) vs prior 9 months ((L12M-L3M)/9)
+  const computeGrowth = (l3m?: number, l12m?: number) => {
+    if (l3m == null || l12m == null) return null;
+    const recent = l3m / 3;
+    const prior = Math.max(0, (l12m - l3m)) / 9;
+    if (prior === 0 && recent === 0) return 0;
+    if (prior === 0) return 999; // new / huge growth sentinel
+    return ((recent - prior) / prior) * 100;
+  };
+
+  // Vendor performance (with growth/decline)
   const vendorPerf = useMemo(() => {
-    const m = new Map<string, { sales: number; value: number }>();
+    const m = new Map<string, { sales: number; value: number; l3m: number; l12m: number; hasTrend: boolean }>();
     for (const it of items) {
       const v = it.supplier ?? "—";
       const sales = it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0);
-      const e = m.get(v) ?? { sales: 0, value: 0 };
+      const e = m.get(v) ?? { sales: 0, value: 0, l3m: 0, l12m: 0, hasTrend: false };
       e.sales += sales;
       e.value += (it.unitCost ?? 0) * it.onHand;
+      if (it.unitsL3m != null) { e.l3m += it.unitsL3m; e.hasTrend = true; }
+      if (it.unitsL12m != null) { e.l12m += it.unitsL12m; e.hasTrend = true; }
       m.set(v, e);
     }
     const total = Array.from(m.values()).reduce((s, e) => s + e.sales, 0) || 1;
@@ -443,7 +455,25 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       sales: v.sales,
       pctSales: (v.sales / total) * 100,
       value: v.value,
+      growthPct: v.hasTrend ? computeGrowth(v.l3m, v.l12m) : null,
     })).sort((a, b) => b.sales - a.sales);
+  }, [items]);
+
+  // Item performance (with growth/decline)
+  const itemPerf = useMemo(() => {
+    return items
+      .map((it) => {
+        const sales = it.avgMonthlySales * (it.listPrice ?? it.unitCost ?? 0);
+        return {
+          sku: it.sku,
+          product: it.product,
+          vendor: it.supplier ?? "—",
+          sales,
+          value: (it.unitCost ?? 0) * it.onHand,
+          growthPct: computeGrowth(it.unitsL3m, it.unitsL12m),
+        };
+      })
+      .sort((a, b) => b.sales - a.sales);
   }, [items]);
 
   // Slow movers
@@ -808,6 +838,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
 
   // Analysis sub-tab
   const [analysisTab, setAnalysisTab] = useState<string>("compare");
+  const [perfMode, setPerfMode] = useState<"vendor" | "item">("vendor");
 
   const [skuSearch, setSkuSearch] = useState("");
   const matchesSearch = useCallback((it: { sku: string; product: string; collection?: string; brand?: string }) => {
@@ -1221,43 +1252,159 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
 
           <TabsContent value="vendor" className="mt-4">
             <Card className="p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <h3 className="text-base font-semibold">Performance by Vendor / Factory</h3>
+              <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <h3 className="text-base font-semibold">
+                    {perfMode === "vendor" ? "Performance by Vendor / Factory" : "Performance by Item"}
+                  </h3>
+                </div>
+                <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5">
+                  <button
+                    onClick={() => setPerfMode("vendor")}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-sm transition-colors",
+                      perfMode === "vendor" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    By Vendor
+                  </button>
+                  <button
+                    onClick={() => setPerfMode("item")}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-sm transition-colors",
+                      perfMode === "item" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    By Item
+                  </button>
+                </div>
               </div>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={vendorPerf} layout="vertical" margin={{ left: 4, right: 12 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis type="category" dataKey="vendor" width={140} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Bar dataKey="sales" fill="hsl(var(--primary))" name="Monthly Sales" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <table className="w-full text-sm mt-4">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="text-left px-3 py-2">Vendor</th>
-                    <th className="text-right px-3 py-2">Monthly Sales</th>
-                    <th className="text-right px-3 py-2">% of Total</th>
-                    <th className="text-right px-3 py-2">Inv Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vendorPerf.slice(0, 20).map((v) => (
-                    <tr key={v.vendor} className="border-t border-border">
-                      <td className="px-3 py-2">{v.vendor}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(v.sales)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{v.pctSales.toFixed(1)}%</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(v.value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+              {(() => {
+                const rows = perfMode === "vendor"
+                  ? vendorPerf.map((v) => ({ label: v.vendor, key: v.vendor, sales: v.sales, pctSales: v.pctSales, value: v.value, growthPct: v.growthPct, sub: undefined as string | undefined }))
+                  : itemPerf.slice(0, 50).map((i) => ({ label: i.product || i.sku, key: i.sku, sales: i.sales, pctSales: 0, value: i.value, growthPct: i.growthPct, sub: i.vendor }));
+
+                const withGrowth = rows.filter((r) => r.growthPct != null && r.growthPct !== 999);
+                const topGrowing = [...withGrowth].sort((a, b) => (b.growthPct ?? 0) - (a.growthPct ?? 0)).slice(0, 5);
+                const topDeclining = [...withGrowth].sort((a, b) => (a.growthPct ?? 0) - (b.growthPct ?? 0)).slice(0, 5);
+
+                // Top N for chart
+                const chartRows = rows.slice(0, perfMode === "vendor" ? 12 : 15);
+                const chartData = chartRows.map((r) => ({
+                  ...r,
+                  fill: r.growthPct == null ? "hsl(var(--primary))"
+                    : r.growthPct >= 10 ? "hsl(var(--success))"
+                    : r.growthPct <= -10 ? "hsl(var(--destructive))"
+                    : "hsl(var(--primary))",
+                }));
+
+                return (
+                  <>
+                    {/* Growth / decline summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+                      <div className="rounded-lg border border-success/30 bg-success/5 p-3">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-success uppercase tracking-wide mb-2">
+                          <TrendingUp className="h-3.5 w-3.5" /> Top Growing
+                        </div>
+                        {topGrowing.length === 0 ? (
+                          <div className="text-xs text-muted-foreground">No trend data available.</div>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {topGrowing.map((r) => (
+                              <li key={r.key} className="flex items-center justify-between text-sm gap-2">
+                                <span className="truncate">{r.label}{r.sub && <span className="text-xs text-muted-foreground ml-1.5">· {r.sub}</span>}</span>
+                                <span className="tabular-nums font-medium text-success shrink-0">+{(r.growthPct ?? 0).toFixed(0)}%</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive uppercase tracking-wide mb-2">
+                          <TrendingDown className="h-3.5 w-3.5" /> Top Declining
+                        </div>
+                        {topDeclining.length === 0 ? (
+                          <div className="text-xs text-muted-foreground">No trend data available.</div>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {topDeclining.map((r) => (
+                              <li key={r.key} className="flex items-center justify-between text-sm gap-2">
+                                <span className="truncate">{r.label}{r.sub && <span className="text-xs text-muted-foreground ml-1.5">· {r.sub}</span>}</span>
+                                <span className="tabular-nums font-medium text-destructive shrink-0">{(r.growthPct ?? 0).toFixed(0)}%</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} layout="vertical" margin={{ left: 4, right: 12 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                          <YAxis type="category" dataKey="label" width={perfMode === "vendor" ? 140 : 180} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                          <RTooltip
+                            formatter={(v: number) => fmtMoney(v)}
+                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                          />
+                          <Bar dataKey="sales" name="Monthly Sales">
+                            {chartData.map((r, idx) => (
+                              <Cell key={idx} fill={r.fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                      <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-success" /> Growing ≥ +10%</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-primary" /> Stable</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-destructive" /> Declining ≤ -10%</span>
+                    </div>
+
+                    <table className="w-full text-sm mt-4">
+                      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                        <tr>
+                          <th className="text-left px-3 py-2">{perfMode === "vendor" ? "Vendor" : "Item"}</th>
+                          {perfMode === "item" && <th className="text-left px-3 py-2">Vendor</th>}
+                          <th className="text-right px-3 py-2">Monthly Sales</th>
+                          {perfMode === "vendor" && <th className="text-right px-3 py-2">% of Total</th>}
+                          <th className="text-right px-3 py-2">Inv Value</th>
+                          <th className="text-right px-3 py-2">Growth (3m vs 9m)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.slice(0, 20).map((r) => {
+                          const g = r.growthPct;
+                          const growthLabel = g == null
+                            ? "—"
+                            : g === 999
+                              ? "New"
+                              : `${g > 0 ? "+" : ""}${g.toFixed(0)}%`;
+                          const growthCls = g == null || g === 999
+                            ? "text-muted-foreground"
+                            : g >= 10 ? "text-success" : g <= -10 ? "text-destructive" : "text-foreground";
+                          return (
+                            <tr key={r.key} className="border-t border-border">
+                              <td className="px-3 py-2">{r.label}</td>
+                              {perfMode === "item" && <td className="px-3 py-2 text-muted-foreground">{r.sub}</td>}
+                              <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(r.sales)}</td>
+                              {perfMode === "vendor" && <td className="px-3 py-2 text-right tabular-nums">{r.pctSales.toFixed(1)}%</td>}
+                              <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(r.value)}</td>
+                              <td className={cn("px-3 py-2 text-right tabular-nums font-medium", growthCls)}>{growthLabel}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </>
+                );
+              })()}
             </Card>
           </TabsContent>
+
 
           <TabsContent value="slow" className="mt-4">
             <Card className="p-5">
