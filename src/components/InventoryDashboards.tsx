@@ -560,7 +560,59 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       .sort((a, b) => b.sales - a.sales);
   }, [items]);
 
-  // Slow movers
+  // YTD Purchase Orders by SKU (current year vs prior year YTD)
+  const itemPoYtd = useMemo(() => {
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const lastYear = thisYear - 1;
+    const cutoffMs = now.getTime() - new Date(thisYear, 0, 1).getTime();
+
+    const poById = new Map<string, PurchaseOrder>();
+    for (const po of hub.purchaseOrders) poById.set(po.id, po);
+
+    const m = new Map<string, { ty: number; ly: number; tyCount: number; lyCount: number }>();
+    const seenPoSku = new Map<string, Set<string>>();
+
+    for (const line of hub.poLines) {
+      const po = poById.get(line.po_id);
+      if (!po?.order_date) continue;
+      const d = new Date(po.order_date);
+      const y = d.getFullYear();
+      if (y !== thisYear && y !== lastYear) continue;
+      const yearStart = new Date(y, 0, 1).getTime();
+      if (d.getTime() - yearStart > cutoffMs) continue;
+
+      const sku = line.sku;
+      const val = Number(line.qty_ordered ?? 0) * Number(line.unit_cost ?? 0);
+      let e = m.get(sku);
+      if (!e) { e = { ty: 0, ly: 0, tyCount: 0, lyCount: 0 }; m.set(sku, e); }
+      if (y === thisYear) e.ty += val; else e.ly += val;
+
+      let ps = seenPoSku.get(sku);
+      if (!ps) { ps = new Set(); seenPoSku.set(sku, ps); }
+      const key = `${y}:${line.po_id}`;
+      if (!ps.has(key)) {
+        ps.add(key);
+        if (y === thisYear) e.tyCount += 1; else e.lyCount += 1;
+      }
+    }
+
+    const totalTy = Array.from(m.values()).reduce((s, e) => s + e.ty, 0) || 1;
+    const totalLy = Array.from(m.values()).reduce((s, e) => s + e.ly, 0) || 1;
+    return {
+      thisYear,
+      lastYear,
+      rows: Array.from(m, ([sku, e]) => ({
+        sku,
+        ytdValue: e.ty,
+        ytdValueLY: e.ly,
+        ytdCount: e.tyCount,
+        ytdCountLY: e.lyCount,
+        pctOfTotal: (e.ty / totalTy) * 100,
+        pctOfTotalLY: (e.ly / totalLy) * 100,
+      })).sort((a, b) => b.ytdValue - a.ytdValue),
+    };
+  }, [hub.purchaseOrders, hub.poLines]);
   const slowMovers = useMemo(() =>
     [...items]
       .filter((it) => (it.monthsSupply ?? 0) >= 6 && it.onHand > 0)
