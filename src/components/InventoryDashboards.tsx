@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { weeksOfSupply, weeksTone, LEAD_TIME_WEEKS } from "@/lib/inventoryMath";
 import ComparePeriodsReport from "@/components/ComparePeriodsReport";
@@ -977,6 +978,35 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
   const [perfMode, setPerfMode] = useState<"vendor" | "item">("vendor");
   const [compareLY, setCompareLY] = useState<boolean>(false);
 
+  // Item-mode filters (apply to chart + table)
+  const [itemQuery, setItemQuery] = useState("");
+  const [itemBrand, setItemBrand] = useState<string>("all");
+  const [itemCollection, setItemCollection] = useState<string>("all");
+
+  const itemBrandOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const it of items) if (it.brand) s.add(it.brand);
+    return Array.from(s).sort();
+  }, [items]);
+  const itemCollectionOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const it of items) if (it.collection) s.add(it.collection);
+    return Array.from(s).sort();
+  }, [items]);
+
+  const itemMetaMap = useMemo(() => new Map(items.map((it) => [it.sku, it])), [items]);
+  const itemPassesFilter = useCallback((sku: string, productHint?: string) => {
+    const meta = itemMetaMap.get(sku);
+    if (itemBrand !== "all" && (meta?.brand ?? "") !== itemBrand) return false;
+    if (itemCollection !== "all" && (meta?.collection ?? "") !== itemCollection) return false;
+    if (itemQuery) {
+      const q = itemQuery.toLowerCase();
+      const hay = `${sku} ${meta?.product ?? productHint ?? ""} ${meta?.collection ?? ""} ${meta?.brand ?? ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  }, [itemMetaMap, itemBrand, itemCollection, itemQuery]);
+
   const [skuSearch, setSkuSearch] = useState("");
   const matchesSearch = useCallback((it: { sku: string; product: string; collection?: string; brand?: string }) => {
     if (!skuSearch) return true;
@@ -1421,7 +1451,10 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
               {(() => {
                 const rows = perfMode === "vendor"
                   ? vendorPerf.map((v) => ({ label: v.vendor, key: v.vendor, sales: v.sales, pctSales: v.pctSales, value: v.value, growthPct: v.growthPct, sub: undefined as string | undefined }))
-                  : itemPerf.slice(0, 50).map((i) => ({ label: i.product || i.sku, key: i.sku, sales: i.sales, pctSales: 0, value: i.value, growthPct: i.growthPct, sub: i.vendor }));
+                  : itemPerf
+                      .filter((i) => itemPassesFilter(i.sku, i.product))
+                      .slice(0, 50)
+                      .map((i) => ({ label: i.product || i.sku, key: i.sku, sales: i.sales, pctSales: 0, value: i.value, growthPct: i.growthPct, sub: i.vendor }));
 
                 const withGrowth = rows.filter((r) => r.growthPct != null && r.growthPct !== 999);
                 const topGrowing = [...withGrowth].sort((a, b) => (b.growthPct ?? 0) - (a.growthPct ?? 0)).slice(0, 5);
@@ -1439,6 +1472,41 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
 
                 return (
                   <>
+                    {perfMode === "item" && (
+                      <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-lg border border-border bg-muted/30">
+                        <div className="relative flex-1 min-w-[200px]">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                          <Input
+                            value={itemQuery}
+                            onChange={(e) => setItemQuery(e.target.value)}
+                            placeholder="Search SKU or product…"
+                            className="pl-8 h-9 text-sm bg-background"
+                          />
+                        </div>
+                        <Select value={itemBrand} onValueChange={setItemBrand}>
+                          <SelectTrigger className="w-[170px] h-9 text-sm bg-background"><SelectValue placeholder="Brand" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All brands</SelectItem>
+                            {itemBrandOptions.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Select value={itemCollection} onValueChange={setItemCollection}>
+                          <SelectTrigger className="w-[180px] h-9 text-sm bg-background"><SelectValue placeholder="Collection" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All collections</SelectItem>
+                            {itemCollectionOptions.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        {(itemQuery || itemBrand !== "all" || itemCollection !== "all") && (
+                          <button
+                            onClick={() => { setItemQuery(""); setItemBrand("all"); setItemCollection("all"); }}
+                            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 px-1"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {/* Growth / decline summary */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
                       <div className="rounded-lg border border-success/30 bg-success/5 p-3">
@@ -1586,6 +1654,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                       // Item mode — YTD POs by SKU, joined with item metadata
                       const itemMeta = new Map(items.map((it) => [it.sku, it]));
                       const itemRows = itemPoYtd.rows
+                        .filter((r) => itemPassesFilter(r.sku))
                         .slice(0, 30)
                         .map((r) => {
                           const meta = itemMeta.get(r.sku);
