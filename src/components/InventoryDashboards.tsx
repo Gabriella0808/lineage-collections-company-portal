@@ -459,6 +459,90 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
     })).sort((a, b) => b.sales - a.sales);
   }, [items]);
 
+  // YTD Purchase Orders by vendor (current year vs prior year YTD)
+  const vendorPoYtd = useMemo(() => {
+    const skuToSupplier = new Map<string, string>();
+    for (const it of items) skuToSupplier.set(it.sku, it.supplier ?? "—");
+
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const lastYear = thisYear - 1;
+    // Day-of-year cutoff for like-for-like YTD comparison
+    const cutoffMs = now.getTime() - new Date(thisYear, 0, 1).getTime();
+
+    const poById = new Map<string, PurchaseOrder>();
+    for (const po of hub.purchaseOrders) poById.set(po.id, po);
+
+    // Vendor -> { ty: value, ly: value, tyCount, lyCount }
+    const m = new Map<string, { ty: number; ly: number; tyCount: number; lyCount: number }>();
+    const ensure = (v: string) => {
+      let e = m.get(v);
+      if (!e) { e = { ty: 0, ly: 0, tyCount: 0, lyCount: 0 }; m.set(v, e); }
+      return e;
+    };
+
+    // Prefer line-level aggregation (maps vendor by SKU supplier)
+    if (hub.poLines.length > 0) {
+      const seenPoVendor = new Map<string, Set<string>>(); // poId -> vendors counted
+      for (const line of hub.poLines) {
+        const po = poById.get(line.po_id);
+        if (!po?.order_date) continue;
+        const d = new Date(po.order_date);
+        const y = d.getFullYear();
+        if (y !== thisYear && y !== lastYear) continue;
+        const yearStart = new Date(y, 0, 1).getTime();
+        if (d.getTime() - yearStart > cutoffMs) continue;
+
+        const vendor = skuToSupplier.get(line.sku) ?? po.factory ?? "—";
+        const lineValue = Number(line.qty_ordered ?? 0) * Number(line.unit_cost ?? 0);
+        const e = ensure(vendor);
+        if (y === thisYear) e.ty += lineValue; else e.ly += lineValue;
+
+        // Count distinct PO per vendor
+        let vs = seenPoVendor.get(line.po_id);
+        if (!vs) { vs = new Set(); seenPoVendor.set(line.po_id, vs); }
+        if (!vs.has(vendor)) {
+          vs.add(vendor);
+          if (y === thisYear) e.tyCount += 1; else e.lyCount += 1;
+        }
+      }
+    } else {
+      // Fallback: aggregate by PO.factory using total_value
+      for (const po of hub.purchaseOrders) {
+        if (!po.order_date) continue;
+        const d = new Date(po.order_date);
+        const y = d.getFullYear();
+        if (y !== thisYear && y !== lastYear) continue;
+        const yearStart = new Date(y, 0, 1).getTime();
+        if (d.getTime() - yearStart > cutoffMs) continue;
+
+        const vendor = po.factory ?? "—";
+        const e = ensure(vendor);
+        const val = Number(po.total_value ?? 0);
+        if (y === thisYear) { e.ty += val; e.tyCount += 1; }
+        else { e.ly += val; e.lyCount += 1; }
+      }
+    }
+
+    const totalTy = Array.from(m.values()).reduce((s, e) => s + e.ty, 0) || 1;
+    const totalLy = Array.from(m.values()).reduce((s, e) => s + e.ly, 0) || 1;
+    return {
+      thisYear,
+      lastYear,
+      totalTy,
+      totalLy,
+      rows: Array.from(m, ([vendor, e]) => ({
+        vendor,
+        ytdValue: e.ty,
+        ytdValueLY: e.ly,
+        ytdCount: e.tyCount,
+        ytdCountLY: e.lyCount,
+        pctOfTotal: (e.ty / totalTy) * 100,
+        pctOfTotalLY: (e.ly / totalLy) * 100,
+      })).sort((a, b) => b.ytdValue - a.ytdValue),
+    };
+  }, [items, hub.purchaseOrders, hub.poLines]);
+
   // Item performance (with growth/decline)
   const itemPerf = useMemo(() => {
     return items
@@ -839,6 +923,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
   // Analysis sub-tab
   const [analysisTab, setAnalysisTab] = useState<string>("compare");
   const [perfMode, setPerfMode] = useState<"vendor" | "item">("vendor");
+  const [compareLY, setCompareLY] = useState<boolean>(false);
 
   const [skuSearch, setSkuSearch] = useState("");
   const matchesSearch = useCallback((it: { sku: string; product: string; collection?: string; brand?: string }) => {
@@ -1364,41 +1449,122 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                       <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-destructive" /> Declining ≤ -10%</span>
                     </div>
 
-                    <table className="w-full text-sm mt-4">
-                      <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                        <tr>
-                          <th className="text-left px-3 py-2">{perfMode === "vendor" ? "Vendor" : "Item"}</th>
-                          {perfMode === "item" && <th className="text-left px-3 py-2">Vendor</th>}
-                          <th className="text-right px-3 py-2">Monthly Sales</th>
-                          {perfMode === "vendor" && <th className="text-right px-3 py-2">% of Total</th>}
-                          <th className="text-right px-3 py-2">Inv Value</th>
-                          <th className="text-right px-3 py-2">Growth (3m vs 9m)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.slice(0, 20).map((r) => {
-                          const g = r.growthPct;
-                          const growthLabel = g == null
-                            ? "—"
-                            : g === 999
-                              ? "New"
-                              : `${g > 0 ? "+" : ""}${g.toFixed(0)}%`;
-                          const growthCls = g == null || g === 999
-                            ? "text-muted-foreground"
-                            : g >= 10 ? "text-success" : g <= -10 ? "text-destructive" : "text-foreground";
-                          return (
-                            <tr key={r.key} className="border-t border-border">
-                              <td className="px-3 py-2">{r.label}</td>
-                              {perfMode === "item" && <td className="px-3 py-2 text-muted-foreground">{r.sub}</td>}
-                              <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(r.sales)}</td>
-                              {perfMode === "vendor" && <td className="px-3 py-2 text-right tabular-nums">{r.pctSales.toFixed(1)}%</td>}
-                              <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(r.value)}</td>
-                              <td className={cn("px-3 py-2 text-right tabular-nums font-medium", growthCls)}>{growthLabel}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                    {perfMode === "vendor" ? (() => {
+                      // Merge vendorPoYtd with vendorPerf inv values
+                      const invByVendor = new Map(vendorPerf.map((v) => [v.vendor, v.value]));
+                      const vendorRows = vendorPoYtd.rows
+                        .slice(0, 20)
+                        .map((r) => ({
+                          ...r,
+                          invValue: invByVendor.get(r.vendor) ?? 0,
+                          delta: r.ytdValueLY > 0 ? ((r.ytdValue - r.ytdValueLY) / r.ytdValueLY) * 100 : (r.ytdValue > 0 ? 999 : 0),
+                        }));
+                      const ty = vendorPoYtd.thisYear;
+                      const ly = vendorPoYtd.lastYear;
+                      return (
+                        <>
+                          <div className="flex items-center justify-between mt-4 mb-2 gap-2 flex-wrap">
+                            <div className="text-xs text-muted-foreground">
+                              YTD Purchase Orders ({ty}{compareLY ? ` vs ${ly}` : ""}) · {hub.purchaseOrders.length === 0 ? "no PO data yet" : `${vendorPoYtd.rows.length} vendors`}
+                            </div>
+                            <label className="inline-flex items-center gap-2 text-xs cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                className="h-3.5 w-3.5 rounded border-border accent-primary"
+                                checked={compareLY}
+                                onChange={(e) => setCompareLY(e.target.checked)}
+                              />
+                              <span className="font-medium">Compare to last year ({ly})</span>
+                            </label>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                                <tr>
+                                  <th className="text-left px-3 py-2">Vendor</th>
+                                  <th className="text-right px-3 py-2">YTD PO&apos;s ({ty})</th>
+                                  <th className="text-right px-3 py-2">% of Total</th>
+                                  <th className="text-right px-3 py-2">Inv Value</th>
+                                  {compareLY && (
+                                    <>
+                                      <th className="text-right px-3 py-2">YTD PO&apos;s ({ly})</th>
+                                      <th className="text-right px-3 py-2">YoY Δ</th>
+                                    </>
+                                  )}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {vendorRows.length === 0 ? (
+                                  <tr><td colSpan={compareLY ? 6 : 4} className="px-3 py-6 text-center text-muted-foreground text-xs">No YTD purchase orders found.</td></tr>
+                                ) : vendorRows.map((r) => {
+                                  const d = r.delta;
+                                  const dLabel = r.ytdValueLY === 0
+                                    ? (r.ytdValue > 0 ? "New" : "—")
+                                    : `${d > 0 ? "+" : ""}${d.toFixed(0)}%`;
+                                  const dCls = r.ytdValueLY === 0
+                                    ? "text-muted-foreground"
+                                    : d >= 10 ? "text-success" : d <= -10 ? "text-destructive" : "text-foreground";
+                                  return (
+                                    <tr key={r.vendor} className="border-t border-border">
+                                      <td className="px-3 py-2">{r.vendor}</td>
+                                      <td className="px-3 py-2 text-right tabular-nums">
+                                        {fmtMoney(r.ytdValue)}
+                                        <span className="text-xs text-muted-foreground ml-1.5">· {r.ytdCount} PO{r.ytdCount === 1 ? "" : "s"}</span>
+                                      </td>
+                                      <td className="px-3 py-2 text-right tabular-nums">{r.pctOfTotal.toFixed(1)}%</td>
+                                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(r.invValue)}</td>
+                                      {compareLY && (
+                                        <>
+                                          <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                                            {fmtMoney(r.ytdValueLY)}
+                                            <span className="text-xs ml-1.5">· {r.ytdCountLY}</span>
+                                          </td>
+                                          <td className={cn("px-3 py-2 text-right tabular-nums font-medium", dCls)}>{dLabel}</td>
+                                        </>
+                                      )}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      );
+                    })() : (
+                      <table className="w-full text-sm mt-4">
+                        <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                          <tr>
+                            <th className="text-left px-3 py-2">Item</th>
+                            <th className="text-left px-3 py-2">Vendor</th>
+                            <th className="text-right px-3 py-2">Monthly Sales</th>
+                            <th className="text-right px-3 py-2">Inv Value</th>
+                            <th className="text-right px-3 py-2">Growth (3m vs 9m)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.slice(0, 20).map((r) => {
+                            const g = r.growthPct;
+                            const growthLabel = g == null
+                              ? "—"
+                              : g === 999
+                                ? "New"
+                                : `${g > 0 ? "+" : ""}${g.toFixed(0)}%`;
+                            const growthCls = g == null || g === 999
+                              ? "text-muted-foreground"
+                              : g >= 10 ? "text-success" : g <= -10 ? "text-destructive" : "text-foreground";
+                            return (
+                              <tr key={r.key} className="border-t border-border">
+                                <td className="px-3 py-2">{r.label}</td>
+                                <td className="px-3 py-2 text-muted-foreground">{r.sub}</td>
+                                <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(r.sales)}</td>
+                                <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(r.value)}</td>
+                                <td className={cn("px-3 py-2 text-right tabular-nums font-medium", growthCls)}>{growthLabel}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
                   </>
                 );
               })()}
