@@ -60,6 +60,7 @@ interface Task {
   assigned_user_id: string | null;
   user_id: string;
   board_id: string | null;
+  visibility: "public" | "private";
 }
 
 interface Board {
@@ -176,7 +177,8 @@ export default function TasksPage() {
     assigned_user_ids: string[];
     trade_show: boolean;
     kpi_review: boolean;
-  }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [], trade_show: false, kpi_review: false });
+    visibility: "public" | "private";
+  }>({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [], trade_show: false, kpi_review: false, visibility: "public" });
 
   const TRADE_SHOW_TAG = "[Trade Show Leads]";
   const KPI_REVIEW_TAG = "[KPI Review]";
@@ -256,7 +258,7 @@ export default function TasksPage() {
     if (assigneeUserId === "any") return true;
     if (assigneeUserId === "__trade_show__") return isTradeShowTask(t);
     if (assigneeUserId === "__kpi_review__") return isKpiReviewTask(t);
-    return getAssigneeIds(t).includes(assigneeUserId);
+    return getAssigneeIds(t).includes(assigneeUserId) || t.user_id === assigneeUserId;
   };
 
   const filteredTasks = tasks.filter(
@@ -319,7 +321,7 @@ export default function TasksPage() {
 
   const resetForm = () => {
     setEditing(null);
-    setForm({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [], trade_show: false, kpi_review: false });
+    setForm({ title: "", description: "", status: "todo", due_date: "", assigned_user_ids: [], trade_show: false, kpi_review: false, visibility: "public" });
   };
 
   const openNew = () => {
@@ -337,6 +339,7 @@ export default function TasksPage() {
       assigned_user_ids: getAssigneeIds(t),
       trade_show: isTradeShowTask(t),
       kpi_review: isKpiReviewTask(t),
+      visibility: t.visibility ?? "public",
     });
     setOpen(true);
   };
@@ -380,6 +383,7 @@ export default function TasksPage() {
       status: form.status,
       due_date: form.due_date || null,
       assigned_user_id: primary,
+      visibility: form.visibility,
     } as any;
     if (editing) {
       const { error } = await supabase
@@ -557,6 +561,40 @@ export default function TasksPage() {
                   kpiReview={form.kpi_review}
                   onKpiReviewChange={(v) => setForm({ ...form, kpi_review: v })}
                 />
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">Visibility</p>
+                    <p className="text-xs text-muted-foreground">
+                      {form.visibility === "public"
+                        ? "Public — anyone in the portal can view this task."
+                        : "Private — only you and assignees can view this task."}
+                    </p>
+                  </div>
+                  <div className="inline-flex rounded-md border bg-muted p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, visibility: "public" })}
+                      className={`px-3 py-1 text-xs rounded-sm transition-colors ${
+                        form.visibility === "public"
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      Public
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, visibility: "private" })}
+                      className={`px-3 py-1 text-xs rounded-sm transition-colors ${
+                        form.visibility === "private"
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      Private
+                    </button>
+                  </div>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
