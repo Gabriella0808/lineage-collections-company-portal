@@ -1004,6 +1004,7 @@ export default function TasksPage() {
                                   </span>
                                 )}
                               </div>
+                              </div>
                             </div>
 
                             {/* Owner column (md+) */}
