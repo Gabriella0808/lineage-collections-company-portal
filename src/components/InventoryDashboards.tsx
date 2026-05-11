@@ -1546,10 +1546,25 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                     </div>
 
                     {(() => {
-                      const rowH = 32;
-                      const fitRows = perfMode === "vendor" ? 12 : 10;
-                      const innerH = Math.max(fitRows, chartData.length) * rowH + 40;
+                      const rowH = 36;
+                      const fitRows = perfMode === "vendor" ? 10 : 9;
+                      const innerH = Math.max(fitRows, chartData.length) * rowH + 48;
                       const needsScroll = chartData.length > fitRows;
+                      const yWidth = perfMode === "vendor" ? 160 : 220;
+                      const maxChars = perfMode === "vendor" ? 22 : 30;
+                      const truncate = (s: string) => (s.length > maxChars ? s.slice(0, maxChars - 1).trimEnd() + "…" : s);
+                      const renderTick = (props: { x?: number; y?: number; payload?: { value?: string } }) => {
+                        const { x = 0, y = 0, payload } = props;
+                        const value = String(payload?.value ?? "");
+                        return (
+                          <g transform={`translate(${x},${y})`}>
+                            <title>{value}</title>
+                            <text x={-6} y={0} dy={4} textAnchor="end" fontSize={11} fill="hsl(var(--muted-foreground))">
+                              {truncate(value)}
+                            </text>
+                          </g>
+                        );
+                      };
                       return (
                         <div
                           ref={(el) => { if (el && needsScroll) el.scrollTop = el.scrollHeight; }}
@@ -1561,9 +1576,10 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                               <BarChart data={chartData} layout="vertical" margin={{ left: 4, right: 12, top: 8, bottom: 8 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                 <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                                <YAxis type="category" dataKey="label" width={perfMode === "vendor" ? 140 : 180} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} interval={0} />
+                                <YAxis type="category" dataKey="label" width={yWidth} tick={renderTick} interval={0} />
                                 <RTooltip
                                   formatter={(v: number) => fmtMoney(v)}
+                                  labelFormatter={(label) => String(label)}
                                   contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                                 />
                                 <Bar dataKey="sales" name="Monthly Sales">
