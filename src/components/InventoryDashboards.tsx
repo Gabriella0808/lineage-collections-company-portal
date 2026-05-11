@@ -923,6 +923,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
   // Analysis sub-tab
   const [analysisTab, setAnalysisTab] = useState<string>("compare");
   const [perfMode, setPerfMode] = useState<"vendor" | "item">("vendor");
+  const [compareLY, setCompareLY] = useState<boolean>(false);
 
   const [skuSearch, setSkuSearch] = useState("");
   const matchesSearch = useCallback((it: { sku: string; product: string; collection?: string; brand?: string }) => {
