@@ -1552,6 +1552,8 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                       const needsScroll = chartData.length > fitRows;
                       return (
                         <div
+                          ref={(el) => { if (el && needsScroll) el.scrollTop = el.scrollHeight; }}
+                          key={`chart-${perfMode}-${chartData.length}`}
                           className={cn("rounded-md", needsScroll && "max-h-80 overflow-y-auto border border-border bg-background/40")}
                         >
                           <div style={{ height: innerH }}>
