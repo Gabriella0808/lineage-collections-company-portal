@@ -490,6 +490,48 @@ export default function TasksPage() {
     }
   };
 
+  const bulkUpdateStatus = async (status: Status) => {
+    if (!user || selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    const editable = tasks.filter(
+      (t) => ids.includes(t.id) && (t.user_id === user.id || getAssigneeIds(t).includes(user.id)),
+    );
+    if (editable.length === 0) {
+      toast({ title: "Nothing to update", description: "You can only edit tasks you created or are assigned to.", variant: "destructive" });
+      return;
+    }
+    const editableIds = editable.map((t) => t.id);
+    const prev = tasks;
+    setTasks((ts) => ts.map((t) => (editableIds.includes(t.id) ? { ...t, status } : t)));
+    const { error } = await supabase.from("manager_tasks").update({ status }).in("id", editableIds);
+    if (error) {
+      setTasks(prev);
+      toast({ title: "Bulk update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: `Updated ${editableIds.length} task${editableIds.length === 1 ? "" : "s"}` });
+    exitSelectMode();
+  };
+
+  const bulkDelete = async () => {
+    if (!user || selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    const deletable = tasks.filter((t) => ids.includes(t.id) && t.user_id === user.id).map((t) => t.id);
+    if (deletable.length === 0) {
+      toast({ title: "Nothing to delete", description: "You can only delete tasks you created.", variant: "destructive" });
+      return;
+    }
+    if (!confirm(`Delete ${deletable.length} task${deletable.length === 1 ? "" : "s"}? This cannot be undone.`)) return;
+    const { error } = await supabase.from("manager_tasks").delete().in("id", deletable);
+    if (error) {
+      toast({ title: "Bulk delete failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    setTasks((ts) => ts.filter((t) => !deletable.includes(t.id)));
+    toast({ title: `Deleted ${deletable.length} task${deletable.length === 1 ? "" : "s"}` });
+    exitSelectMode();
+  };
+
   const assigneeName = (userId: string | null) => {
     if (!userId) return null;
     const a = assignees.find((x) => x.user_id === userId);
