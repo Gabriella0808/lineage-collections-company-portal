@@ -429,6 +429,13 @@ export default function TaskBoardsView() {
     const id = e.dataTransfer.getData("text/task-id");
     if (id) moveTaskToGroup(id, groupId);
   };
+  const onDropToCustomSubsection = async (e: React.DragEvent, groupId: string, status: Status) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/task-id");
+    if (!id) return;
+    await moveTaskToGroup(id, groupId);
+    await updateTaskStatus(id, status);
+  };
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading boards…</p>;
 
