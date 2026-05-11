@@ -1553,9 +1553,10 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                       const yWidth = perfMode === "vendor" ? 160 : 220;
                       const maxChars = perfMode === "vendor" ? 22 : 30;
                       const truncate = (s: string) => (s.length > maxChars ? s.slice(0, maxChars - 1).trimEnd() + "…" : s);
-                      const renderTick = (props: { x?: number; y?: number; payload?: { value?: string } }) => {
-                        const { x = 0, y = 0, payload } = props;
-                        const value = String(payload?.value ?? "");
+                      const renderTick = (props: any) => {
+                        const x = Number(props?.x ?? 0);
+                        const y = Number(props?.y ?? 0);
+                        const value = String(props?.payload?.value ?? "");
                         return (
                           <g transform={`translate(${x},${y})`}>
                             <title>{value}</title>
