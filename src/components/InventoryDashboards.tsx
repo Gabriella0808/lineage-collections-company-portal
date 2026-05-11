@@ -264,7 +264,8 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
                 onClick={((d: { vendor?: string }) => {
                   if (!d?.vendor) return;
                   setDetail({ title: `Vendor: ${d.vendor}`, subset: rows.filter((r) => r.vendor === d.vendor) });
-                }) as unknown as React.MouseEventHandler}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                }) as any}
               >
                 {vendorLateness.map((v, i) => (
                   <Cell key={i} fill={v.avgDaysLate > 7 ? "hsl(var(--destructive))" : v.avgDaysLate > 0 ? "hsl(var(--warning))" : "hsl(var(--success))"} />
