@@ -1450,7 +1450,10 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
               {(() => {
                 const rows = perfMode === "vendor"
                   ? vendorPerf.map((v) => ({ label: v.vendor, key: v.vendor, sales: v.sales, pctSales: v.pctSales, value: v.value, growthPct: v.growthPct, sub: undefined as string | undefined }))
-                  : itemPerf.slice(0, 50).map((i) => ({ label: i.product || i.sku, key: i.sku, sales: i.sales, pctSales: 0, value: i.value, growthPct: i.growthPct, sub: i.vendor }));
+                  : itemPerf
+                      .filter((i) => itemPassesFilter(i.sku, i.product))
+                      .slice(0, 50)
+                      .map((i) => ({ label: i.product || i.sku, key: i.sku, sales: i.sales, pctSales: 0, value: i.value, growthPct: i.growthPct, sub: i.vendor }));
 
                 const withGrowth = rows.filter((r) => r.growthPct != null && r.growthPct !== 999);
                 const topGrowing = [...withGrowth].sort((a, b) => (b.growthPct ?? 0) - (a.growthPct ?? 0)).slice(0, 5);
