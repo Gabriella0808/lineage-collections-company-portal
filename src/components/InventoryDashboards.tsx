@@ -191,6 +191,8 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
       });
   }, [pos]);
 
+  const [detail, setDetail] = useState<{ title: string; subset: typeof rows } | null>(null);
+
   if (rows.length === 0) return <EmptyState message="No POs to show." />;
   const fd = (d: Date) => d.toLocaleDateString();
 
