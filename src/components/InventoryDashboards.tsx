@@ -261,10 +261,10 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
                 name="Avg days late"
                 radius={[0, 4, 4, 0]}
                 cursor="pointer"
-                onClick={(d: { vendor?: string }) => {
+                onClick={((d: { vendor?: string }) => {
                   if (!d?.vendor) return;
                   setDetail({ title: `Vendor: ${d.vendor}`, subset: rows.filter((r) => r.vendor === d.vendor) });
-                }}
+                }) as unknown as React.MouseEventHandler}
               >
                 {vendorLateness.map((v, i) => (
                   <Cell key={i} fill={v.avgDaysLate > 7 ? "hsl(var(--destructive))" : v.avgDaysLate > 0 ? "hsl(var(--warning))" : "hsl(var(--success))"} />
