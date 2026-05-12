@@ -129,7 +129,7 @@ function DateRangePicker({ label, value, onChange, onReset }: { label: string; v
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="h-9 justify-start font-normal min-w-[230px]">
             <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-            {format(value.from, "MMM d, yyyy")} – {format(value.to, "MMM d, yyyy")}
+            {format(value.from, "MMM d, yyyy")} - {format(value.to, "MMM d, yyyy")}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
