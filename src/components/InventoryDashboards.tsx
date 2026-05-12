@@ -1655,35 +1655,32 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
           {hub.purchaseOrders.length === 0 && (
             <div className="text-xs text-muted-foreground mb-3">Showing sample data — Acctivate sync hasn't run yet.</div>
           )}
-          {(
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              {([
-                { label: "Late", pos: poBuckets.late, accent: "border-destructive/40" },
-                { label: "Next 30 days", pos: poBuckets.d30, accent: "border-warning/40" },
-                { label: "Next 60 days", pos: poBuckets.d60, accent: "border-border" },
-                { label: "Next 90 days", pos: poBuckets.d90, accent: "border-border" },
-              ]).map((b) => (
-                <div key={b.label} className={cn("rounded-lg border p-3 space-y-2", b.accent)}>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">{b.label}</div>
-                    <Badge variant="secondary" className="text-xs">{b.pos.length}</Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {fmtMoney(b.pos.reduce((s, p) => s + Number(p.total_value), 0))}
-                  </div>
-                  <div className="space-y-1 max-h-40 overflow-y-auto">
-                    {b.pos.slice(0, 8).map((po) => (
-                      <div key={po.id} className="text-xs flex items-center justify-between gap-2">
-                        <span className="font-mono truncate">{po.po_number ?? "—"}</span>
-                        <span className="text-muted-foreground whitespace-nowrap">{po.eta}</span>
-                      </div>
-                    ))}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {([
+              { label: "Late", pos: poBuckets.late, accent: "border-destructive/40" },
+              { label: "Next 30 days", pos: poBuckets.d30, accent: "border-warning/40" },
+              { label: "Next 60 days", pos: poBuckets.d60, accent: "border-border" },
+              { label: "Next 90 days", pos: poBuckets.d90, accent: "border-border" },
+            ]).map((b) => (
+              <div key={b.label} className={cn("rounded-lg border p-3 space-y-2", b.accent)}>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">{b.label}</div>
+                  <Badge variant="secondary" className="text-xs">{b.pos.length}</Badge>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="text-xs text-muted-foreground">
+                  {fmtMoney(b.pos.reduce((s, p) => s + Number(p.total_value), 0))}
+                </div>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {b.pos.slice(0, 8).map((po) => (
+                    <div key={po.id} className="text-xs flex items-center justify-between gap-2">
+                      <span className="font-mono truncate">{po.po_number ?? "—"}</span>
+                      <span className="text-muted-foreground whitespace-nowrap">{po.eta}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
 
       </TabsContent>
