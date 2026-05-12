@@ -688,7 +688,8 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
   const poBuckets = useMemo(() => {
     const today = new Date();
     const buckets = { late: [] as PurchaseOrder[], d30: [] as PurchaseOrder[], d60: [] as PurchaseOrder[], d90: [] as PurchaseOrder[] };
-    for (const po of hub.purchaseOrders) {
+    const source = hub.purchaseOrders.length > 0 ? hub.purchaseOrders : MOCK_ARRIVAL_POS;
+    for (const po of source) {
       if (po.production_stage === "closed" || po.production_stage === "arrived") continue;
       if (!po.eta) continue;
       const eta = new Date(po.eta);
