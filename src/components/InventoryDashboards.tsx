@@ -1607,20 +1607,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
           </Card>
         </div>
 
-        {/* PO stage status board */}
-        <Card className="p-5">
-          <h3 className="text-base font-semibold mb-3">Purchase Order Status</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {stageCounts.map((s) => (
-              <div key={s.key} className="rounded-lg border border-border p-3">
-                <div className="text-xs text-muted-foreground">{s.label}</div>
-                <div className="text-2xl font-semibold mt-1 tabular-nums">{s.count}</div>
-                <div className="text-xs text-muted-foreground mt-1">{fmtMoney(s.value)}</div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
         {/* Arrival calendar (next 30/60/90) */}
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-3">
