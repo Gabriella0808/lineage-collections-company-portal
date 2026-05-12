@@ -1518,7 +1518,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
         <TabsTrigger value="stockouts">Stockouts / Lost Sales</TabsTrigger>
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="reorder">Reorder</TabsTrigger>
-        <TabsTrigger value="closeout">Closeout</TabsTrigger>
       </TabsList>
 
       {/* ============ STOCKOUTS / LOST SALES ============ */}
