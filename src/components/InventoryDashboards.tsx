@@ -1652,7 +1652,11 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             <CalendarClock className="h-4 w-4 text-primary" />
             <h3 className="text-base font-semibold">Arrival Calendar</h3>
           </div>
-          {hub.purchaseOrders.length === 0 ? <EmptyState message="No POs synced yet." /> : (
+          {hub.purchaseOrders.length === 0 && (
+            <div className="text-xs text-muted-foreground mb-3">Showing sample data — Acctivate sync hasn't run yet.</div>
+          )}
+          {(
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               {([
                 { label: "Late", pos: poBuckets.late, accent: "border-destructive/40" },
