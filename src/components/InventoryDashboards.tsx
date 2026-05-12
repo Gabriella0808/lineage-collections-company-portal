@@ -1551,7 +1551,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             </div>
             <Button size="sm" variant="ghost" className="h-8" onClick={() => setDrilldown(null)}>Close</Button>
           </div>
-          <div className={cn("overflow-auto", drilldown === "openpo" ? "max-h-[88vh]" : "max-h-[60vh]")}>
+          <div className={cn("overflow-auto", drilldown === "openpo" ? "max-h-[88vh]" : drilldown === "closeout" ? "max-h-[80vh]" : "max-h-[60vh]")}>
             {drilldown === "value" && <ReportSkuValue items={items} total={summary.value} />}
             {drilldown === "closeout" && <ReportCloseout />}
             {drilldown === "openpo" && <ReportOpenPOsFull pos={(() => {
