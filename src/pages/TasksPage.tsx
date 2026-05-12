@@ -572,23 +572,26 @@ export default function TasksPage() {
       !(a.full_name ?? "").toLowerCase().includes("michigan (open)"),
   );
 
-  // ---- Header summary metrics ----
+  // ---- Header summary metrics (only the current user's tasks: created by or assigned to me) ----
   const today = new Date();
-  const totalTasks = tasks.length;
-  const overdueCount = tasks.filter(
+  const myTasks = user
+    ? tasks.filter((t) => t.user_id === user.id || getAssigneeIds(t).includes(user.id))
+    : [];
+  const totalTasks = myTasks.length;
+  const overdueCount = myTasks.filter(
     (t) => t.due_date && t.status !== "done" && parseISO(t.due_date) < startOfDay(today),
   ).length;
-  const dueSoonCount = tasks.filter(
+  const dueSoonCount = myTasks.filter(
     (t) =>
       t.due_date &&
       t.status !== "done" &&
       isWithinInterval(parseISO(t.due_date), { start: startOfDay(today), end: endOfDay(addDays(today, 7)) }),
   ).length;
   const assignedToMeCount = user
-    ? tasks.filter((t) => getAssigneeIds(t).includes(user.id) && t.status !== "done").length
+    ? myTasks.filter((t) => getAssigneeIds(t).includes(user.id) && t.status !== "done").length
     : 0;
-  const stuckCount = tasks.filter((t) => t.status === "blocked").length;
-  const completedCount = tasks.filter((t) => t.status === "done").length;
+  const stuckCount = myTasks.filter((t) => t.status === "blocked").length;
+  const completedCount = myTasks.filter((t) => t.status === "done").length;
 
   return (
     <div className="space-y-6">
