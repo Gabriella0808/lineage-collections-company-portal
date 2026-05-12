@@ -1485,7 +1485,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
           </div>
           <div className={cn("overflow-auto", drilldown === "openpo" ? "max-h-[88vh]" : "max-h-[60vh]")}>
             {drilldown === "value" && <ReportSkuValue items={items} total={summary.value} />}
-            {drilldown === "closeout" && <ReportSkuValue items={items.filter((it) => it.isCloseout || it.isClearance)} total={summary.closeoutValue} />}
+            {drilldown === "closeout" && <ReportCloseout />}
             {drilldown === "openpo" && <ReportOpenPOsFull pos={(() => {
               const real = hub.purchaseOrders.filter((p) => p.production_stage !== "closed" && p.production_stage !== "arrived");
               if (real.length > 0) return real;
