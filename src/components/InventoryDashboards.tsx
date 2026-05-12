@@ -1829,7 +1829,13 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
 
               {(() => {
                 const rows = perfMode === "vendor"
-                  ? vendorPerf.map((v) => ({ label: v.vendor, key: v.vendor, sales: v.sales, pctSales: v.pctSales, value: v.value, growthPct: v.growthPct, sub: undefined as string | undefined }))
+                  ? vendorPoYtd.rows.map((v) => {
+                      const growthPct = v.ytdValueLY > 0
+                        ? ((v.ytdValue - v.ytdValueLY) / v.ytdValueLY) * 100
+                        : (v.ytdValue > 0 ? 999 : 0);
+                      const perf = vendorPerf.find((x) => x.vendor === v.vendor);
+                      return { label: v.vendor, key: v.vendor, sales: v.ytdValue, pctSales: v.pctOfTotal, value: perf?.value ?? 0, growthPct, sub: undefined as string | undefined };
+                    })
                   : itemPerf
                       .filter((i) => itemPassesFilter(i.sku, i.product))
                       .slice(0, 50)
@@ -1962,7 +1968,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
                                   labelFormatter={(label) => String(label)}
                                   contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                                 />
-                                <Bar dataKey="sales" name="Monthly Sales">
+                                <Bar dataKey="sales" name={perfMode === "vendor" ? "YTD POs" : "Monthly Sales"}>
                                   {chartData.map((r, idx) => (
                                     <Cell key={idx} fill={r.fill} />
                                   ))}
