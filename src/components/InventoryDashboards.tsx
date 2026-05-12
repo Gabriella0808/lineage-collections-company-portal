@@ -830,7 +830,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
         const seed = hash(v);
         const mockSales = 18000 + (seed % 64000) + i * 4200;
         const mockL3m = 60 + (seed % 220);
-        const mockL12m = Math.round(mockL3m * 4 * (0.75 + ((seed >> 4) % 50) / 100)); // 0.75–1.25
+        const mockL12m = Math.round(mockL3m * 4 * (0.75 + ((seed >> 4) % 50) / 100)); // 0.75-1.25
         const cur = m.get(v) ?? { sales: 0, value: 0, l3m: 0, l12m: 0, hasTrend: false };
         cur.sales = mockSales;
         cur.l3m = mockL3m;
@@ -925,7 +925,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       seedVendors.forEach((v, i) => {
         const seed = hash(v);
         const tyVal = 80000 + (seed % 420000) + i * 12000;
-        const lyVal = Math.round(tyVal * (0.72 + ((seed >> 3) % 60) / 100)); // 0.72–1.32 of TY
+        const lyVal = Math.round(tyVal * (0.72 + ((seed >> 3) % 60) / 100)); // 0.72-1.32 of TY
         const tyCount = 4 + (seed % 18);
         const lyCount = 3 + ((seed >> 5) % 16);
         m.set(v, { ty: tyVal, ly: lyVal, tyCount, lyCount });
@@ -1065,9 +1065,9 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       else buckets.d90plus += value;
     }
     return [
-      { bucket: "0–30 days", value: buckets.d030 },
-      { bucket: "31–60 days", value: buckets.d3160 },
-      { bucket: "61–90 days", value: buckets.d6190 },
+      { bucket: "0-30 days", value: buckets.d030 },
+      { bucket: "31-60 days", value: buckets.d3160 },
+      { bucket: "61-90 days", value: buckets.d6190 },
       { bucket: "90+ days", value: buckets.d90plus },
       { bucket: "Unknown", value: buckets.unknown },
     ];

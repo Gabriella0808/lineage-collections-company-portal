@@ -309,7 +309,7 @@ export default function ComparePeriodsReport(_props: Props) {
   }, [filteredAccounts, p1Idx, p2Idx]);
 
   // -------------------- Helpers --------------------
-  const periodLabel = ([a, b]: [number, number]) => a === b ? months[a] : `${months[a]} – ${months[b]}`;
+  const periodLabel = ([a, b]: [number, number]) => a === b ? months[a] : `${months[a]} - ${months[b]}`;
 
   const reset = () => {
     setSearch(""); setSourceFilter("all"); setBrandFilter("all"); setPerfFilter("all");
