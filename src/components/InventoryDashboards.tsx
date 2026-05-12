@@ -1607,20 +1607,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
           </Card>
         </div>
 
-        {/* PO stage status board */}
-        <Card className="p-5">
-          <h3 className="text-base font-semibold mb-3">Purchase Order Status</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {stageCounts.map((s) => (
-              <div key={s.key} className="rounded-lg border border-border p-3">
-                <div className="text-xs text-muted-foreground">{s.label}</div>
-                <div className="text-2xl font-semibold mt-1 tabular-nums">{s.count}</div>
-                <div className="text-xs text-muted-foreground mt-1">{fmtMoney(s.value)}</div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
         {/* Arrival calendar (next 30/60/90) */}
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-3">
@@ -1657,56 +1643,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
           )}
         </Card>
 
-        {/* Backlog detail */}
-        <Card className="p-5">
-          <h3 className="text-base font-semibold mb-3">Backlog</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <div className="rounded-lg border border-border p-3">
-              <div className="text-xs text-muted-foreground">Out of Stock value</div>
-              <div className="text-lg font-semibold text-destructive tabular-nums">{fmtMoney(summary.outOfStockValue)}</div>
-            </div>
-            <div className="rounded-lg border border-border p-3">
-              <div className="text-xs text-muted-foreground">Mixed container POs</div>
-              <div className="text-lg font-semibold tabular-nums">{hub.purchaseOrders.filter((p) => p.container_type === "mixed").length}</div>
-            </div>
-            <div className="rounded-lg border border-border p-3">
-              <div className="text-xs text-muted-foreground">Direct container POs</div>
-              <div className="text-lg font-semibold tabular-nums">{hub.purchaseOrders.filter((p) => p.container_type === "direct").length}</div>
-            </div>
-            <div className="rounded-lg border border-border p-3">
-              <div className="text-xs text-muted-foreground">New product (no avail)</div>
-              <div className="text-lg font-semibold tabular-nums">{items.filter((it) => it.onHand === 0 && it.avgMonthlySales === 0).length}</div>
-            </div>
-          </div>
-          {hub.openOrders.length === 0 ? <EmptyState message="No open orders synced." /> : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="text-left px-3 py-2">Order #</th>
-                    <th className="text-left px-3 py-2">SKU</th>
-                    <th className="text-left px-3 py-2">Dealer</th>
-                    <th className="text-right px-3 py-2">Qty Open</th>
-                    <th className="text-right px-3 py-2">Value</th>
-                    <th className="text-left px-3 py-2">Promised</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {hub.openOrders.slice(0, 25).map((o) => (
-                    <tr key={o.id} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{o.order_number ?? "—"}</td>
-                      <td className="px-3 py-2 font-mono">{o.sku}</td>
-                      <td className="px-3 py-2">{o.dealer_name ?? "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{o.qty_open}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(Number(o.extended_value))}</td>
-                      <td className="px-3 py-2">{o.promised_date ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
       </TabsContent>
 
       {/* ============ SECTION 2: ANALYSIS ============ */}
