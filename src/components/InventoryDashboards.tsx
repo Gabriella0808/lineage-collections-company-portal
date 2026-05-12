@@ -1571,8 +1571,6 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             })()} />}
             {drilldown === "prepaid" && <ReportPOs pos={hub.purchaseOrders.filter((p) => p.is_prepaid)} prepaidMode />}
             {drilldown === "backlog" && <ReportBacklog rows={hub.openOrders} />}
-            {drilldown === "ratio" && <ReportSalesRatio items={items} />}
-            {drilldown === "turnover" && <ReportTurnover items={items} />}
             {drilldown === "lost" && <ReportLost items={items.filter((it) => it.status === "out-of-stock" && it.avgMonthlySales > 0)} />}
           </div>
         </Card>
