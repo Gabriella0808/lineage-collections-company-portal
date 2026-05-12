@@ -1535,9 +1535,9 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
         <KPI label="Prepaid Inventory" value={fmtMoney(summary.prepaidValue)} icon={DollarSign} onClick={() => toggleDrill("prepaid")} active={drilldown === "prepaid"} />
         <KPI label="Backlog (Open Orders)" value={fmtMoney(summary.backlogValue)} hint={`${fmtNum(summary.backlogUnits)} units`} icon={ShoppingCart} onClick={() => toggleDrill("backlog")} active={drilldown === "backlog"} />
         <KPI label="Closeout Inventory" value={fmtMoney(summary.closeoutValue)} hint="clearance + closeout" icon={Tag} onClick={() => toggleDrill("closeout")} active={drilldown === "closeout"} />
-        <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} onClick={() => toggleDrill("ratio")} active={drilldown === "ratio"} />
-        <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} onClick={() => toggleDrill("turnover")} active={drilldown === "turnover"} />
         <KPI label="Out of Stock — Lost Sales" value={fmtMoney(summary.lostSales)} hint="per month" icon={AlertCircle} accent="text-destructive" onClick={() => toggleDrill("lost")} active={drilldown === "lost"} />
+        <KPI label="Sales / Inv Ratio" value={summary.salesToInv.toFixed(2)} hint={summary.salesToInv > 0.5 ? "healthy" : summary.salesToInv > 0.2 ? "OK" : "carrying too much"} icon={Activity} accent={summary.salesToInv < 0.2 ? "text-warning-foreground" : undefined} />
+        <KPI label="Annual Turnover" value={`${summary.turnover.toFixed(1)}×`} hint="sales ÷ inventory" icon={Activity} />
       </div>
 
       {drilldown && (
