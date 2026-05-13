@@ -153,14 +153,17 @@ export function BacklogSummary() {
   );
 
   const activeFilterCount = useMemo(
-    () => [territoryFilter, stockClassFilter, statusFilter].filter((f) => f !== "all").length,
-    [territoryFilter, stockClassFilter, statusFilter],
+    () => [territoryFilter, stockClassFilter, statusFilter, customerFilter, repFilter].filter((f) => f !== "all").length + (skuQuery ? 1 : 0),
+    [territoryFilter, stockClassFilter, statusFilter, customerFilter, repFilter, skuQuery],
   );
 
   const clearFilters = useCallback(() => {
     setTerritoryFilter("all");
     setStockClassFilter("all");
     setStatusFilter("all");
+    setCustomerFilter("all");
+    setSkuQuery("");
+    setRepFilter("all");
   }, []);
 
   const drillRows = useMemo<typeof filteredDetail>(() => {
