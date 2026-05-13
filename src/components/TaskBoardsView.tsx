@@ -689,10 +689,7 @@ export default function TaskBoardsView() {
                                 {g.name}
                               </h4>
                               <span className="text-xs text-muted-foreground tabular-nums">{items.length}</span>
-                              <span className="flex-1" />
-                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openNewTask(g.id)}>
-                                <Plus className="h-3.5 w-3.5" /> Item
-                              </Button>
+                               <span className="flex-1" />
                             </div>
                             {!isCollapsed && (
                               <>
