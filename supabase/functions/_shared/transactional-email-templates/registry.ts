@@ -11,8 +11,10 @@ export interface TemplateEntry {
 
 import { template as newLeadAssigned } from './new-lead-assigned.tsx'
 import { template as boardSubscribed } from './board-subscribed.tsx'
+import { template as taskDueToday } from './task-due-today.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'new-lead-assigned': newLeadAssigned,
   'board-subscribed': boardSubscribed,
+  'task-due-today': taskDueToday,
 }
