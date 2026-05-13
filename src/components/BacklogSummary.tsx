@@ -158,7 +158,7 @@ export function BacklogSummary() {
   if (drill) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button size="sm" variant="ghost" className="h-8" onClick={() => setDrill(null)}>
               <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to summary
@@ -175,11 +175,54 @@ export function BacklogSummary() {
               </p>
             </div>
           </div>
-          {activeFilterCount > 0 && (
-            <Badge variant="secondary" className="text-[10px]">
-              {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active
-            </Badge>
-          )}
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Territory</label>
+              <Select value={territoryFilter} onValueChange={setTerritoryFilter}>
+                <SelectTrigger className="h-8 w-[160px] text-xs">
+                  <SelectValue placeholder="All territories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All territories</SelectItem>
+                  {allTerritories.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Stock Class</label>
+              <Select value={stockClassFilter} onValueChange={setStockClassFilter}>
+                <SelectTrigger className="h-8 w-[140px] text-xs">
+                  <SelectValue placeholder="All classes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All classes</SelectItem>
+                  {data.stockClasses.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Status</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-8 w-[120px] text-xs">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="Cleared">Cleared</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {activeFilterCount > 0 && (
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={clearFilters}>
+                <X className="h-3 w-3 mr-1" /> Clear
+              </Button>
+            )}
+          </div>
         </div>
         <div className="overflow-auto max-h-[60vh] border border-border rounded-md">
           <table className="w-full text-sm">
