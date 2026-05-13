@@ -18,6 +18,7 @@ import InvoicingReportPage from "@/pages/InvoicingReportPage";
 import CompanyWidePage from "@/pages/CompanyWidePage";
 import MondayBoardsPage from "@/pages/MondayBoardsPage";
 import TasksPage from "@/pages/TasksPage";
+import SalesTargetsPage from "@/pages/SalesTargetsPage";
 import InventoryPage from "@/pages/InventoryPage";
 import CheckInsPage from "@/pages/CheckInsPage";
 import CheckInAnalyticsPage from "@/pages/CheckInAnalyticsPage";
@@ -57,6 +58,7 @@ const App = () => (
                       <Route path="/reports/invoicing" element={<CompanyWidePage />} />
                       <Route path="/monday-boards" element={<MondayBoardsPage />} />
                       <Route path="/tasks" element={<TasksPage />} />
+                      <Route path="/sales-targets" element={<ProtectedRoute allow={["admin"]}><SalesTargetsPage /></ProtectedRoute>} />
                       <Route path="/inventory" element={<ProtectedRoute allow={["admin"]}><InventoryPage /></ProtectedRoute>} />
                       <Route path="/check-ins" element={<ProtectedRoute allow={["admin", "manager"]}><CheckInsPage /></ProtectedRoute>} />
                       <Route path="/check-ins/analytics" element={<ProtectedRoute allow={["admin", "manager"]}><CheckInAnalyticsPage /></ProtectedRoute>} />

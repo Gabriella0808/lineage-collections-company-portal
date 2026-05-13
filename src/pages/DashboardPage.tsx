@@ -1,4 +1,5 @@
 import { Users, Map, Store, LogIn, Trophy, TrendingUp, ArrowUp } from "lucide-react";
+import { TargetsProgressCard } from "@/components/TargetsProgressCard";
 import { StatCard } from "@/components/StatCard";
 import { useSalesReps, useTerritories, useDealers, useDealerSales, useRepTerritories, useManagers, formatCurrency, getInitials } from "@/hooks/usePortalData";
 import { useSignInFeed } from "@/hooks/useSignInFeed";
@@ -173,6 +174,9 @@ export default function DashboardPage() {
         <StatCard title={`${currentYear} Revenue`} value={formatCurrency(totalRevenue)} trend="neutral" variant="accent" />
         <StatCard title="Orders" value={totalOrders.toLocaleString()} trend="neutral" subtitle={String(currentYear)} variant="success" />
       </div>
+
+      {/* Sales Targets — YTD/MTD progress */}
+      <TargetsProgressCard />
 
       {/* Sales Leaderboard — full width */}
       <div className="glass-card p-4 sm:p-6 mb-6">
