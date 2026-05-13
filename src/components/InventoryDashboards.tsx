@@ -1524,7 +1524,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
     openpo: { title: "Total Open POs - not yet arrived", desc: "Purchase orders still in production or transit." },
     prepaid: { title: "Prepaid Inventory - POs with deposits", desc: "Cash already paid out to factories." },
     backlog: { title: "Backlog - Open Sales Orders", desc: "Customer orders placed but not yet shipped." },
-    closeout: { title: "Closeout Inventory — clearance & closeout", desc: "SKUs flagged closeout or clearance." },
+    closeout: { title: "Closeout Inventory - clearance & closeout", desc: "SKUs flagged closeout or clearance." },
     lost: { title: "Lost Sales — out-of-stock SKUs", desc: "Estimated monthly $ lost from stockouts." },
   };
 
