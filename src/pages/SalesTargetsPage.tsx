@@ -145,7 +145,7 @@ export default function SalesTargetsPage() {
       <div className="page-header flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="page-title flex items-center gap-2"><Target className="h-6 w-6 text-accent" /> Sales Targets</h1>
-          <p className="page-subtitle">Set monthly sales goals per rep. Annual target = sum of all months.</p>
+          <p className="page-subtitle">{canEdit ? "Set monthly sales goals per rep. Annual target = sum of all months." : "View-only. Contact an admin to update goals."}</p>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium text-muted-foreground">Year</label>
@@ -156,10 +156,12 @@ export default function SalesTargetsPage() {
           >
             {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          <Button variant="outline" size="sm" onClick={copyFromPreviousYear} disabled={copying}>
-            {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-            <span className="ml-2">Copy from {year - 1}</span>
-          </Button>
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={copyFromPreviousYear} disabled={copying}>
+              {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+              <span className="ml-2">Copy from {year - 1}</span>
+            </Button>
+          )}
         </div>
       </div>
 
