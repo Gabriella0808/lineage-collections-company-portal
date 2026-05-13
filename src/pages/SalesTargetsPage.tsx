@@ -56,14 +56,15 @@ export default function SalesTargetsPage() {
   if (roleLoading) {
     return <div className="p-6"><Skeleton className="h-64 w-full" /></div>;
   }
-  if (role !== "admin") {
+  if (role !== "admin" && role !== "manager") {
     return (
       <div className="animate-fade-in">
         <div className="page-header"><h1 className="page-title">Sales Targets</h1></div>
-        <div className="glass-card p-6 text-sm text-muted-foreground">Only admins can edit sales targets.</div>
+        <div className="glass-card p-6 text-sm text-muted-foreground">You don't have access to sales targets.</div>
       </div>
     );
   }
+  const canEdit = role === "admin";
 
   const getValue = (repId: string, key: keyof RepTarget): number => {
     const d = draft[repId]?.[key];
@@ -144,7 +145,7 @@ export default function SalesTargetsPage() {
       <div className="page-header flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="page-title flex items-center gap-2"><Target className="h-6 w-6 text-accent" /> Sales Targets</h1>
-          <p className="page-subtitle">Set monthly sales goals per rep. Annual target = sum of all months.</p>
+          <p className="page-subtitle">{canEdit ? "Set monthly sales goals per rep. Annual target = sum of all months." : "View-only. Contact an admin to update goals."}</p>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium text-muted-foreground">Year</label>
@@ -155,10 +156,12 @@ export default function SalesTargetsPage() {
           >
             {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          <Button variant="outline" size="sm" onClick={copyFromPreviousYear} disabled={copying}>
-            {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-            <span className="ml-2">Copy from {year - 1}</span>
-          </Button>
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={copyFromPreviousYear} disabled={copying}>
+              {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+              <span className="ml-2">Copy from {year - 1}</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -179,7 +182,7 @@ export default function SalesTargetsPage() {
                   <th className="px-3 py-2 text-right min-w-[110px]">Annual</th>
                   <th className="px-3 py-2 text-right min-w-[110px]">YTD Actual</th>
                   <th className="px-3 py-2 text-right min-w-[80px]">Attain</th>
-                  <th className="px-3 py-2 text-right">Action</th>
+                  {canEdit && <th className="px-3 py-2 text-right">Action</th>}
                 </tr>
               </thead>
               <tbody>
@@ -194,32 +197,43 @@ export default function SalesTargetsPage() {
                         {rep.name}
                         {dirty && <span className="ml-2 text-[10px] text-amber-600">unsaved</span>}
                       </td>
-                      {TARGET_MONTHS.map(m => (
-                        <td key={m} className="px-1 py-1.5">
-                          <Input
-                            type="number"
-                            min={0}
-                            value={getValue(rep.id, m as keyof RepTarget) || ""}
-                            onChange={(e) => setValue(rep.id, m as keyof RepTarget, e.target.value)}
-                            className="h-8 text-xs text-right tabular-nums px-1.5"
-                          />
-                        </td>
-                      ))}
+                      {TARGET_MONTHS.map(m => {
+                        const val = getValue(rep.id, m as keyof RepTarget);
+                        return (
+                          <td key={m} className="px-1 py-1.5">
+                            {canEdit ? (
+                              <Input
+                                type="number"
+                                min={0}
+                                value={val || ""}
+                                onChange={(e) => setValue(rep.id, m as keyof RepTarget, e.target.value)}
+                                className="h-8 text-xs text-right tabular-nums px-1.5"
+                              />
+                            ) : (
+                              <div className="h-8 flex items-center justify-end text-xs tabular-nums text-muted-foreground px-1.5">
+                                {val ? formatCurrency(val) : "—"}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
                       <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatCurrency(annual)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{formatCurrency(actual)}</td>
                       <td className={`px-3 py-2 text-right font-semibold tabular-nums ${pct >= 100 ? "text-success" : pct >= 75 ? "text-accent" : pct >= 50 ? "text-amber-600" : "text-destructive"}`}>
                         {annual > 0 ? `${pct}%` : "—"}
                       </td>
-                      <td className="px-3 py-2 text-right">
-                        <Button
-                          size="sm"
-                          variant={dirty ? "default" : "outline"}
-                          disabled={!dirty || saving === rep.id}
-                          onClick={() => saveRow(rep.id)}
-                        >
-                          {saving === rep.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                        </Button>
-                      </td>
+                      {canEdit && (
+                        <td className="px-3 py-2 text-right">
+                          <Button
+                            size="sm"
+                            variant={dirty ? "default" : "outline"}
+                            disabled={!dirty || saving === rep.id}
+                            onClick={() => saveRow(rep.id)}
+                          >
+                            {saving === rep.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
