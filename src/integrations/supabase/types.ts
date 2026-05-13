@@ -1284,6 +1284,75 @@ export type Database = {
         }
         Relationships: []
       }
+      rep_targets: {
+        Row: {
+          annual_target: number
+          apr: number
+          aug: number
+          created_at: string
+          created_by: string | null
+          dec: number
+          feb: number
+          id: string
+          jan: number
+          jul: number
+          jun: number
+          mar: number
+          may: number
+          notes: string | null
+          nov: number
+          oct: number
+          rep_id: string
+          sep: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          annual_target?: number
+          apr?: number
+          aug?: number
+          created_at?: string
+          created_by?: string | null
+          dec?: number
+          feb?: number
+          id?: string
+          jan?: number
+          jul?: number
+          jun?: number
+          mar?: number
+          may?: number
+          notes?: string | null
+          nov?: number
+          oct?: number
+          rep_id: string
+          sep?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          annual_target?: number
+          apr?: number
+          aug?: number
+          created_at?: string
+          created_by?: string | null
+          dec?: number
+          feb?: number
+          id?: string
+          jan?: number
+          jul?: number
+          jun?: number
+          mar?: number
+          may?: number
+          notes?: string | null
+          nov?: number
+          oct?: number
+          rep_id?: string
+          sep?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       rep_territories: {
         Row: {
           rep_id: string
