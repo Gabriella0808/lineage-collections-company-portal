@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Users, Store, BookOpen, BarChart3, Settings,
   UserCog, LogOut, LayoutGrid, ListChecks, Boxes, MapPinned, Plane, PieChart,
-  ChevronDown, Megaphone, ClipboardList, Compass, Network,
+  ChevronDown, Megaphone, ClipboardList, Compass, Network, RefreshCw,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -261,6 +261,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-xs text-muted-foreground hidden sm:inline lg:hidden tabular-nums">
               {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
+            <RefreshUpdatesButton />
             <SignOutButton />
           </header>
           <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
@@ -292,5 +293,40 @@ function SignOutButton() {
         <span className="hidden sm:inline">Sign out</span>
       </Button>
     </div>
+  );
+}
+
+function RefreshUpdatesButton() {
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      if ("caches" in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map((n) => caches.delete(n)));
+      }
+    } catch {
+      // ignore
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("_r", Date.now().toString());
+    window.location.replace(url.toString());
+  };
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleRefresh}
+      className="h-8 px-2 sm:px-3"
+      title="Refresh updates"
+      aria-label="Refresh updates"
+    >
+      <RefreshCw className={cn("h-3.5 w-3.5 sm:mr-1", refreshing && "animate-spin")} />
+      <span className="hidden sm:inline">Refresh</span>
+    </Button>
   );
 }
