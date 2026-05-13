@@ -182,7 +182,7 @@ export default function SalesTargetsPage() {
                   <th className="px-3 py-2 text-right min-w-[110px]">Annual</th>
                   <th className="px-3 py-2 text-right min-w-[110px]">YTD Actual</th>
                   <th className="px-3 py-2 text-right min-w-[80px]">Attain</th>
-                  <th className="px-3 py-2 text-right">Action</th>
+                  {canEdit && <th className="px-3 py-2 text-right">Action</th>}
                 </tr>
               </thead>
               <tbody>
