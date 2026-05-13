@@ -295,3 +295,38 @@ function SignOutButton() {
     </div>
   );
 }
+
+function RefreshUpdatesButton() {
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      if ("caches" in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map((n) => caches.delete(n)));
+      }
+    } catch {
+      // ignore
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("_r", Date.now().toString());
+    window.location.replace(url.toString());
+  };
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleRefresh}
+      className="h-8 px-2 sm:px-3"
+      title="Refresh updates"
+      aria-label="Refresh updates"
+    >
+      <RefreshCw className={cn("h-3.5 w-3.5 sm:mr-1", refreshing && "animate-spin")} />
+      <span className="hidden sm:inline">Refresh</span>
+    </Button>
+  );
+}
