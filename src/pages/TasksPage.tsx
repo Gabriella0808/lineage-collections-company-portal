@@ -134,6 +134,7 @@ export default function TasksPage() {
   const [taskAssignees, setTaskAssignees] = useState<Record<string, string[]>>({});
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("list");
   const readKey = user ? `tasks_read_${user.id}` : "";
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
@@ -603,12 +604,12 @@ export default function TasksPage() {
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
             <DialogTrigger asChild>
               <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <Plus className="h-4 w-4" /> New Action Item
+                <Plus className="h-4 w-4" /> {activeTab === "boards" ? "Item" : "New Action Item"}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="font-display text-xl">{editing ? "Edit Action Item" : "New Action Item"}</DialogTitle>
+                <DialogTitle className="font-display text-xl">{editing ? "Edit Action Item" : activeTab === "boards" ? "New Item" : "New Action Item"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <Input
@@ -691,7 +692,7 @@ export default function TasksPage() {
         }
       />
 
-      <Tabs defaultValue="list" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="list">List View</TabsTrigger>
           <TabsTrigger value="boards">Boards</TabsTrigger>
