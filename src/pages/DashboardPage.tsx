@@ -1,4 +1,5 @@
 import { Users, Map, Store, LogIn, Trophy, TrendingUp, ArrowUp } from "lucide-react";
+import { TargetsProgressCard } from "@/components/TargetsProgressCard";
 import { StatCard } from "@/components/StatCard";
 import { useSalesReps, useTerritories, useDealers, useDealerSales, useRepTerritories, useManagers, formatCurrency, getInitials } from "@/hooks/usePortalData";
 import { useSignInFeed } from "@/hooks/useSignInFeed";
