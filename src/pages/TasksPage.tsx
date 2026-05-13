@@ -134,6 +134,7 @@ export default function TasksPage() {
   const [taskAssignees, setTaskAssignees] = useState<Record<string, string[]>>({});
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("list");
   const readKey = user ? `tasks_read_${user.id}` : "";
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
