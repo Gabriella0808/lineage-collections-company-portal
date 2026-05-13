@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, MessageSquare } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { ArrowLeft, AlertTriangle, MessageSquare, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import backlogData from "@/data/backlogSummary.json";
 
@@ -42,6 +43,39 @@ const STOCK_CLASS_TONE: Record<string, string> = {
   Contract: "bg-muted text-foreground border border-border",
 };
 
+// Rep → territory mapping (from DB). Falls back to rep name if unknown.
+const REP_TO_TERRITORY: Record<string, string> = {
+  "Skip Camillo": "Skip Camillo / New England",
+  "Skip": "Skip Camillo / New England",
+  "Brent Holbrook": "South Florida",
+  "Brent": "South Florida",
+  "Bruce Quillen": "Panhandle/GA/AL",
+  "Quill": "Panhandle/GA/AL",
+  "Jordan Shindell": "OH/WPA / Mid Atlantic",
+  "Shindell": "OH/WPA / Mid Atlantic",
+  "Internet": "Internet",
+  "Inter": "Internet",
+  "Andrew Smith": "MI",
+  "Brad Robertson": "VA/WV",
+  "Dave Ervin": "NC/SC",
+  "House": "House",
+  "Mike Durham": "North Florida",
+  "Mike Root": "Root",
+  "Peter Avella": "NY/NJ",
+  "Sergio - Hospitality": "Hospitality",
+  "Stewart Hunt": "TX/OK",
+  "Arkansas (open)": "Arkansas",
+  "IL/WI (open)": "IL/WI",
+  "Indiana (open)": "Indiana",
+  "MS-LA (open)": "MS-LA",
+  "TN/KY (open)": "TN/KY",
+};
+
+function getTerritory(rep: string | null): string {
+  if (!rep) return "Unknown";
+  return REP_TO_TERRITORY[rep] ?? rep;
+}
+
 type Drill =
   | { kind: "stockClass"; code: string; label: string }
   | { kind: "customer"; customer: string }
@@ -49,25 +83,72 @@ type Drill =
 
 export function BacklogSummary() {
   const [drill, setDrill] = useState<Drill>(null);
+  const [territoryFilter, setTerritoryFilter] = useState<string>("all");
+  const [stockClassFilter, setStockClassFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const totalBacklog = useMemo(
-    () => data.stockClasses.reduce((s, c) => s + c.total, 0),
-    [],
-  );
-  const totalProblem = useMemo(
-    () => data.problemOrders.reduce((s, c) => s + c.amount, 0),
-    [],
+  // Derive territory for every detail row
+  const detailWithTerritory = useMemo(() => {
+    return data.detail.map((r) => ({
+      ...r,
+      territory: getTerritory(r.rep),
+      status: (r.openBalance || 0) !== 0 ? "Open" : "Cleared",
+    }));
+  }, []);
+
+  const allTerritories = useMemo(
+    () => Array.from(new Set(detailWithTerritory.map((r) => r.territory).filter(Boolean))).sort(),
+    [detailWithTerritory],
   );
 
-  const drillRows = useMemo<DetailRow[]>(() => {
+  const filteredDetail = useMemo(() => {
+    return detailWithTerritory.filter((r) => {
+      if (territoryFilter !== "all" && r.territory !== territoryFilter) return false;
+      if (stockClassFilter !== "all" && r.stockClass !== stockClassFilter) return false;
+      if (statusFilter === "Open" && (r.openBalance || 0) === 0) return false;
+      if (statusFilter === "Cleared" && (r.openBalance || 0) !== 0) return false;
+      return true;
+    });
+  }, [detailWithTerritory, territoryFilter, stockClassFilter, statusFilter]);
+
+  // Recompute summary tables from filtered detail
+  const filteredStockClasses = useMemo(() => {
+    const totals = new Map<string, { code: string; description: string; total: number }>();
+    for (const r of filteredDetail) {
+      if (!r.stockClass || r.stockClass === "N/A") continue;
+      const desc = data.stockClasses.find((s) => s.code === r.stockClass)?.description ?? r.stockClass;
+      const entry = totals.get(r.stockClass) ?? { code: r.stockClass, description: desc, total: 0 };
+      entry.total += Math.abs(r.openBalance || 0);
+      totals.set(r.stockClass, entry);
+    }
+    return Array.from(totals.values());
+  }, [filteredDetail]);
+
+  const filteredTotalBacklog = useMemo(
+    () => filteredStockClasses.reduce((s, c) => s + c.total, 0),
+    [filteredStockClasses],
+  );
+
+  const activeFilterCount = useMemo(
+    () => [territoryFilter, stockClassFilter, statusFilter].filter((f) => f !== "all").length,
+    [territoryFilter, stockClassFilter, statusFilter],
+  );
+
+  const clearFilters = useCallback(() => {
+    setTerritoryFilter("all");
+    setStockClassFilter("all");
+    setStatusFilter("all");
+  }, []);
+
+  const drillRows = useMemo<typeof filteredDetail>(() => {
     if (!drill) return [];
     if (drill.kind === "stockClass") {
-      return data.detail.filter((r) => r.stockClass === drill.code);
+      return filteredDetail.filter((r) => r.stockClass === drill.code);
     }
-    return data.detail.filter(
+    return filteredDetail.filter(
       (r) => (r.customer ?? "").toLowerCase() === drill.customer.toLowerCase(),
     );
-  }, [drill]);
+  }, [drill, filteredDetail]);
 
   const drillTotal = useMemo(
     () => drillRows.reduce((s, r) => s + (r.openBalance || 0), 0),
@@ -94,6 +175,11 @@ export function BacklogSummary() {
               </p>
             </div>
           </div>
+          {activeFilterCount > 0 && (
+            <Badge variant="secondary" className="text-[10px]">
+              {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active
+            </Badge>
+          )}
         </div>
         <div className="overflow-auto max-h-[60vh] border border-border rounded-md">
           <table className="w-full text-sm">
@@ -104,6 +190,7 @@ export function BacklogSummary() {
                 <th className="text-left px-3 py-2">Item</th>
                 <th className="text-left px-3 py-2 max-w-[300px]">Description</th>
                 <th className="text-left px-3 py-2">Rep</th>
+                <th className="text-left px-3 py-2">Territory</th>
                 <th className="text-left px-3 py-2">Ship Date</th>
                 {drill.kind === "customer" && <th className="text-left px-3 py-2">Class</th>}
                 <th className="text-right px-3 py-2">Amount</th>
@@ -122,6 +209,7 @@ export function BacklogSummary() {
                     {r.description ?? "—"}
                   </td>
                   <td className="px-3 py-2 text-xs">{r.rep ?? "—"}</td>
+                  <td className="px-3 py-2 text-xs">{r.territory}</td>
                   <td className="px-3 py-2 text-xs">
                     {r.shipDate ? new Date(r.shipDate).toLocaleDateString() : "—"}
                   </td>
@@ -147,6 +235,13 @@ export function BacklogSummary() {
                   </td>
                 </tr>
               ))}
+              {drillRows.length === 0 && (
+                <tr>
+                  <td colSpan={drill.kind === "stockClass" ? 10 : 9} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                    No detail rows match the current filters.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -156,8 +251,56 @@ export function BacklogSummary() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap text-xs text-muted-foreground">
-        <span>
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Territory</label>
+          <Select value={territoryFilter} onValueChange={setTerritoryFilter}>
+            <SelectTrigger className="h-8 w-[180px] text-xs">
+              <SelectValue placeholder="All territories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All territories</SelectItem>
+              {allTerritories.map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Stock Class</label>
+          <Select value={stockClassFilter} onValueChange={setStockClassFilter}>
+            <SelectTrigger className="h-8 w-[160px] text-xs">
+              <SelectValue placeholder="All classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All classes</SelectItem>
+              {data.stockClasses.map((c) => (
+                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Status</label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-8 w-[140px] text-xs">
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="Open">Open</SelectItem>
+              <SelectItem value="Cleared">Cleared</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {activeFilterCount > 0 && (
+          <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={clearFilters}>
+            <X className="h-3 w-3 mr-1" /> Clear
+          </Button>
+        )}
+        <div className="ml-auto text-xs text-muted-foreground flex items-center gap-1.5">
+          <Filter className="h-3 w-3" />
           Backlog as of{" "}
           <span className="font-medium text-foreground">
             {new Date(data.asOf).toLocaleDateString(undefined, {
@@ -166,8 +309,7 @@ export function BacklogSummary() {
               day: "numeric",
             })}
           </span>
-        </span>
-        <span>Click any row to drill into line-item detail</span>
+        </div>
       </div>
 
       {/* Stock Class breakdown */}
@@ -184,7 +326,7 @@ export function BacklogSummary() {
               </tr>
             </thead>
             <tbody>
-              {data.stockClasses.map((c) => (
+              {filteredStockClasses.map((c) => (
                 <tr
                   key={c.code}
                   className="border-t border-border hover:bg-muted/40 cursor-pointer"
@@ -203,15 +345,22 @@ export function BacklogSummary() {
                   <td className="px-3 py-2">{c.description}</td>
                   <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtMoney(c.total)}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {((c.total / totalBacklog) * 100).toFixed(1)}%
+                    {filteredTotalBacklog > 0 ? ((c.total / filteredTotalBacklog) * 100).toFixed(1) : "0.0"}%
                   </td>
                 </tr>
               ))}
+              {filteredStockClasses.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                    No rows match the current filters.
+                  </td>
+                </tr>
+              )}
               <tr className="border-t-2 border-border bg-muted/30 font-semibold">
                 <td className="px-3 py-2" colSpan={2}>
                   Total Open Backlog
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(totalBacklog)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(filteredTotalBacklog)}</td>
                 <td />
               </tr>
             </tbody>
@@ -226,9 +375,6 @@ export function BacklogSummary() {
             <AlertTriangle className="h-4 w-4 text-warning" />
             Problem Orders
           </h4>
-          <span className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{fmtMoney(totalProblem)}</span> at risk
-          </span>
         </div>
         <div className="overflow-auto border border-border rounded-md">
           <table className="w-full text-sm">
