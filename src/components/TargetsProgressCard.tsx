@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useId } from "react";
 import { Target } from "lucide-react";
 import { useSalesReps, useDealerSales, useDealers, formatCurrency, getInitials } from "@/hooks/usePortalData";
 import { useRepTargets, MONTH_LABEL_TO_KEY, type RepTarget } from "@/hooks/useRepTargets";
@@ -7,21 +7,44 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const MONTH_ORDER = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-function ProgressRing({ pct, size = 56, label }: { pct: number; size?: number; label: string }) {
-  const r = (size - 8) / 2;
+function ProgressRing({ pct, size = 64, label }: { pct: number; size?: number; label: string }) {
+  const uid = useId();
+  const gradientId = `ring-grad-${uid}`;
+  const r = (size - 12) / 2;
   const c = 2 * Math.PI * r;
   const clamped = Math.max(0, Math.min(pct, 100));
   const offset = c - (clamped / 100) * c;
-  const color = pct >= 100 ? "hsl(152 60% 40%)" : pct >= 75 ? "hsl(38 75% 50%)" : pct >= 50 ? "hsl(38 75% 50%)" : "hsl(0 65% 55%)";
+
   return (
-    <div className="flex flex-col items-center gap-1">
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={r} stroke="hsl(220 13% 90%)" strokeWidth={5} fill="none" />
-        <circle cx={size/2} cy={size/2} r={r} stroke={color} strokeWidth={5} fill="none"
-          strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 600ms ease" }} />
-      </svg>
-      <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <svg className="w-full h-full -rotate-90" viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#d4af37" />
+              <stop offset="100%" stopColor="#b8860b" />
+            </linearGradient>
+          </defs>
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            stroke="hsl(220 13% 90%)" strokeWidth={5} fill="transparent"
+          />
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            stroke={`url(#${gradientId})`} strokeWidth={6}
+            fill="transparent" strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={offset}
+            style={{ transition: "stroke-dashoffset 800ms ease-out" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="font-['DM_Serif_Display'] text-sm font-bold text-foreground leading-none tracking-tight">
+            {clamped}<span className="text-[10px] align-top ml-0.5 opacity-60 font-sans">%</span>
+          </span>
+        </div>
+        <div className="absolute inset-[6px] border border-white/40 rounded-full pointer-events-none" />
+      </div>
+      <span className="text-[10px] font-bold tracking-[0.12em] text-muted-foreground uppercase">{label}</span>
     </div>
   );
 }
