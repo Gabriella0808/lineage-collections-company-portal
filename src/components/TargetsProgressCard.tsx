@@ -24,22 +24,22 @@ function ProgressRing({ pct, size = 64, label }: { pct: number; size?: number; l
       : { label: "Off track", tone: "danger" as const };
 
   const gradients: Record<string, { from: string; to: string }> = {
-    success: { from: "#1e7e5e", to: "#0f3d2e" },
-    gold:    { from: "#bfa04b", to: "#7a5c1a" },
-    warning: { from: "#b45309", to: "#78350f" },
-    danger:  { from: "#991b1b", to: "#450a0a" },
+    success: { from: "#d4af37", to: "#b8860b" },
+    gold:    { from: "#d4af37", to: "#b8860b" },
+    warning: { from: "#d4af37", to: "#b8860b" },
+    danger:  { from: "#d4af37", to: "#b8860b" },
   };
 
   const grad = gradients[status.tone];
   const gradId = `ring-grad-${uid}`;
   const textColor =
     status.tone === "success"
-      ? "text-emerald-800"
+      ? "text-amber-700"
       : status.tone === "gold"
-      ? "text-amber-800"
+      ? "text-amber-700"
       : status.tone === "warning"
-      ? "text-amber-900"
-      : "text-red-900";
+      ? "text-amber-700"
+      : "text-amber-700";
 
   return (
     <div className="flex flex-col items-center gap-1.5">
