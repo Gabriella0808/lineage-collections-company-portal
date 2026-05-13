@@ -232,9 +232,7 @@ export default function SalesTargetsPage() {
         )}
       </div>
 
-      <p className="mt-3 text-xs text-muted-foreground">
-        Tip: enter monthly amounts in dollars. Annual target updates automatically. Use "Copy from {year - 1}" to start a new year quickly, then adjust.
-      </p>
+      {"\n"}
     </div>
   );
 }
