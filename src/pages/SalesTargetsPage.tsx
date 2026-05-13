@@ -197,32 +197,43 @@ export default function SalesTargetsPage() {
                         {rep.name}
                         {dirty && <span className="ml-2 text-[10px] text-amber-600">unsaved</span>}
                       </td>
-                      {TARGET_MONTHS.map(m => (
-                        <td key={m} className="px-1 py-1.5">
-                          <Input
-                            type="number"
-                            min={0}
-                            value={getValue(rep.id, m as keyof RepTarget) || ""}
-                            onChange={(e) => setValue(rep.id, m as keyof RepTarget, e.target.value)}
-                            className="h-8 text-xs text-right tabular-nums px-1.5"
-                          />
-                        </td>
-                      ))}
+                      {TARGET_MONTHS.map(m => {
+                        const val = getValue(rep.id, m as keyof RepTarget);
+                        return (
+                          <td key={m} className="px-1 py-1.5">
+                            {canEdit ? (
+                              <Input
+                                type="number"
+                                min={0}
+                                value={val || ""}
+                                onChange={(e) => setValue(rep.id, m as keyof RepTarget, e.target.value)}
+                                className="h-8 text-xs text-right tabular-nums px-1.5"
+                              />
+                            ) : (
+                              <div className="h-8 flex items-center justify-end text-xs tabular-nums text-muted-foreground px-1.5">
+                                {val ? formatCurrency(val) : "—"}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
                       <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatCurrency(annual)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{formatCurrency(actual)}</td>
                       <td className={`px-3 py-2 text-right font-semibold tabular-nums ${pct >= 100 ? "text-success" : pct >= 75 ? "text-accent" : pct >= 50 ? "text-amber-600" : "text-destructive"}`}>
                         {annual > 0 ? `${pct}%` : "—"}
                       </td>
-                      <td className="px-3 py-2 text-right">
-                        <Button
-                          size="sm"
-                          variant={dirty ? "default" : "outline"}
-                          disabled={!dirty || saving === rep.id}
-                          onClick={() => saveRow(rep.id)}
-                        >
-                          {saving === rep.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                        </Button>
-                      </td>
+                      {canEdit && (
+                        <td className="px-3 py-2 text-right">
+                          <Button
+                            size="sm"
+                            variant={dirty ? "default" : "outline"}
+                            disabled={!dirty || saving === rep.id}
+                            onClick={() => saveRow(rep.id)}
+                          >
+                            {saving === rep.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
