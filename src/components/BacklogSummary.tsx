@@ -343,8 +343,7 @@ export function BacklogSummary() {
             <X className="h-3 w-3 mr-1" /> Clear
           </Button>
         )}
-        <div className="ml-auto text-xs text-muted-foreground flex items-center gap-1.5">
-          <Filter className="h-3 w-3" />
+        <div className="ml-auto text-xs text-muted-foreground">
           Backlog as of{" "}
           <span className="font-medium text-foreground">
             {new Date(data.asOf).toLocaleDateString(undefined, {
