@@ -1479,10 +1479,13 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
     return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [items]);
 
-  // Closeout by SKU (top 15 by value)
+  const [closeoutSkuFilter, setCloseoutSkuFilter] = useState("");
+
+  // Closeout by SKU (top 15 by value, filtered)
   const closeoutBySku = useMemo(() => {
+    const q = closeoutSkuFilter.trim().toLowerCase();
     const arr = items
-      .filter((it) => it.isCloseout || it.isClearance)
+      .filter((it) => (it.isCloseout || it.isClearance) && (q === "" || it.sku.toLowerCase().includes(q) || it.product.toLowerCase().includes(q)))
       .map((it) => ({
         name: it.sku,
         value: it.onHandValue ?? (it.unitCost ?? 0) * it.onHand,
@@ -1490,7 +1493,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
       .sort((a, b) => b.value - a.value)
       .slice(0, 15);
     return arr;
-  }, [items]);
+  }, [items, closeoutSkuFilter]);
 
   // SKU detail drawer
   const [drawerSku, setDrawerSku] = useState<string | null>(null);
@@ -1576,7 +1579,18 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
           )}
           {closeoutBySku.length > 0 && (
             <Card className="p-5">
-              <h3 className="text-base font-semibold mb-3">Closeout Value by SKU</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-semibold">Closeout Value by SKU</h3>
+                <div className="relative w-48">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={closeoutSkuFilter}
+                    onChange={(e) => setCloseoutSkuFilter(e.target.value)}
+                    placeholder="Filter by item / SKU"
+                    className="h-8 pl-8 text-xs"
+                  />
+                </div>
+              </div>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={closeoutBySku} layout="vertical" margin={{ left: 4, right: 12 }}>
