@@ -89,6 +89,7 @@ const NAV_SECTIONS: NavSection[] = [
       { title: "Company-wide",     url: "/company-wide",  icon: BarChart3, roles: ["admin"] },
       { title: "Team Performance", url: "/company-wide",  icon: BarChart3, roles: ["manager"] },
       { title: "My Performance",   url: "/company-wide",  icon: BarChart3, roles: ["rep"] },
+      { title: "Product Catalog", url: "/catalog", icon: Package, roles: ["admin", "manager", "rep"] },
       { title: "Inventory", url: "/inventory", icon: Boxes, roles: ["admin"] },
     ],
   },
