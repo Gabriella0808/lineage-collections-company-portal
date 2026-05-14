@@ -50,12 +50,12 @@ const NAV_SECTIONS: NavSection[] = [
     id: "catalog",
     label: "Catalog & Inventory",
     items: [
-      { title: "Product Catalog", url: "/catalog", icon: Package, roles: ["admin", "manager", "rep"] },
-      { title: "Quote Cart", url: "/cart", icon: ShoppingCart, roles: ["admin", "manager", "rep"] },
-      { title: "My Quotes", url: "/my-quotes", icon: FileText, roles: ["admin", "manager", "rep"] },
+      { title: "Product Catalog", url: "/catalog", icon: Package, roles: ["admin", "manager", "rep", "dealer"] },
+      { title: "Quote Cart", url: "/cart", icon: ShoppingCart, roles: ["admin", "manager", "rep", "dealer"] },
+      { title: "My Quotes", url: "/my-quotes", icon: FileText, roles: ["admin", "manager", "rep", "dealer"] },
       { title: "Customer Quotes", url: "/customer-quotes", icon: Send, roles: ["admin", "manager", "rep"] },
-      { title: "Digital Assets", url: "/digital-assets", icon: FolderOpen, roles: ["admin", "manager", "rep"] },
-      { title: "Public Inventory", url: "/inventory", icon: Boxes, roles: ["admin", "manager", "rep"] },
+      { title: "Digital Assets", url: "/digital-assets", icon: FolderOpen, roles: ["admin", "manager", "rep", "dealer"] },
+      { title: "Public Inventory", url: "/inventory", icon: Boxes, roles: ["admin", "manager", "rep", "dealer"] },
     ],
   },
   {
