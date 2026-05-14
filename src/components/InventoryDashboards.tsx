@@ -1479,6 +1479,19 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
     return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [items]);
 
+  // Closeout by SKU (top 15 by value)
+  const closeoutBySku = useMemo(() => {
+    const arr = items
+      .filter((it) => it.isCloseout || it.isClearance)
+      .map((it) => ({
+        name: it.sku,
+        value: it.onHandValue ?? (it.unitCost ?? 0) * it.onHand,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 15);
+    return arr;
+  }, [items]);
+
   // SKU detail drawer
   const [drawerSku, setDrawerSku] = useState<string | null>(null);
   const drawerItem = useMemo(() => items.find((it) => it.sku === drawerSku) ?? null, [items, drawerSku]);
