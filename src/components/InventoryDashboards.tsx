@@ -142,6 +142,8 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
     const VESSELS = ["CMA CGM ORFEO", "MAERSK HONAM", "EVER GIVEN", "MSC OSCAR", "ONE STORK", "COSCO SHIPPING"];
     const PORTS = ["TAMPA", "SAVANNAH", "LONG BEACH", "CHARLESTON", "NORFOLK", "HOUSTON"];
     const DESCRIPTIONS = ["RTG DC", "Isla Occ", "Coastal Sofa", "Veranda Set", "Bayview Bed", "Harbor Dining", "Tradewinds Lounge"];
+    const COLLECTIONS = ["Coastal", "Veranda", "Harbor", "Bayview", "Tradewinds", "Isla", "Heritage"];
+    const SKU_PREFIX = ["SW", "FL", "LL", "RTG"];
 
     return [...pos]
       .sort((a, b) => Number(b.total_value) - Number(a.total_value))
