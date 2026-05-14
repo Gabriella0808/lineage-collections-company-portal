@@ -1494,8 +1494,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
         name: it.sku,
         value: it.onHandValue ?? (it.unitCost ?? 0) * it.onHand,
       }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 15);
+      .sort((a, b) => b.value - a.value);
     return arr;
   }, [items, closeoutSkuFilter]);
 
