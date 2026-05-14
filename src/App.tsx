@@ -20,6 +20,7 @@ import MondayBoardsPage from "@/pages/MondayBoardsPage";
 import TasksPage from "@/pages/TasksPage";
 import SalesTargetsPage from "@/pages/SalesTargetsPage";
 import InventoryPage from "@/pages/InventoryPage";
+import CatalogPage from "@/pages/CatalogPage";
 import CheckInsPage from "@/pages/CheckInsPage";
 import CheckInAnalyticsPage from "@/pages/CheckInAnalyticsPage";
 import TravelLogPage from "@/pages/TravelLogPage";
