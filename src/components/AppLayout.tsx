@@ -3,7 +3,6 @@ import {
   LayoutDashboard, Users, Store, BookOpen, BarChart3, Settings,
   UserCog, LogOut, LayoutGrid, ListChecks, Boxes, MapPinned, Plane, PieChart,
   ChevronDown, Megaphone, ClipboardList, Compass, Network, RefreshCw, Target, Package, ShoppingCart,
-  Globe, Lock, Percent, MapIcon, Mail, Image as ImageIcon, Heart, BookOpen as BookOpenIcon, FileText,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,29 +38,12 @@ type NavSection = {
  */
 const NAV_SECTIONS: NavSection[] = [
   {
-    id: "website",
-    label: "Website & Portal",
+    id: "catalog",
+    label: "Catalog & Inventory",
     items: [
-      {
-        title: "Roadmap & Spec", url: "/website", icon: Globe,
-        roles: ["admin", "manager", "rep"],
-        children: [
-          { title: "Consumer Website",      url: "/website#consumer",       icon: Globe,         roles: ["admin", "manager", "rep"] },
-          { title: "Dealer Locator",        url: "/website#dealer-locator", icon: MapIcon,       roles: ["admin", "manager", "rep"] },
-          { title: "Marketing & Content",   url: "/website#marketing",      icon: Megaphone,     roles: ["admin", "manager", "rep"] },
-          { title: "Dealer Portal (AMP)",   url: "/website#amp",            icon: Lock,          roles: ["admin", "manager", "rep"] },
-          { title: "Targeted Discounts",    url: "/website#discounts",      icon: Percent,       roles: ["admin", "manager", "rep"] },
-          { title: "Sales Rep Tools",       url: "/website#reps",           icon: Users,         roles: ["admin", "manager", "rep"] },
-        ],
-      },
-      { title: "Product Catalog", url: "/catalog",   icon: Package,       roles: ["admin", "manager", "rep"] },
-      { title: "Public Inventory", url: "/inventory", icon: Boxes,        roles: ["admin"] },
-      { title: "Quote Cart",       url: "/cart",      icon: ShoppingCart, roles: ["admin", "manager", "rep"] },
-      { title: "Newsletter (Mailchimp)", url: "/website#marketing", icon: Mail,         roles: ["admin", "manager"] },
-      { title: "Promo Banners",          url: "/website#marketing", icon: Megaphone,    roles: ["admin", "manager"] },
-      { title: "Digital Catalog",        url: "/website#marketing", icon: BookOpenIcon, roles: ["admin", "manager", "rep"] },
-      { title: "Media Library",          url: "/website#marketing", icon: ImageIcon,    roles: ["admin", "manager", "rep"] },
-      { title: "Charity Page",           url: "/website#marketing", icon: Heart,        roles: ["admin", "manager", "rep"] },
+      { title: "Product Catalog", url: "/catalog", icon: Package, roles: ["admin", "manager", "rep"] },
+      { title: "Public Inventory", url: "/inventory", icon: Boxes, roles: ["admin"] },
+      { title: "Quote Cart", url: "/cart", icon: ShoppingCart, roles: ["admin", "manager", "rep"] },
     ],
   },
   {
