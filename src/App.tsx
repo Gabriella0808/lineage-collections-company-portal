@@ -26,6 +26,8 @@ import ProductDetailPage from "@/pages/ProductDetailPage";
 import CartPage from "@/pages/CartPage";
 import MyQuotesPage from "@/pages/MyQuotesPage";
 import CustomerQuotesPage from "@/pages/CustomerQuotesPage";
+import CustomerQuoteBuilderPage from "@/pages/CustomerQuoteBuilderPage";
+import CustomerQuoteViewPage from "@/pages/CustomerQuoteViewPage";
 import DigitalAssetsPage from "@/pages/DigitalAssetsPage";
 
 import CheckInsPage from "@/pages/CheckInsPage";
