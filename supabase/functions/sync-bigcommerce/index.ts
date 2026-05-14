@@ -17,7 +17,7 @@ async function bcFetch(path: string) {
   const url = `https://api.bigcommerce.com/stores/${hash}/v3${path}`;
   const res = await fetch(url, {
     headers: {
-      "X-Auth-Token": ACCESS_TOKEN!,
+      "X-Auth-Token": token,
       "Accept": "application/json",
       "Content-Type": "application/json",
     },
