@@ -465,7 +465,7 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
         <thead className="bg-muted/50 text-[10px] uppercase tracking-wide text-muted-foreground sticky top-0">
           <tr>
             {[
-              "Order Date","Brand","Vendor","Description","DC Inv/Rec","Pro Forma Ship","PO #","Actual Ship","Est Arrival","Freight Forwarder",
+              "Order Date","Brand","Vendor","SKU","Collection","Description","DC Inv/Rec","Pro Forma Ship","PO #","Actual Ship","Est Arrival","Freight Forwarder",
               "Customs Provider","Vessel","Container #","Due in Port","Port","Where to Track","Drayage","Notes","Tariff Disc?",
               "Invoice $","Inv Entered","Invoice No","Ocean Freight","Ocean Entered","Drayage Rate","Dray Entered","Tariff",
             ].map((h) => <th key={h} className="text-left px-2 py-2 whitespace-nowrap">{h}</th>)}
