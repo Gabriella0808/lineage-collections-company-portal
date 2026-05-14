@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import DashboardPage from "@/pages/DashboardPage";
@@ -21,6 +22,8 @@ import TasksPage from "@/pages/TasksPage";
 import SalesTargetsPage from "@/pages/SalesTargetsPage";
 import InventoryPage from "@/pages/InventoryPage";
 import CatalogPage from "@/pages/CatalogPage";
+import ProductDetailPage from "@/pages/ProductDetailPage";
+import CartPage from "@/pages/CartPage";
 import CheckInsPage from "@/pages/CheckInsPage";
 import CheckInAnalyticsPage from "@/pages/CheckInAnalyticsPage";
 import TravelLogPage from "@/pages/TravelLogPage";
@@ -39,6 +42,7 @@ const App = () => (
       <Toaster />
       <BrowserRouter>
         <AuthProvider>
+          <CartProvider>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/unsubscribe" element={<UnsubscribePage />} />
@@ -62,6 +66,8 @@ const App = () => (
                       <Route path="/sales-targets" element={<ProtectedRoute allow={["admin","manager"]}><SalesTargetsPage /></ProtectedRoute>} />
                       <Route path="/inventory" element={<ProtectedRoute allow={["admin"]}><InventoryPage /></ProtectedRoute>} />
                       <Route path="/catalog" element={<CatalogPage />} />
+                      <Route path="/catalog/:sku" element={<ProductDetailPage />} />
+                      <Route path="/cart" element={<CartPage />} />
                       <Route path="/check-ins" element={<ProtectedRoute allow={["admin", "manager"]}><CheckInsPage /></ProtectedRoute>} />
                       <Route path="/check-ins/analytics" element={<ProtectedRoute allow={["admin", "manager"]}><CheckInAnalyticsPage /></ProtectedRoute>} />
                       <Route path="/travel-log" element={<ProtectedRoute allow={["admin", "manager"]}><TravelLogPage /></ProtectedRoute>} />
@@ -76,6 +82,7 @@ const App = () => (
               }
             />
           </Routes>
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
