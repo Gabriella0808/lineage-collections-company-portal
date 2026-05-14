@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DollarSign, PackageOpen, TrendingUp, TrendingDown, Tag, Activity,
   Truck, Factory, AlertCircle, ShoppingCart, CalendarClock, Layers,
@@ -1480,7 +1479,7 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
     return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [items]);
 
-  // Closeout by SKU (all, sorted by value)
+  // Closeout by SKU (top 15 by value)
   const closeoutBySku = useMemo(() => {
     const arr = items
       .filter((it) => it.isCloseout || it.isClearance)
@@ -1488,7 +1487,8 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
         name: it.sku,
         value: it.onHandValue ?? (it.unitCost ?? 0) * it.onHand,
       }))
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 15);
     return arr;
   }, [items]);
 
@@ -1577,19 +1577,17 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
           {closeoutBySku.length > 0 && (
             <Card className="p-5">
               <h3 className="text-base font-semibold mb-3">Closeout Value by SKU</h3>
-              <ScrollArea className="h-96">
-                <div className="h-full min-h-[400px]">
-                  <ResponsiveContainer width="100%" height={Math.max(400, closeoutBySku.length * 28)}>
-                    <BarChart data={[...closeoutBySku].reverse()} layout="vertical" margin={{ left: 4, right: 12 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                      <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                      <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                      <Bar dataKey="value" fill="hsl(var(--primary))" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </ScrollArea>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={closeoutBySku} layout="vertical" margin={{ left: 4, right: 12 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" tickFormatter={fmtMoney} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <RTooltip formatter={(v: number) => fmtMoney(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                    <Bar dataKey="value" fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </Card>
           )}
         </div>
