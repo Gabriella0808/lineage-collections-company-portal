@@ -424,7 +424,7 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {filteredRows.map((r) => (
             <tr key={r.id} className="border-t border-border hover:bg-muted/30">
               <td className="px-2 py-1.5 whitespace-nowrap">{fd(r.orderDate)}</td>
               <td className="px-2 py-1.5">{r.brand}</td>
