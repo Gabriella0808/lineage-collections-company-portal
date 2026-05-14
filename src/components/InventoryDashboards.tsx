@@ -142,6 +142,8 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
     const VESSELS = ["CMA CGM ORFEO", "MAERSK HONAM", "EVER GIVEN", "MSC OSCAR", "ONE STORK", "COSCO SHIPPING"];
     const PORTS = ["TAMPA", "SAVANNAH", "LONG BEACH", "CHARLESTON", "NORFOLK", "HOUSTON"];
     const DESCRIPTIONS = ["RTG DC", "Isla Occ", "Coastal Sofa", "Veranda Set", "Bayview Bed", "Harbor Dining", "Tradewinds Lounge"];
+    const COLLECTIONS = ["Coastal", "Veranda", "Harbor", "Bayview", "Tradewinds", "Isla", "Heritage"];
+    const SKU_PREFIX = ["SW", "FL", "LL", "RTG"];
 
     return [...pos]
       .sort((a, b) => Number(b.total_value) - Number(a.total_value))
@@ -164,6 +166,8 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
           orderDate,
           brand: BRANDS[seed % BRANDS.length],
           vendor: (p.factory ?? VENDORS[(seed >> 1) % VENDORS.length]).toUpperCase(),
+          collection: COLLECTIONS[(seed >> 13) % COLLECTIONS.length],
+          sku: `${SKU_PREFIX[(seed >> 15) % SKU_PREFIX.length]}-${1000 + (seed % 8999)}`,
           description: `${DESCRIPTIONS[(seed >> 2) % DESCRIPTIONS.length]} (${(1500000 + (seed % 500000))}YPA)`,
           dcInvRec: (seed >> 4) % 5 === 0 ? "NO" : "YES",
           proForma,
@@ -194,13 +198,39 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
 
   const [detail, setDetail] = useState<{ title: string; subset: typeof rows } | null>(null);
 
+  const [fVendor, setFVendor] = useState<string>("all");
+  const [fBrand, setFBrand] = useState<string>("all");
+  const [fCollection, setFCollection] = useState<string>("all");
+  const [fItem, setFItem] = useState<string>("all");
+  const [fSku, setFSku] = useState<string>("");
+
+  const uniq = (arr: string[]) => Array.from(new Set(arr)).sort();
+  const vendorOpts = useMemo(() => uniq(rows.map((r) => r.vendor)), [rows]);
+  const brandOpts = useMemo(() => uniq(rows.map((r) => r.brand)), [rows]);
+  const collectionOpts = useMemo(() => uniq(rows.map((r) => r.collection)), [rows]);
+  const itemOpts = useMemo(() => uniq(rows.map((r) => r.description)), [rows]);
+
+  const filteredRows = useMemo(() => {
+    const skuQ = fSku.trim().toLowerCase();
+    return rows.filter((r) =>
+      (fVendor === "all" || r.vendor === fVendor) &&
+      (fBrand === "all" || r.brand === fBrand) &&
+      (fCollection === "all" || r.collection === fCollection) &&
+      (fItem === "all" || r.description === fItem) &&
+      (skuQ === "" || r.sku.toLowerCase().includes(skuQ) || r.poNumber.toLowerCase().includes(skuQ))
+    );
+  }, [rows, fVendor, fBrand, fCollection, fItem, fSku]);
+
+  const filtersActive = fVendor !== "all" || fBrand !== "all" || fCollection !== "all" || fItem !== "all" || fSku.trim() !== "";
+  const resetFilters = () => { setFVendor("all"); setFBrand("all"); setFCollection("all"); setFItem("all"); setFSku(""); };
+
   if (rows.length === 0) return <EmptyState message="No POs to show." />;
   const fd = (d: Date) => d.toLocaleDateString();
 
   // Vendor lateness: avg days late = actualShip - proForma
   const vendorLateness = (() => {
     const m = new Map<string, { sum: number; n: number; late: number }>();
-    for (const r of rows) {
+    for (const r of filteredRows) {
       const days = Math.round((r.actualShip.getTime() - r.proForma.getTime()) / 86400000);
       const e = m.get(r.vendor) ?? { sum: 0, n: 0, late: 0 };
       e.sum += days; e.n += 1; if (days > 0) e.late += 1;
@@ -214,7 +244,7 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
   // ETA by month
   const etaByMonth = (() => {
     const m = new Map<string, number>();
-    for (const r of rows) {
+    for (const r of filteredRows) {
       const key = `${r.eta.getFullYear()}-${String(r.eta.getMonth() + 1).padStart(2, "0")}`;
       m.set(key, (m.get(key) ?? 0) + 1);
     }
@@ -231,7 +261,7 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
   const now = Date.now();
   const statusSplit = (() => {
     let onTime = 0, late = 0, arrived = 0;
-    for (const r of rows) {
+    for (const r of filteredRows) {
       if (r.eta.getTime() < now) arrived += 1;
       else if (r.actualShip.getTime() > r.proForma.getTime()) late += 1;
       else onTime += 1;
@@ -247,6 +277,54 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
 
   return (
     <div className="space-y-4">
+      <Card className="p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Filters</div>
+          <div className="text-[10px] text-muted-foreground">
+            Showing {filteredRows.length} of {rows.length} POs
+            {filtersActive && (
+              <Button size="sm" variant="ghost" className="h-6 px-2 ml-2 text-[10px]" onClick={resetFilters}>Reset</Button>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+          <Select value={fVendor} onValueChange={setFVendor}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Vendor" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Vendors</SelectItem>
+              {vendorOpts.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={fItem} onValueChange={setFItem}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Item" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Items</SelectItem>
+              {itemOpts.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={fCollection} onValueChange={setFCollection}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Collection" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Collections</SelectItem>
+              {collectionOpts.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={fBrand} onValueChange={setFBrand}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Brand" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Brands</SelectItem>
+              {brandOpts.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input
+            value={fSku}
+            onChange={(e) => setFSku(e.target.value)}
+            placeholder="SKU or PO #"
+            className="h-8 text-xs"
+          />
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Card className="p-3">
           <div className="text-xs font-semibold mb-1">Avg Days Late by Vendor</div>
@@ -387,18 +465,20 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
         <thead className="bg-muted/50 text-[10px] uppercase tracking-wide text-muted-foreground sticky top-0">
           <tr>
             {[
-              "Order Date","Brand","Vendor","Description","DC Inv/Rec","Pro Forma Ship","PO #","Actual Ship","Est Arrival","Freight Forwarder",
+              "Order Date","Brand","Vendor","SKU","Collection","Description","DC Inv/Rec","Pro Forma Ship","PO #","Actual Ship","Est Arrival","Freight Forwarder",
               "Customs Provider","Vessel","Container #","Due in Port","Port","Where to Track","Drayage","Notes","Tariff Disc?",
               "Invoice $","Inv Entered","Invoice No","Ocean Freight","Ocean Entered","Drayage Rate","Dray Entered","Tariff",
             ].map((h) => <th key={h} className="text-left px-2 py-2 whitespace-nowrap">{h}</th>)}
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {filteredRows.map((r) => (
             <tr key={r.id} className="border-t border-border hover:bg-muted/30">
               <td className="px-2 py-1.5 whitespace-nowrap">{fd(r.orderDate)}</td>
               <td className="px-2 py-1.5">{r.brand}</td>
               <td className="px-2 py-1.5 whitespace-nowrap">{r.vendor}</td>
+              <td className="px-2 py-1.5 font-mono whitespace-nowrap">{r.sku}</td>
+              <td className="px-2 py-1.5 whitespace-nowrap">{r.collection}</td>
               <td className="px-2 py-1.5 max-w-[200px] truncate" title={r.description}>{r.description}</td>
               <td className="px-2 py-1.5">{r.dcInvRec}</td>
               <td className="px-2 py-1.5 whitespace-nowrap">{fd(r.proForma)}</td>
