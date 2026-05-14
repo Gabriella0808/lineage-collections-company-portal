@@ -76,7 +76,9 @@ const App = () => (
                       <Route path="/catalog/:sku" element={<ProductDetailPage />} />
                       <Route path="/cart" element={<CartPage />} />
                       <Route path="/my-quotes" element={<MyQuotesPage />} />
-                      <Route path="/customer-quotes" element={<ProtectedRoute allow={["admin", "manager"]}><CustomerQuotesPage /></ProtectedRoute>} />
+                      <Route path="/customer-quotes" element={<CustomerQuotesPage />} />
+                      <Route path="/customer-quotes/new" element={<CustomerQuoteBuilderPage />} />
+                      <Route path="/customer-quotes/:id" element={<CustomerQuoteBuilderPage />} />
                       <Route path="/digital-assets" element={<DigitalAssetsPage />} />
                       <Route path="/check-ins" element={<ProtectedRoute allow={["admin", "manager"]}><CheckInsPage /></ProtectedRoute>} />
                       <Route path="/check-ins/analytics" element={<ProtectedRoute allow={["admin", "manager"]}><CheckInAnalyticsPage /></ProtectedRoute>} />
