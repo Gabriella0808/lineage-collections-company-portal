@@ -2,15 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type AppRole = "admin" | "manager" | "rep";
+export type AppRole = "admin" | "manager" | "rep" | "dealer";
 
 export interface UserRoleInfo {
   role: AppRole;
   managerId: string | null;
   repId: string | null;
+  dealerId: string | null;
   isAdmin: boolean;
   isManager: boolean;
   isRep: boolean;
+  isDealer: boolean;
 }
 
 /**
