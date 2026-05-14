@@ -52,6 +52,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/unsubscribe" element={<UnsubscribePage />} />
+            <Route path="/q/:token" element={<CustomerQuoteViewPage />} />
             <Route
               path="/*"
               element={
