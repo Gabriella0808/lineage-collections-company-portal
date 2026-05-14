@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Users, Store, BookOpen, BarChart3, Settings,
   UserCog, LogOut, LayoutGrid, ListChecks, Boxes, MapPinned, Plane, PieChart,
-  ChevronDown, Megaphone, ClipboardList, Compass, Network, RefreshCw, Target, Package,
+  ChevronDown, Megaphone, ClipboardList, Compass, Network, RefreshCw, Target, Package, ShoppingCart,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,7 @@ const NAV_SECTIONS: NavSection[] = [
       { title: "Team Performance", url: "/company-wide",  icon: BarChart3, roles: ["manager"] },
       { title: "My Performance",   url: "/company-wide",  icon: BarChart3, roles: ["rep"] },
       { title: "Product Catalog", url: "/catalog", icon: Package, roles: ["admin", "manager", "rep"] },
+      { title: "Quote Cart", url: "/cart", icon: ShoppingCart, roles: ["admin", "manager", "rep"] },
       { title: "Inventory", url: "/inventory", icon: Boxes, roles: ["admin"] },
     ],
   },
