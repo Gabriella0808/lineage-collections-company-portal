@@ -53,9 +53,9 @@ const NAV_SECTIONS: NavSection[] = [
       { title: "Product Catalog", url: "/catalog", icon: Package, roles: ["admin", "manager", "rep"] },
       { title: "Quote Cart", url: "/cart", icon: ShoppingCart, roles: ["admin", "manager", "rep"] },
       { title: "My Quotes", url: "/my-quotes", icon: FileText, roles: ["admin", "manager", "rep"] },
-      { title: "Customer Quotes", url: "/customer-quotes", icon: Send, roles: ["admin", "manager"] },
+      { title: "Customer Quotes", url: "/customer-quotes", icon: Send, roles: ["admin", "manager", "rep"] },
       { title: "Digital Assets", url: "/digital-assets", icon: FolderOpen, roles: ["admin", "manager", "rep"] },
-      { title: "Public Inventory", url: "/inventory", icon: Boxes, roles: ["admin"] },
+      { title: "Public Inventory", url: "/inventory", icon: Boxes, roles: ["admin", "manager", "rep"] },
     ],
   },
   {
