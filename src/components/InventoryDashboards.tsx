@@ -1479,13 +1479,17 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
     return Array.from(m, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [items]);
 
-  const [closeoutSkuFilter, setCloseoutSkuFilter] = useState("");
+  const [closeoutSkuFilter, setCloseoutSkuFilter] = useState<string>("all");
+  const closeoutSkuOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const it of items) if (it.isCloseout || it.isClearance) s.add(it.sku);
+    return Array.from(s).sort();
+  }, [items]);
 
   // Closeout by SKU (top 15 by value, filtered)
   const closeoutBySku = useMemo(() => {
-    const q = closeoutSkuFilter.trim().toLowerCase();
     const arr = items
-      .filter((it) => (it.isCloseout || it.isClearance) && (q === "" || it.sku.toLowerCase().includes(q) || it.product.toLowerCase().includes(q)))
+      .filter((it) => (it.isCloseout || it.isClearance) && (closeoutSkuFilter === "all" || it.sku === closeoutSkuFilter))
       .map((it) => ({
         name: it.sku,
         value: it.onHandValue ?? (it.unitCost ?? 0) * it.onHand,
