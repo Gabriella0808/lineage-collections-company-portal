@@ -166,6 +166,8 @@ function ReportOpenPOsFull({ pos }: { pos: PurchaseOrder[] }) {
           orderDate,
           brand: BRANDS[seed % BRANDS.length],
           vendor: (p.factory ?? VENDORS[(seed >> 1) % VENDORS.length]).toUpperCase(),
+          collection: COLLECTIONS[(seed >> 13) % COLLECTIONS.length],
+          sku: `${SKU_PREFIX[(seed >> 15) % SKU_PREFIX.length]}-${1000 + (seed % 8999)}`,
           description: `${DESCRIPTIONS[(seed >> 2) % DESCRIPTIONS.length]} (${(1500000 + (seed % 500000))}YPA)`,
           dcInvRec: (seed >> 4) % 5 === 0 ? "NO" : "YES",
           proForma,
