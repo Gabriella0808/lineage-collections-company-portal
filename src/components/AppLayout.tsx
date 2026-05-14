@@ -55,7 +55,6 @@ const NAV_SECTIONS: NavSection[] = [
       { title: "My Quotes", url: "/my-quotes", icon: FileText, roles: ["admin", "manager", "rep", "dealer"] },
       { title: "Customer Quotes", url: "/customer-quotes", icon: Send, roles: ["admin", "manager", "rep"] },
       { title: "Digital Assets", url: "/digital-assets", icon: FolderOpen, roles: ["admin", "manager", "rep", "dealer"] },
-      { title: "Public Inventory", url: "/inventory", icon: Boxes, roles: ["admin", "manager", "rep", "dealer"] },
     ],
   },
   {
