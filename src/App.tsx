@@ -24,6 +24,7 @@ import InventoryPage from "@/pages/InventoryPage";
 import CatalogPage from "@/pages/CatalogPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import CartPage from "@/pages/CartPage";
+import WebsitePortalPage from "@/pages/WebsitePortalPage";
 import CheckInsPage from "@/pages/CheckInsPage";
 import CheckInAnalyticsPage from "@/pages/CheckInAnalyticsPage";
 import TravelLogPage from "@/pages/TravelLogPage";
