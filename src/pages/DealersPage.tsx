@@ -3,12 +3,17 @@ import { Mail, Phone, ExternalLink } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useSalesReps, useTerritories, useDealers, formatCurrency, getRepName, getTerritoryName } from "@/hooks/usePortalData";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NoteToTask } from "@/components/NoteToTask";
 
 export default function DealersPage() {
+  const { data: roleInfo } = useUserRole();
+  const isRep = roleInfo?.isRep ?? false;
+  const myRepId = roleInfo?.repId ?? null;
+
   const { data: reps = [] } = useSalesReps();
   const { data: territories = [] } = useTerritories();
   const { data: dealers = [], isLoading } = useDealers();
@@ -20,9 +25,10 @@ export default function DealersPage() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const filtered = dealers.filter(d => {
+    if (isRep && myRepId && d.rep_id !== myRepId) return false;
     if (search && !d.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (territoryFilter !== "all" && d.territory_id !== territoryFilter) return false;
-    if (repFilter !== "all" && d.rep_id !== repFilter) return false;
+    if (!isRep && repFilter !== "all" && d.rep_id !== repFilter) return false;
     if (statusFilter !== "all" && d.status !== statusFilter) return false;
     return true;
   });
@@ -42,8 +48,12 @@ export default function DealersPage() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">Dealers</h1>
-        <p className="page-subtitle">{dealers.length} dealers synced from Acctivate</p>
+        <h1 className="page-title">{isRep ? "My Dealers" : "Dealers"}</h1>
+        <p className="page-subtitle">
+          {isRep
+            ? `${filtered.length} assigned dealer${filtered.length === 1 ? "" : "s"}`
+            : `${dealers.length} dealers synced from Acctivate`}
+        </p>
       </div>
 
       <FilterBar
@@ -52,7 +62,7 @@ export default function DealersPage() {
         onSearchChange={setSearch}
         filters={[
           { label: "Territory", value: territoryFilter, onChange: setTerritoryFilter, options: territories.map(t => ({ label: t.name, value: t.id })) },
-          { label: "Rep", value: repFilter, onChange: setRepFilter, options: reps.map(r => ({ label: r.name, value: r.id })) },
+          ...(isRep ? [] : [{ label: "Rep", value: repFilter, onChange: setRepFilter, options: reps.map(r => ({ label: r.name, value: r.id })) }]),
           { label: "Status", value: statusFilter, onChange: setStatusFilter, options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }, { label: 'Prospect', value: 'prospect' }, { label: 'At Risk', value: 'at-risk' }] },
         ]}
       />
