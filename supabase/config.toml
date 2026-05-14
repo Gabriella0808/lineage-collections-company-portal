@@ -6,6 +6,12 @@ verify_jwt = false
 [functions.sync-acctivate]
 verify_jwt = false
 
+[functions.sync-bigcommerce]
+verify_jwt = false
+
+[functions.submit-quote]
+verify_jwt = true
+
 [functions.list-monday-boards]
 verify_jwt = false
 
