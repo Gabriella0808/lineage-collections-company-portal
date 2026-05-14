@@ -1585,15 +1585,17 @@ export default function InventoryDashboards({ items, statusFilter, onStatusFilte
             <Card className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-semibold">Closeout Value by SKU</h3>
-                <div className="relative w-48">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    value={closeoutSkuFilter}
-                    onChange={(e) => setCloseoutSkuFilter(e.target.value)}
-                    placeholder="Filter by item / SKU"
-                    className="h-8 pl-8 text-xs"
-                  />
-                </div>
+                <Select value={closeoutSkuFilter} onValueChange={setCloseoutSkuFilter}>
+                  <SelectTrigger className="w-48 h-8 text-xs">
+                    <SelectValue placeholder="Filter by SKU" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All SKUs</SelectItem>
+                    {closeoutSkuOptions.map((sku) => (
+                      <SelectItem key={sku} value={sku}>{sku}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
