@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole, type AppRole } from "@/hooks/useUserRole";
 import lineageLogo from "@/assets/lineage-logo-white.png";
 import { NavLink } from "@/components/NavLink";
+import { isAllowedEmail } from "@/components/EmailGuard";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarHeader,
@@ -187,12 +188,11 @@ function SidebarNav() {
   const role: AppRole = roleInfo?.role ?? "rep";
   const location = useLocation();
   const { user } = useAuth();
-  const allowedEmail = "gabriella@lineage-collections.com";
 
   const sections = NAV_SECTIONS
     .filter((s) => {
       if (s.id === "catalog") {
-        return user?.email?.toLowerCase() === allowedEmail.toLowerCase();
+        return isAllowedEmail(user?.email);
       }
       return true;
     })
