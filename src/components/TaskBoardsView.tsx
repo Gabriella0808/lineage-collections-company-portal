@@ -126,13 +126,14 @@ export default function TaskBoardsView() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const [bRes, gRes, tRes] = await Promise.all([
+    const [bRes, gRes, tRes, uRes] = await Promise.all([
       supabase.from("task_boards" as any).select("*").order("created_at", { ascending: true }),
       supabase.from("task_board_groups" as any).select("*").order("position", { ascending: true }),
       supabase
         .from("manager_tasks")
         .select("id,title,description,status,due_date,board_id,group_id,user_id,assigned_user_id")
         .not("board_id", "is", null),
+      supabase.rpc("assignable_users"),
     ]);
     if (!bRes.error) {
       const list = (bRes.data ?? []) as unknown as Board[];
@@ -142,7 +143,25 @@ export default function TaskBoardsView() {
       toast({ title: "Failed to load boards", description: bRes.error.message, variant: "destructive" });
     }
     if (!gRes.error) setGroups((gRes.data ?? []) as unknown as Group[]);
-    if (!tRes.error) setTasks((tRes.data ?? []) as unknown as BoardTask[]);
+    if (!tRes.error) {
+      const boardTasks = (tRes.data ?? []) as unknown as BoardTask[];
+      setTasks(boardTasks);
+      const ids = boardTasks.map((t) => t.id);
+      if (ids.length) {
+        const { data: aData } = await supabase
+          .from("manager_task_assignees")
+          .select("task_id,user_id")
+          .in("task_id", ids);
+        const map: Record<string, string[]> = {};
+        (aData ?? []).forEach((r: any) => {
+          (map[r.task_id] ||= []).push(r.user_id);
+        });
+        setTaskAssignees(map);
+      } else {
+        setTaskAssignees({});
+      }
+    }
+    if (!uRes.error) setAssignableUsers((uRes.data ?? []) as any);
     setLoading(false);
   };
 
