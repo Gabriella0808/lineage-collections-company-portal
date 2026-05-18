@@ -90,8 +90,7 @@ const NAV_SECTIONS: NavSection[] = [
     id: "network",
     label: "Dealer Network",
     items: [
-      { title: "My Dealers", url: "/dealers",   icon: Store,    roles: ["rep"] },
-      { title: "Dealers",    url: "/dealers",   icon: Store,    roles: ["admin", "manager"] },
+      { title: "Dealers", url: "/dealers", icon: Store, roles: ["admin", "manager", "rep"] },
       { title: "Directory",  url: "/directory", icon: BookOpen, roles: ["admin", "manager"] },
     ],
   },
