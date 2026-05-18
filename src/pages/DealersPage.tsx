@@ -48,7 +48,7 @@ export default function DealersPage() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">{isRep ? "My Dealers" : "Dealers"}</h1>
+        <h1 className="page-title">Dealers</h1>
         <p className="page-subtitle">
           {isRep
             ? `${filtered.length} assigned dealer${filtered.length === 1 ? "" : "s"}`
