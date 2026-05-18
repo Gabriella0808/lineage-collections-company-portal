@@ -85,8 +85,8 @@ export default function DealersPage() {
             </p>
             <div className="flex items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="bg-muted px-2 py-0.5 rounded-full truncate">{getTerritoryName(territories, d.territory_id)}</span>
-                <span className="text-muted-foreground truncate">{getRepName(reps, d.rep_id)}</span>
+                <span className="bg-muted px-2 py-0.5 rounded-full truncate">{getTerritoryName(territories, d.territory_id) || (d as any).territory || '—'}</span>
+                <span className="text-muted-foreground truncate">{getRepName(reps, d.rep_id) || (d as any).salesperson || '—'}</span>
               </div>
               <span className="font-medium tabular-nums shrink-0">{formatCurrency(d.revenue)}</span>
             </div>
