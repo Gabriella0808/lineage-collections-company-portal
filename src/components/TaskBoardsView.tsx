@@ -603,6 +603,74 @@ export default function TaskBoardsView() {
                       <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{t.description}</p>
                     )}
                   </div>
+            const userLookup = (uid: string | null | undefined) => {
+              if (!uid) return null;
+              return assignableUsers.find((u) => u.user_id === uid) ?? null;
+            };
+            const getInitials = (name: string) =>
+              name.split(/\s+/).filter(Boolean).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+            const assigneeIdsFor = (t: BoardTask): string[] => {
+              const ids = new Set<string>();
+              if (t.assigned_user_id) ids.add(t.assigned_user_id);
+              (taskAssignees[t.id] ?? []).forEach((id) => ids.add(id));
+              return Array.from(ids);
+            };
+            const renderAssignees = (t: BoardTask) => {
+              const ids = assigneeIdsFor(t);
+              if (ids.length === 0) {
+                const creator = userLookup(t.user_id);
+                const label = creator?.full_name || creator?.email || "Creator";
+                return (
+                  <span className="text-xs italic text-muted-foreground" title={`Unassigned (created by ${label})`}>
+                    Unassigned
+                  </span>
+                );
+              }
+              const visible = ids.slice(0, 3);
+              const extra = ids.length - visible.length;
+              return (
+                <div className="flex items-center -space-x-1.5">
+                  {visible.map((id) => {
+                    const u = userLookup(id);
+                    const name = u?.full_name || u?.email || id.slice(0, 8);
+                    return (
+                      <span
+                        key={id}
+                        title={name}
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-semibold ring-2 ring-card"
+                      >
+                        {getInitials(name)}
+                      </span>
+                    );
+                  })}
+                  {extra > 0 && (
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-[10px] font-semibold ring-2 ring-card">
+                      +{extra}
+                    </span>
+                  )}
+                </div>
+              );
+            };
+
+            const renderTaskRow = (t: BoardTask) => {
+              const meta = STATUS_META[t.status];
+              const isMine = !!user && t.user_id === user.id;
+              return (
+                <li
+                  key={t.id}
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData("text/task-id", t.id)}
+                  className="grid grid-cols-[24px_minmax(0,1fr)] md:grid-cols-[24px_minmax(0,1fr)_140px_120px_140px_60px] items-center hover:bg-muted/40 cursor-grab active:cursor-grabbing"
+                >
+                  <div className="flex items-center justify-center text-muted-foreground/40">
+                    <GripVertical className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="px-2 py-2 min-w-0">
+                    <p className="text-sm font-medium leading-snug break-words">{t.title}</p>
+                    {t.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{t.description}</p>
+                    )}
+                  </div>
                   <div className="hidden md:flex items-center px-2">
                     <Select value={t.status} onValueChange={(v: Status) => updateTaskStatus(t.id, v)}>
                       <SelectTrigger
@@ -618,6 +686,9 @@ export default function TaskBoardsView() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="hidden md:flex items-center px-2">
+                    {renderAssignees(t)}
                   </div>
                   <div className="hidden md:flex items-center px-2 text-xs text-muted-foreground">
                     {t.due_date ? (
@@ -642,6 +713,7 @@ export default function TaskBoardsView() {
                   {/* mobile meta */}
                   <div className="md:hidden col-start-2 px-2 pb-2 -mt-1 flex flex-wrap items-center gap-2">
                     <Badge className={`${meta.pillBg} ${meta.pillText} border-0 text-[10px]`}>{meta.label}</Badge>
+                    {renderAssignees(t)}
                     {t.due_date && (
                       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                         <Calendar className="h-3 w-3" />
@@ -654,10 +726,11 @@ export default function TaskBoardsView() {
             };
 
             const columnHeader = (
-              <div className="hidden md:grid grid-cols-[24px_minmax(0,1fr)_140px_140px_60px] items-center gap-0 bg-muted/20 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="hidden md:grid grid-cols-[24px_minmax(0,1fr)_140px_120px_140px_60px] items-center gap-0 bg-muted/20 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 <div />
                 <div className="px-2">Task</div>
                 <div className="px-2">Status</div>
+                <div className="px-2">Assignee</div>
                 <div className="px-2">Due date</div>
                 <div />
               </div>
