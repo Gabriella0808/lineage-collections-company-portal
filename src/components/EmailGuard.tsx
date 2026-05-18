@@ -1,8 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-export const ALLOWED_EMAILS = [
-  "gabriella@lineage-collections.com",
+export const CUSTOMER_SERVICE_EMAILS = [
   "tammy@lineage-collections.com",
   "jessica@lineage-collections.com",
   "melissa@lineage-collections.com",
@@ -11,9 +10,19 @@ export const ALLOWED_EMAILS = [
   "sarah@lineage-collections.com",
 ];
 
+export const ALLOWED_EMAILS = [
+  "gabriella@lineage-collections.com",
+  ...CUSTOMER_SERVICE_EMAILS,
+];
+
 export function isAllowedEmail(email?: string | null): boolean {
   if (!email) return false;
   return ALLOWED_EMAILS.includes(email.toLowerCase());
+}
+
+export function isCustomerService(email?: string | null): boolean {
+  if (!email) return false;
+  return CUSTOMER_SERVICE_EMAILS.includes(email.toLowerCase());
 }
 
 interface Props {
