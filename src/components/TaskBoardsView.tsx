@@ -584,25 +584,7 @@ export default function TaskBoardsView() {
               (g) => !(DEFAULT_GROUP_NAMES as readonly string[]).includes(g.name),
             );
 
-            const renderTaskRow = (t: BoardTask) => {
-              const meta = STATUS_META[t.status];
-              const isMine = !!user && t.user_id === user.id;
-              return (
-                <li
-                  key={t.id}
-                  draggable
-                  onDragStart={(e) => e.dataTransfer.setData("text/task-id", t.id)}
-                  className="grid grid-cols-[24px_minmax(0,1fr)] md:grid-cols-[24px_minmax(0,1fr)_140px_140px_60px] items-center hover:bg-muted/40 cursor-grab active:cursor-grabbing"
-                >
-                  <div className="flex items-center justify-center text-muted-foreground/40">
-                    <GripVertical className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="px-2 py-2 min-w-0">
-                    <p className="text-sm font-medium leading-snug break-words">{t.title}</p>
-                    {t.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{t.description}</p>
-                    )}
-                  </div>
+            
             const userLookup = (uid: string | null | undefined) => {
               if (!uid) return null;
               return assignableUsers.find((u) => u.user_id === uid) ?? null;
