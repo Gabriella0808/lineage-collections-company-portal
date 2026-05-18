@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole, type AppRole } from "@/hooks/useUserRole";
 import lineageLogo from "@/assets/lineage-logo-white.png";
 import { NavLink } from "@/components/NavLink";
-import { isAllowedEmail } from "@/components/EmailGuard";
+import { isAllowedEmail, isCustomerService } from "@/components/EmailGuard";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarHeader,
@@ -189,14 +189,21 @@ function SidebarNav() {
   const location = useLocation();
   const { user } = useAuth();
 
+  const cs = isCustomerService(user?.email);
+  const CS_ALLOWED = new Set(["/", "/tasks", "/dealers", "/settings"]);
+
   const sections = NAV_SECTIONS
     .filter((s) => {
-      if (s.id === "catalog") {
-        return isAllowedEmail(user?.email);
-      }
+      if (cs) return true;
+      if (s.id === "catalog") return isAllowedEmail(user?.email);
       return true;
     })
-    .map((s) => ({ ...s, items: s.items.filter((i) => i.roles.includes(role)) }))
+    .map((s) => ({
+      ...s,
+      items: s.items
+        .filter((i) => (cs ? CS_ALLOWED.has(i.url) : i.roles.includes(role)))
+        .map((i) => (cs ? { ...i, children: undefined } : i)),
+    }))
     .filter((s) => s.items.length > 0);
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
