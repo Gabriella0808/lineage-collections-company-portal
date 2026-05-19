@@ -2301,6 +2301,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _post_task_assigned_email: {
+        Args: { _assigner_id: string; _task_id: string; _user_id: string }
+        Returns: undefined
+      }
       assignable_users: {
         Args: never
         Returns: {
