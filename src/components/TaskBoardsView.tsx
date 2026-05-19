@@ -424,12 +424,14 @@ export default function TaskBoardsView() {
       board_id: activeBoardId,
       group_id: taskForm.group_id,
     };
+    let taskId: string | null = null;
     if (editingTask) {
       const { error } = await supabase.from("manager_tasks").update(payload).eq("id", editingTask.id);
       if (error) {
         console.error("[TaskBoards] update task failed", error);
         return toast({ title: "Update failed", description: error.message, variant: "destructive" });
       }
+      taskId = editingTask.id;
     } else {
       const { data, error } = await supabase
         .from("manager_tasks")
@@ -444,10 +446,20 @@ export default function TaskBoardsView() {
           variant: "destructive",
         });
       }
-      // Optimistic insert so the new task appears immediately, even if the
-      // refetch is delayed or filtered.
+      taskId = (data as any).id;
       setTasks((prev) => [...prev, data as unknown as BoardTask]);
     }
+
+    // Sync assignees
+    if (taskId) {
+      await supabase.from("manager_task_assignees").delete().eq("task_id", taskId);
+      if (taskForm.assignee_ids.length) {
+        const rows = taskForm.assignee_ids.map((uid) => ({ task_id: taskId!, user_id: uid }));
+        const { error: aErr } = await supabase.from("manager_task_assignees").insert(rows);
+        if (aErr) console.error("[TaskBoards] assignee sync failed", aErr);
+      }
+    }
+
     setTaskDlgOpen(false);
     load();
   };
