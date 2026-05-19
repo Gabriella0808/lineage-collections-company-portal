@@ -35,6 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { format } from "date-fns";
+import { parseDateOnly } from "@/lib/utils";
 
 type Status = "todo" | "in_progress" | "blocked" | "done";
 
@@ -731,7 +732,7 @@ export default function TaskBoardsView() {
                     {t.due_date ? (
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(t.due_date), "MMM d")}
+                        {format(parseDateOnly(t.due_date)!, "MMM d")}
                       </span>
                     ) : (
                       <span className="italic">—</span>
@@ -754,7 +755,7 @@ export default function TaskBoardsView() {
                     {t.due_date && (
                       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(t.due_date), "MMM d")}
+                        {format(parseDateOnly(t.due_date)!, "MMM d")}
                       </span>
                     )}
                   </div>
