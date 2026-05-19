@@ -584,7 +584,7 @@ export default function TasksPage() {
 
   const allowedAssigneeRoles: AssignableUser["role"][] =
     roleInfo?.role === "admin"
-      ? ["admin", "manager"]
+      ? ["admin", "manager", "rep"]
       : roleInfo?.role === "manager"
         ? ["admin", "manager", "rep"]
         : ["admin", "manager", "rep"];
