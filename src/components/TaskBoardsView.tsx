@@ -393,17 +393,21 @@ export default function TaskBoardsView() {
   // --- Task CRUD ---
   const openNewTask = (groupId: string | null, status: Status = "todo") => {
     setEditingTask(null);
-    setTaskForm({ title: "", description: "", status, due_date: "", group_id: groupId });
+    setTaskForm({ title: "", description: "", status, due_date: "", group_id: groupId, assignee_ids: [] });
     setTaskDlgOpen(true);
   };
   const openEditTask = (t: BoardTask) => {
     setEditingTask(t);
+    const existing = new Set<string>();
+    if (t.assigned_user_id) existing.add(t.assigned_user_id);
+    (taskAssignees[t.id] ?? []).forEach((id) => existing.add(id));
     setTaskForm({
       title: t.title,
       description: t.description ?? "",
       status: t.status,
       due_date: t.due_date ?? "",
       group_id: t.group_id,
+      assignee_ids: Array.from(existing),
     });
     setTaskDlgOpen(true);
   };
