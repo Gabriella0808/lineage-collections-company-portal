@@ -143,22 +143,19 @@ FROM dbo.Territory
 
   dealers = @"
 SELECT
-  CAST(c.CustomerID AS NVARCHAR(64))  AS acctivate_id,
-  c.CompanyName                       AS name,
-  c.Email                             AS email,
-  c.Phone                             AS phone,
-  c.BillAddress1                      AS address,
-  c.BillCity                          AS city,
-  c.BillState                         AS state,
-  c.BillZip                           AS zip,
-  s.SalespersonName                   AS salesperson,
-  t.TerritoryName                     AS territory,
-  m.EmployeeName                      AS sales_manager
+  CAST(c.CustId AS NVARCHAR(64))  AS acctivate_id,
+  c.CompanyName                   AS name,
+  c.Email                         AS email,
+  c.Phone                         AS phone,
+  c.Address                       AS address,
+  c.City                          AS city,
+  c.State                         AS state,
+  c.Zip                           AS zip,
+  c.SalespersonName               AS salesperson,
+  c._Territory                    AS territory,
+  c._SalesManager                 AS sales_manager
 FROM dbo.Customer c
-LEFT JOIN dbo.Salesperson s ON s.SalespersonID = c.SalespersonID
-LEFT JOIN dbo.Territory   t ON t.TerritoryCode = c.TerritoryCode
-LEFT JOIN dbo.Employee    m ON m.EmployeeID    = s.SalesManagerID
-WHERE c.Inactive = 0
+WHERE c.Status = 1
 "@
 
   products = @"
