@@ -147,10 +147,9 @@ SELECT
   c.CompanyName                   AS name,
   c.Email                         AS email,
   c.Phone                         AS phone,
-  c.Address                       AS address,
+  c.Address                       AS street_address,
   c.City                          AS city,
   c.State                         AS state,
-  c.Zip                           AS zip,
   c.SalespersonName               AS salesperson,
   c._Territory                    AS territory,
   c._SalesManager                 AS sales_manager
