@@ -711,12 +711,16 @@ export default function TaskBoardsView() {
                   <div className="flex items-center justify-center text-muted-foreground/40">
                     <GripVertical className="h-3.5 w-3.5" />
                   </div>
-                  <div className="px-2 py-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setDetailsTask(t)}
+                    className="px-2 py-2 min-w-0 text-left hover:underline underline-offset-2 decoration-muted-foreground/40"
+                  >
                     <p className="text-sm font-medium leading-snug break-words">{t.title}</p>
                     {t.description && (
                       <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{t.description}</p>
                     )}
-                  </div>
+                  </button>
                   <div className="hidden md:flex items-center px-2">
                     <Select value={t.status} onValueChange={(v: Status) => updateTaskStatus(t.id, v)}>
                       <SelectTrigger
