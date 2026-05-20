@@ -1,0 +1,13 @@
+{
+  "supabaseUrl": "https://tsbrvpgzawbbmuloxlkz.supabase.co",
+  "syncToken": "PASTE_YOUR_SYNC_API_TOKEN_HERE",
+  "batchSize": 500,
+  "enabledTables": ["managers", "sales_reps", "territories", "dealers", "products", "inventory"],
+  "sql": {
+    "server": "YOUR-SQL-HOST\\ACCTIVATE",
+    "database": "Acctivate",
+    "integratedSecurity": true,
+    "user": "",
+    "password": ""
+  }
+}
