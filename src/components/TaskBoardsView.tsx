@@ -124,6 +124,7 @@ export default function TaskBoardsView() {
   }>({ title: "", description: "", status: "todo", due_date: "", group_id: null, assignee_ids: [] });
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [detailsTask, setDetailsTask] = useState<BoardTask | null>(null);
 
   // members / subscribers
   const [shareDlgOpen, setShareDlgOpen] = useState(false);
